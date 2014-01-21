@@ -1,0 +1,116 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    }
+
+.photor {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #090907;
+
+    &__viewport {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 100px;
+        left: 0;
+        overflow: hidden;
+
+        &Layer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            white-space: nowrap;
+            transition-property: left;
+            transition-timing-function: cubic-bezier(0.1,0,.25,1);
+
+            &Slide {
+                display: inline-block;
+                vertical-align: top;
+                width: 100%;
+                height: 100%;
+                background-repeat: no-repeat;
+                background-position: center center;
+
+                &._auto {
+                    background-size: contain;
+
+                    @media (max-width: 400px) {
+                        background-size: cover;
+                        }
+                    }
+                &._center {
+                    background-size: auto;
+                    }
+                }
+            }
+
+        &Control {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1;
+            cursor: move;
+            cursor: -webkit-grab;
+            cursor: -moz-grab;
+
+            &Prev,
+            &Next {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                cursor: pointer;
+                }
+            &Prev {
+                right: 70%;
+                left: 0;
+                }
+            &Next {
+                right: 0;
+                left: 30%;
+                }
+            }
+        }
+
+    &__thumbs {
+        position: absolute;
+        height: 100px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        text-align: center;
+        white-space: nowrap;
+
+        &Item {
+            display: inline-block;
+            vertical-align: top;
+            height: 100px;
+
+            &Img {
+                width: auto;
+                height: 100%;
+                vertical-align: top;
+                }
+            }
+        }
+    }
+
+.photor._dragging {
+    .photor__viewportControl {
+        cursor: move;
+        cursor: -webkit-grabbing;
+        cursor: -moz-grabbing;
+
+        &Prev,
+        &Next {
+            cursor: move;
+            cursor: -webkit-grabbing;
+            cursor: -moz-grabbing;
+            }
+        }
+    }

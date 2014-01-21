@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link rel="stylesheet" href="dist/photor.min.css">
+</head>
+<body>
+
+<div class="photor">
+    <div class="photor__viewport">
+        <div class="photor__viewportLayer"></div>
+        <div class="photor__viewportControl">
+            <div class="photor__viewportControlPrev"></div>
+            <div class="photor__viewportControlNext"></div>
+        </div>
+    </div>
+    <div class="photor__thumbs">
+        <a href="demo/images/1.jpg" class="photor__thumbsItem">
+            <img src="demo/images/1.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/2.jpg" class="photor__thumbsItem">
+            <img src="demo/images/2.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/3.jpg" class="photor__thumbsItem">
+            <img src="demo/images/3.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/4.jpg" class="photor__thumbsItem">
+            <img src="demo/images/4.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/5.jpg" class="photor__thumbsItem">
+            <img src="demo/images/5.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/6.jpg" class="photor__thumbsItem">
+            <img src="demo/images/6.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/7.jpg" class="photor__thumbsItem">
+            <img src="demo/images/7.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/8.jpg" class="photor__thumbsItem">
+            <img src="demo/images/8.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/9.jpg" class="photor__thumbsItem">
+            <img src="demo/images/9.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+    </div>
+</div>
+
+<!-- <div class="photor">
+    <div class="photor__viewport">
+        <div class="photor__viewportLayer"></div>
+        <div class="photor__viewportControl">
+            <div class="photor__viewportControlPrev"></div>
+            <div class="photor__viewportControlNext"></div>
+        </div>
+    </div>
+    <div class="photor__thumbs">
+        <a href="demo/images/1.jpg" class="photor__thumbsItem">
+            <img src="demo/images/1.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/2.jpg" class="photor__thumbsItem">
+            <img src="demo/images/2.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/4.jpg" class="photor__thumbsItem">
+            <img src="demo/images/4.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+        <a href="demo/images/5.jpg" class="photor__thumbsItem">
+            <img src="demo/images/5.jpg" alt="" class="photor__thumbsItemImg">
+        </a>
+    </div>
+</div> -->
+
+<script src="libs/jquery/jquery.js"></script>
+<script src="dist/photor.js"></script>
+<script>
+$(document).ready(function() {
+
+    $('.photor').photor({
+
+        control: 'photor__viewportControl',
+        next: 'photor__viewportControlNext',
+        prev: 'photor__viewportControlPrev',
+        thumb: 'photor__thumbsItem',
+        thumbImg: 'photor__thumbsItemImg',
+        viewport: 'photor__viewport',
+        layer: 'photor__viewportLayer',
+        slide: 'photor__viewportLayerSlide',
+
+        // Settings
+        delay: 300,
+        keyboard: true,
+        swipe: true,
+
+        mod: {
+            // States
+            loading: '_loading',
+            current: '_current',
+            dragging: '_dragging',
+
+            // Algorithm
+            auto: '_auto',
+            center: '_center',
+
+            // Orientation
+            portrait: '_portrait',
+            landscape: '_landscape'
+        }
+
+    });
+
+});
+</script>
+</body>
+</html>

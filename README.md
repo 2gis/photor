@@ -1,4 +1,4 @@
-photor
-======
+mindmap
+=======
 
-jQuery photo gallery.
+jQuery mindmap plugin
