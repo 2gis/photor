@@ -69,6 +69,7 @@
                 p.current = params.current;
                 p.count = count - 1;
                 p.dragging = false;
+                p.allowClick = true;
                 p.viewportWidth = p.viewport.outerWidth();
                 p.viewportHeight = p.viewport.outerHeight();
 
@@ -100,16 +101,16 @@
 
             // Next button
             p.next.on('click', function() {
-                if (!p.dragging) {
-                    // console.log('click');
+                console.log('click', p.allowClick);
+                if (p.allowClick) {
                     methods.next(galleryId);
                 }
             });
 
             // Previous button
             p.prev.on('click', function() {
-                if (!p.dragging) {
-                    // console.log('click');
+                console.log('click', p.allowClick);
+                if (p.allowClick) {
                     methods.prev(galleryId);
                 }
             });
@@ -169,22 +170,26 @@
             p.dragging = false;
 
             p.control.on('mouseup mouseleave', function() {
-                // console.log('mouseup');
+                p.root.removeClass(params.mod.dragging);
                 if (p.dragging) {
                     var self = $(this),
                         selfWidth = self.outerWidth(),
                         deltaX,
-                        deltaT,
                         target;
 
-                    (function(p) {
-                        setTimeout(function() {
-                            p.dragging = false;
-                        }, 10);
-                    })(p);
-
+                    p.dragging = false;
                     deltaX = startX - endX;
                     target = deltaX > 0 ? p.current + 1 : p.current - 1;
+
+                    if (deltaX == 0) {
+                        p.allowClick = true;
+                        return;
+                    } else {
+                        p.allowClick = false;
+                        setTimeout(function() {
+                            p.allowClick = true;
+                        }, 20);
+                    }
 
                     // Transition executes if delta more then 5% of container width
                     if (Math.abs(deltaX) > selfWidth * 0.05) {
@@ -196,8 +201,6 @@
                     } else {
                         methods.go(galleryId, p.current);
                     }
-
-                    p.root.removeClass(params.mod.dragging);
                 }
             });
 
@@ -220,7 +223,7 @@
             p.control.on('mousedown', function(e) {
                 var offset = $(this).offset();
 
-                startX = e.pageX - offset.left;
+                startX = endX = e.pageX - offset.left;
                 p.dragging = true;
                 p.root.addClass(params.mod.dragging);
             });
