@@ -15,7 +15,23 @@
         return;
     }
 
-    var params,
+    function getSupportedTransform() {
+        for (var key in prefixes) {
+            if (document.createElement('div').style[key] !== undefined) {
+                return key;
+            }
+        }
+        return false;
+    }
+
+    var prefixes = {
+            'transform': 'transform',
+            'OTransform': '-o-transform',
+            'msTransform': '-ms-transform',
+            'MozTransform': '-moz-transform',
+            'WebkitTransform': '-webkit-transform'
+        },
+        params,
         data = [];
 
     var methods = {
@@ -25,7 +41,8 @@
                 current: 0,
                 count: 0,
                 loadingRange: 1,
-                slideIdPrefix: '_'
+                slideIdPrefix: '_',
+                transform: getSupportedTransform()
 
             }, options);
 
@@ -101,7 +118,6 @@
 
             // Next button
             p.next.on('click', function() {
-                console.log('click', p.allowClick);
                 if (p.allowClick) {
                     methods.next(galleryId);
                 }
@@ -109,7 +125,6 @@
 
             // Previous button
             p.prev.on('click', function() {
-                console.log('click', p.allowClick);
                 if (p.allowClick) {
                     methods.prev(galleryId);
                 }
@@ -216,7 +231,7 @@
                     relativeDeltaX = -deltaX / selfWidth * 100;
                     indent = -p.current * 100 + relativeDeltaX;
 
-                    p.layer.css('left', indent + '%');
+                    p.layer.css(methods.setIndent(indent));
                 }
             });
 
@@ -227,6 +242,25 @@
                 p.dragging = true;
                 p.root.addClass(params.mod.dragging);
             });
+
+            function touchHandler(event) {
+                var touch = event.changedTouches[0];
+
+                var simulatedEvent = document.createEvent('MouseEvent');
+                    simulatedEvent.initMouseEvent({
+                        touchstart: 'mousedown',
+                        touchmove: 'mousemove',
+                        touchend: 'mouseup'
+                    }[event.type], true, true, window, 1, touch.screenX, touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null);
+
+                touch.target.dispatchEvent(simulatedEvent);
+                event.preventDefault();
+            }
+
+            p.control[0].addEventListener('touchstart', touchHandler, true);
+            p.control[0].addEventListener('touchmove', touchHandler, true);
+            p.control[0].addEventListener('touchend', touchHandler, true);
+            p.control[0].addEventListener('touchcancel', touchHandler, true);
         },
 
         bindKeyboard: function(galleryId) {
@@ -263,7 +297,7 @@
 
             p.layer
                 .css('transition-duration', delay + 'ms')
-                .css('left', -target * 100 + '%');
+                .css(methods.setIndent(-target * 100));
 
             p.current = target;
 
@@ -373,6 +407,18 @@
             }
         },
 
+        setIndent: function(value) {
+            var result = {};
+
+            if (params.transform) {
+                result[prefixes[params.transform]] = 'translate3d(' + value + '%, 0, 0)';
+            } else {
+                result.left = value + '%';
+            }
+
+            return result;
+        },
+
         getTemplate: function(id) {
             return '<div class="' + params.slide + ' ' + params.slideIdPrefix + id + ' ' + params.mod.loading + '" data-id="' + id + '"></div>';
         }
@@ -391,3 +437,10 @@
     };
 
 }(jQuery));
+
+
+// Disabled кнопки
+// Клик на touch
+// multitouch
+// Счетчик
+// translate вместо left
