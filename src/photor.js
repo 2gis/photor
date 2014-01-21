@@ -244,6 +244,11 @@
             });
 
             function touchHandler(event) {
+                console.log(event.touches, event.touches.length);
+                if (event.touches.length > 1) {
+                    return true;
+                }
+
                 var touch = event.changedTouches[0];
 
                 var simulatedEvent = document.createEvent('MouseEvent');
