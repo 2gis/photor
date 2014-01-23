@@ -32,7 +32,8 @@
             'WebkitTransform': '-webkit-transform'
         },
         params,
-        data = [];
+        data = [],
+        timer;
 
     var methods = {
         init: function(options) {
@@ -94,11 +95,7 @@
 
                 methods.handlers(galleryId);
                 methods.go(galleryId, p.current, 0);
-
             });
-
-            // Взять thumbs
-
         },
 
         destroy: function() {
@@ -179,93 +176,118 @@
 
         bindSwipe: function(galleryId) {
             var p = data[galleryId],
-                startX = 0,
-                endX = 0;
+                start = {},
+                delta = {},
+                isScrolling,
+                isMultiTouch = false;
 
             p.dragging = false;
 
-            p.control.on('mouseup mouseleave', function() {
-                p.root.removeClass(params.mod.dragging);
-                if (p.dragging) {
-                    var self = $(this),
-                        selfWidth = self.outerWidth(),
-                        deltaX,
-                        target;
+            p.control
 
-                    p.dragging = false;
-                    deltaX = startX - endX;
-                    target = deltaX > 0 ? p.current + 1 : p.current - 1;
+                // Pointer start
+                .on('mousedown touchstart', function() {
+                    var offset = $(this).offset();
 
-                    if (deltaX == 0) {
-                        p.allowClick = true;
+                    start = {
+                        x: event.pageX || event.touches[0].pageX,
+                        y: event.pageY || event.touches[0].pageY
+                    };
+
+                    delta = {x: 0, y: 0};
+
+                    if (event.type == 'touchstart') {
+                        return true;
+                    }
+
+                    p.dragging = true;
+                    p.root.addClass(params.mod.dragging);
+                })
+
+                // Pointer move
+                .on('mousemove touchmove', function(e) {
+                    var touches = event.touches && event.touches.length,
+                        coordX = e.pageX || event.touches[0].pageX,
+                        coordY = e.pageY || event.touches[0].pageY;
+
+                    delta = {
+                        x: start.x - coordX,
+                        y: start.y - coordY
+                    };
+
+                    // Detect scrolling
+                    if (typeof isScrolling == 'undefined') {
+                        isScrolling = !!(isScrolling || Math.abs(delta.x) < Math.abs(delta.y));
+                    }
+
+                    // Detect multitouch
+                    isMultiTouch = isMultiTouch || touches > 1;
+
+                    if (isScrolling || isMultiTouch || touches == 0) {
                         return;
                     } else {
+                        e.preventDefault();
+                    }
+
+                    // Start touch
+                    if (e.type == 'touchmove' && !p.dragging) {
+                        p.dragging = true;
+                        p.root.addClass(params.mod.dragging);
+                    }
+
+                    if (p.dragging) {
                         p.allowClick = false;
-                        setTimeout(function() {
+
+                        var self = $(this),
+                            selfWidth = self.outerWidth(),
+                            relativeDeltaX, indent;
+
+                        relativeDeltaX = -delta.x / selfWidth * 100;
+                        indent = -p.current * 100 + relativeDeltaX;
+
+                        p.layer.css(methods.setIndent(indent));
+                    }
+                })
+
+                // Pointer end
+                .on('mouseup mouseleave touchend touchcancel', function() {
+                    p.root.removeClass(params.mod.dragging);
+                    isScrolling = undefined;
+                    isMultiTouch = (event.touches && event.touches.length) == 1;
+
+                    if (p.dragging) {
+                        var self = $(this),
+                            selfWidth = self.outerWidth(),
+                            target;
+
+                        p.dragging = false;
+
+                        // Allow or disable click by buttons
+                        if (delta.x == 0) {
                             p.allowClick = true;
-                        }, 20);
-                    }
-
-                    // Transition executes if delta more then 5% of container width
-                    if (Math.abs(deltaX) > selfWidth * 0.05) {
-                        if (deltaX > 0) {
-                            methods.next(galleryId);
+                            return true;
                         } else {
-                            methods.prev(galleryId);
+                            p.allowClick = false;
+                            setTimeout(function() {
+                                p.allowClick = true;
+                            }, 20);
                         }
-                    } else {
-                        methods.go(galleryId, p.current);
+
+                        // Target slide
+                        target = delta.x > 0 ? p.current + 1 : p.current - 1;
+
+                        // Transition executes if delta more then 5% of container width
+                        if (Math.abs(delta.x) > selfWidth * 0.05) {
+                            if (delta.x > 0) {
+                                methods.next(galleryId);
+                            } else {
+                                methods.prev(galleryId);
+                            }
+                        } else {
+                            methods.go(galleryId, p.current);
+                        }
                     }
-                }
-            });
-
-            p.control.on('mousemove', function(e) {
-                if (p.dragging) {
-                    var self = $(this),
-                        selfWidth = self.outerWidth(),
-                        offset = self.offset(),
-                        deltaX, relativeDeltaX, indent;
-
-                    endX = e.pageX - offset.left;
-                    deltaX = startX - endX;
-                    relativeDeltaX = -deltaX / selfWidth * 100;
-                    indent = -p.current * 100 + relativeDeltaX;
-
-                    p.layer.css(methods.setIndent(indent));
-                }
-            });
-
-            p.control.on('mousedown', function(e) {
-                var offset = $(this).offset();
-
-                startX = endX = e.pageX - offset.left;
-                p.dragging = true;
-                p.root.addClass(params.mod.dragging);
-            });
-
-            function touchHandler(event) {
-                console.log(event.touches, event.touches.length);
-                if (event.touches.length > 1) {
-                    return true;
-                }
-
-                var touch = event.changedTouches[0];
-
-                var simulatedEvent = document.createEvent('MouseEvent');
-                    simulatedEvent.initMouseEvent({
-                        touchstart: 'mousedown',
-                        touchmove: 'mousemove',
-                        touchend: 'mouseup'
-                    }[event.type], true, true, window, 1, touch.screenX, touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null);
-
-                touch.target.dispatchEvent(simulatedEvent);
-                event.preventDefault();
-            }
-
-            p.control[0].addEventListener('touchstart', touchHandler, true);
-            p.control[0].addEventListener('touchmove', touchHandler, true);
-            p.control[0].addEventListener('touchend', touchHandler, true);
-            p.control[0].addEventListener('touchcancel', touchHandler, true);
+                });
         },
 
         bindKeyboard: function(galleryId) {
@@ -316,7 +338,8 @@
             methods.loadSlides(galleryId, target);
 
             // Reset duration
-            setTimeout(function() {
+            clearTimeout(timer);
+            timer = setTimeout(function() {
                 p.layer.css('transition-duration', '0s');
             }, delay);
         },
@@ -445,7 +468,7 @@
 
 
 // Disabled кнопки
-// Клик на touch
-// multitouch
+// Клик на touch (tap)
 // Счетчик
-// translate вместо left
+// Fade
+// Preloader

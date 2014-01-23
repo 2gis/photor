@@ -106,9 +106,3 @@ body {
   cursor: -webkit-grabbing;
   cursor: -moz-grabbing;
 }
-.photor._dragging .photor__viewportControlPrev,
-.photor._dragging .photor__viewportControlNext {
-  cursor: move;
-  cursor: -webkit-grabbing;
-  cursor: -moz-grabbing;
-}
