@@ -392,17 +392,18 @@
                         p.gallery[rel].width = this.width;
                         p.gallery[rel].height = this.height;
 
-                        slide
-                            .css('background-image', 'url(' + this.src + ')')
-                            .removeClass(params.mod.loading);
+                        slide.removeClass(params.mod.loading);
 
                         methods.position(galleryId, rel);
                     })
                     .on('error', function() {
                         // @TODO Обработай ошибку, друже
                     });
+
+                img.src = url;
+
+                slide.css('background-image', 'url(' + img.src + ')');
             })(target);
-            img.src = url;
         },
 
         position: function(galleryId, target) {
@@ -470,5 +471,4 @@
 // Disabled кнопки
 // Клик на touch (tap)
 // Счетчик
-// Fade
 // Preloader

@@ -22,7 +22,7 @@ body {
         position: absolute;
         top: 0;
         right: 0;
-        bottom: 100px;
+        bottom: 60px;
         left: 0;
         overflow: hidden;
 
@@ -42,8 +42,9 @@ body {
                 height: 100%;
                 background-repeat: no-repeat;
                 background-position: center center;
+                visibility: visible;
                 opacity: 1;
-                transition: all .2s cubic-bezier(0.1,0,.25,1);
+                transition: all .3s cubic-bezier(0.1,0,.25,1);
 
                 &._loading {
                     visibility: hidden;
@@ -96,7 +97,7 @@ body {
 
     &__thumbs {
         position: absolute;
-        height: 100px;
+        height: 60px;
         right: 0;
         bottom: 0;
         left: 0;
@@ -107,7 +108,7 @@ body {
         &Item {
             display: inline-block;
             vertical-align: top;
-            height: 100px;
+            height: 60px;
 
             &Img {
                 width: auto;
@@ -126,7 +127,10 @@ body {
 
         &Prev,
         &Next {
-            // pointer-events: none;
+            cursor: move;
+            cursor: -webkit-grabbing;
+            cursor: -moz-grabbing;
+            cursor: grabbing;
             }
         }
     }
