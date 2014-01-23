@@ -2,6 +2,17 @@
 
 module.exports = function(grunt) {
 
+    function getSpecs() {
+        var result = [];
+
+        // Return a unique array of all file or directory paths that match the given globbing pattern(s). 
+        grunt.file.expand('tests/spec/*.js').forEach(function(filepath) {
+            result.push(filepath);
+        });
+
+        return result;
+    }
+
     grunt.initConfig({
 
         clean: {
@@ -72,9 +83,31 @@ module.exports = function(grunt) {
                     interrupt: true
                 }
             }
-        }
+        },
+
+        gruntHtml: {
+            layout: {
+                src: ['tests/html/*.html', '!tests/html/layout.html'],
+                dest: 'build/tests/',
+                options: {
+                    data: {
+                        get specs() {
+                            return getSpecs();
+                        }
+                    }
+                }
+            }
+        },
+
+        'mocha-phantomjs': {
+            options: {
+                view: '1024x768'
+            },
+            all: ['build/tests/*.html']
+        },
     });
 
+    grunt.loadTasks('tasks');
     grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-jshint');
@@ -90,4 +123,6 @@ module.exports = function(grunt) {
     grunt.registerTask('default', ['clean', 'js', 'css']);
     grunt.registerTask('dev', ['default', 'connect', 'watch']);
 
+    grunt.registerTask('test', ['mocha-phantomjs']);
+    grunt.registerTask('build', ['gruntHtml']);
 };
