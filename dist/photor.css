@@ -41,6 +41,12 @@ body {
   height: 100%;
   background-repeat: no-repeat;
   background-position: center center;
+  opacity: 1;
+  transition: all 0.2s cubic-bezier(0.1, 0, 0.25, 1);
+}
+.photor__viewportLayerSlide._loading {
+  visibility: hidden;
+  opacity: 0;
 }
 .photor__viewportLayerSlide._auto {
   -webkit-background-size: contain;

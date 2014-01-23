@@ -186,7 +186,7 @@
             p.control
 
                 // Pointer start
-                .on('mousedown touchstart', function() {
+                .on('mousedown touchstart', function(event) {
                     var offset = $(this).offset();
 
                     start = {
@@ -205,10 +205,10 @@
                 })
 
                 // Pointer move
-                .on('mousemove touchmove', function(e) {
+                .on('mousemove touchmove', function(event) {
                     var touches = event.touches && event.touches.length,
-                        coordX = e.pageX || event.touches[0].pageX,
-                        coordY = e.pageY || event.touches[0].pageY;
+                        coordX = event.pageX || event.touches[0].pageX,
+                        coordY = event.pageY || event.touches[0].pageY;
 
                     delta = {
                         x: start.x - coordX,
@@ -226,11 +226,11 @@
                     if (isScrolling || isMultiTouch || touches == 0) {
                         return;
                     } else {
-                        e.preventDefault();
+                        event.preventDefault();
                     }
 
                     // Start touch
-                    if (e.type == 'touchmove' && !p.dragging) {
+                    if (event.type == 'touchmove' && !p.dragging) {
                         p.dragging = true;
                         p.root.addClass(params.mod.dragging);
                     }
@@ -250,7 +250,7 @@
                 })
 
                 // Pointer end
-                .on('mouseup mouseleave touchend touchcancel', function() {
+                .on('mouseup mouseleave touchend touchcancel', function(event) {
                     p.root.removeClass(params.mod.dragging);
                     isScrolling = undefined;
                     isMultiTouch = (event.touches && event.touches.length) == 1;
