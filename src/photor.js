@@ -336,6 +336,7 @@
 
             // Load slide's range
             methods.loadSlides(galleryId, target);
+            methods.checkButtons(galleryId);
 
             // Reset duration
             clearTimeout(timer);
@@ -437,6 +438,21 @@
             }
         },
 
+        checkButtons: function(galleryId) {
+            var p = data[galleryId];
+
+            if (p.current == 0) {
+                p.prev.addClass(params.mod.disabled);
+            } else {
+                p.prev.removeClass(params.mod.disabled);
+            }
+            if (p.current == p.count) {
+                p.next.addClass(params.mod.disabled);
+            } else {
+                p.next.removeClass(params.mod.disabled);
+            }
+        },
+
         setIndent: function(value) {
             var result = {};
 
@@ -472,7 +488,6 @@
 // Disabled кнопки
 // Клик на touch (tap)
 // Счетчик
-// Preloader
 
 // Thumbs
     // Когда все загружены, составляем объект
