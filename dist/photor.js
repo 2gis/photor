@@ -41,7 +41,7 @@
 
                 current: 0,
                 count: 0,
-                loadingRange: 1,
+                loadingRange: 2,
                 slideIdPrefix: '_',
                 transform: getSupportedTransform()
 
@@ -379,7 +379,8 @@
 
         loadSlide: function(galleryId, target) {
             var p = data[galleryId],
-                slide = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + target),
+                slide = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + target + ' '),
+                slideImg = slide.find('.' + params.slideImg),
                 url = p.gallery[target].url,
                 img = document.createElement('img');
 
@@ -402,7 +403,7 @@
 
                 img.src = url;
 
-                slide.css('background-image', 'url(' + img.src + ')');
+                slideImg.css('background-image', 'url(' + img.src + ')');
             })(target);
         },
 
@@ -449,7 +450,7 @@
         },
 
         getTemplate: function(id) {
-            return '<div class="' + params.slide + ' ' + params.slideIdPrefix + id + ' ' + params.mod.loading + '" data-id="' + id + '"></div>';
+            return '<div class="' + params.slide + ' ' + params.slideIdPrefix + id + ' ' + params.mod.loading + '" data-id="' + id + '"><div class="' + params.slideImg + '"></div></div>';
         }
     };
 
@@ -472,3 +473,10 @@
 // Клик на touch (tap)
 // Счетчик
 // Preloader
+
+// Thumbs
+    // Когда все загружены, составляем объект
+    // При переходе позиционируем рамку
+    // На ресайзе проверяем размеры
+        // Если Размер слоя меньше, чем размер контейнера, инитим драг-н-дроп
+        // Если нет, разинитим

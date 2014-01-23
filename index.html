@@ -18,33 +18,35 @@
         </div>
     </div>
     <div class="photor__thumbs">
-        <a href="demo/images/1.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/1.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
-        <a href="demo/images/2.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/2.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
-        <a href="demo/images/3.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/3.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
-        <a href="demo/images/4.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/4.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
-        <a href="demo/images/5.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/5.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
-        <a href="demo/images/6.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/6.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
-        <a href="demo/images/7.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/7.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
-        <a href="demo/images/8.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/8.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
-        <a href="demo/images/9.jpg" class="photor__thumbsItem">
-            <img src="demo/thumbs/9.jpg" alt="" class="photor__thumbsItemImg">
-        </a>
+        <div class="photor__thumbsWrap">
+            <a href="demo/images/1.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/1.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+            <a href="demo/images/2.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/2.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+            <a href="demo/images/3.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/3.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+            <a href="demo/images/4.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/4.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+            <a href="demo/images/5.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/5.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+            <a href="demo/images/6.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/6.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+            <a href="demo/images/7.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/7.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+            <a href="demo/images/8.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/8.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+            <a href="demo/images/9.jpg" class="photor__thumbsWrapItem">
+                <img src="demo/thumbs/9.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </a>
+        </div>
     </div>
 </div>
 
@@ -82,11 +84,14 @@ $(document).ready(function() {
         control: 'photor__viewportControl',
         next: 'photor__viewportControlNext',
         prev: 'photor__viewportControlPrev',
-        thumb: 'photor__thumbsItem',
-        thumbImg: 'photor__thumbsItemImg',
+        thumbs: 'photor__thumbs',
+        thumbsLayer: 'photor__thumbsWrap',
+        thumb: 'photor__thumbsWrapItem',
+        thumbImg: 'photor__thumbsWrapItemImg',
         viewport: 'photor__viewport',
         layer: 'photor__viewportLayer',
         slide: 'photor__viewportLayerSlide',
+        slideImg: 'photor__viewportLayerSlideImg',
 
         // Settings
         delay: 300,
