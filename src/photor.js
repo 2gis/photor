@@ -52,7 +52,8 @@
                     galleryId = this.id || i,
                     p = {}, // Current instance of gallery
                     content = '',
-                    count = 0;
+                    count = 0,
+                    thumbs = [];
 
                 // Get elements
                 p.root       = root;
@@ -61,12 +62,16 @@
                 p.prev       = root.find('.' + params.prev);
                 p.thumb      = root.find('.' + params.thumb);
                 p.thumbImg   = root.find('.' + params.thumbImg);
+                p.thumbFrame = root.find('.' + params.thumbFrame);
                 p.viewport   = root.find('.' + params.viewport);
                 p.layer      = root.find('.' + params.layer);
 
                 // Images info
                 p.gallery = [];
                 p.thumb.each(function(j) {
+                    var self = $(this),
+                        thumbImg = self.find('.' + params.thumbImg)[0];
+
                     p.gallery.push({
                         url: this.href,
                         width: 0,
@@ -76,9 +81,12 @@
                     content += methods.getTemplate(j);
                     count++;
 
-                    $(this)
+                    self
                         .attr('data-rel', j)
                         .addClass(params.slideIdPrefix + j);
+
+                    // Thumbs init
+                    thumbs[j] = thumbImg.src;
                 });
                 p.layer.html(content);
                 p.slide = root.find('.' + params.slide);
@@ -90,9 +98,11 @@
                 p.allowClick = true;
                 p.viewportWidth = p.viewport.outerWidth();
                 p.viewportHeight = p.viewport.outerHeight();
+                p.thumbSrc = thumbs;
 
                 data[galleryId] = p;
 
+                methods.loadThumbs(galleryId);
                 methods.handlers(galleryId);
                 methods.go(galleryId, p.current, 0);
             });
@@ -186,17 +196,17 @@
             p.control
 
                 // Pointer start
-                .on('mousedown touchstart', function(event) {
+                .on('mousedown touchstart', function(e) {
                     var offset = $(this).offset();
 
                     start = {
-                        x: event.pageX || event.touches[0].pageX,
-                        y: event.pageY || event.touches[0].pageY
+                        x: e.pageX || e.originalEvent.touches[0].pageX,
+                        y: e.pageY || e.originalEvent.touches[0].pageY
                     };
 
                     delta = {x: 0, y: 0};
 
-                    if (event.type == 'touchstart') {
+                    if (e.type == 'touchstart') {
                         return true;
                     }
 
@@ -205,10 +215,10 @@
                 })
 
                 // Pointer move
-                .on('mousemove touchmove', function(event) {
-                    var touches = event.touches && event.touches.length,
-                        coordX = event.pageX || event.touches[0].pageX,
-                        coordY = event.pageY || event.touches[0].pageY;
+                .on('mousemove touchmove', function(e) {
+                    var touches = e.originalEvent.touches && e.originalEvent.touches.length,
+                        coordX = e.pageX || (e.originalEvent.touches && e.originalEvent.touches[0].pageX),
+                        coordY = e.pageY || (e.originalEvent.touches && e.originalEvent.touches[0].pageY);
 
                     delta = {
                         x: start.x - coordX,
@@ -226,11 +236,11 @@
                     if (isScrolling || isMultiTouch || touches == 0) {
                         return;
                     } else {
-                        event.preventDefault();
+                        e.preventDefault();
                     }
 
                     // Start touch
-                    if (event.type == 'touchmove' && !p.dragging) {
+                    if (e.type == 'touchmove' && !p.dragging) {
                         p.dragging = true;
                         p.root.addClass(params.mod.dragging);
                     }
@@ -250,10 +260,10 @@
                 })
 
                 // Pointer end
-                .on('mouseup mouseleave touchend touchcancel', function(event) {
+                .on('mouseup mouseleave touchend touchcancel', function(e) {
                     p.root.removeClass(params.mod.dragging);
                     isScrolling = undefined;
-                    isMultiTouch = (event.touches && event.touches.length) == 1;
+                    isMultiTouch = (e.originalEvent.touches && e.originalEvent.touches.length) == 1;
 
                     if (p.dragging) {
                         var self = $(this),
@@ -293,8 +303,8 @@
         bindKeyboard: function(galleryId) {
             var p = data[galleryId];
 
-            $(window).on('keydown', function() {
-                var key = event.which || event.keyCode;
+            $(window).on('keydown', function(e) {
+                var key = e.which || e.keyCode;
 
                 switch(key) {
                     // Space
@@ -329,9 +339,10 @@
             p.current = target;
 
             // Mark slide as current
+            methods.setCurrentThumb(galleryId, target, delay);
             p.slide.removeClass(params.mod.current);
             p.slide
-                .filter(params.slideIdPrefix + target)
+                .filter('.' + params.slideIdPrefix + target)
                 .addClass(params.mod.current);
 
             // Load slide's range
@@ -406,6 +417,76 @@
 
                 slideImg.css('background-image', 'url(' + img.src + ')');
             })(target);
+        },
+
+        loadThumbs: function(galleryId) {
+            var p = data[galleryId],
+                count = p.count,
+                images = p.thumbSrc,
+                img = document.createElement('img'),
+                loaded = 0;
+
+            p.galleryThumbs = [];
+            p.galleryThumbsLoaded = false;
+
+            for (var i = 0; i <= count; i++) {
+                (function(i) {
+                    var image = $(img);
+
+                    image
+                        .on('load', function() {
+                            loaded++;
+
+                            if (loaded == count) {
+                                p.galleryThumbsLoaded = true;
+                                methods.getThumbSize(galleryId);
+                            }
+                        })
+                        .on('error', function() {
+                            // @TODO Обработай ошибку, друже
+                        });
+
+                    img.src = images[i];
+                })(i);
+            }
+        },
+
+        getThumbSize: function(galleryId) {
+            var p = data[galleryId],
+                thumb = p.thumb;
+
+            thumb.each(function(i) {
+                var self = $(this);
+
+                p.galleryThumbs[i] = {};
+                p.galleryThumbs[i].width = self.outerWidth();
+                p.galleryThumbs[i].height = self.outerHeight();
+                p.galleryThumbs[i].top = self.position().top + parseInt(self.css('margin-top'));
+                p.galleryThumbs[i].left = self.position().left + parseInt(self.css('margin-left'));
+            });
+
+            methods.setCurrentThumb(galleryId, p.current);
+        },
+
+        setCurrentThumb: function(galleryId, target, delay) {
+            var p = data[galleryId],
+                frame = p.thumbFrame,
+                styles = {},
+                current = p.galleryThumbs[target];
+
+            if (p.galleryThumbsLoaded) {
+                styles.width = current.width + 'px';
+                styles.height = current.height + 'px';
+
+                if (params.transform) {
+                    styles[prefixes[params.transform]] = 'translate3d(' + current.left + 'px, ' + current.top + 'px, 0)';
+                } else {
+                    styles.top = current.top + 'px';
+                    styles.left = current.left + 'px';
+                }
+
+                frame.css(styles);
+            }
         },
 
         position: function(galleryId, target) {
@@ -485,13 +566,13 @@
 }(jQuery));
 
 
-// Disabled кнопки
+// + Disabled кнопки
 // Клик на touch (tap)
 // Счетчик
 
 // Thumbs
-    // Когда все загружены, составляем объект
-    // При переходе позиционируем рамку
+    // + Когда все загружены, составляем объект
+    // + При переходе позиционируем рамку
     // На ресайзе проверяем размеры
         // Если Размер слоя меньше, чем размер контейнера, инитим драг-н-дроп
         // Если нет, разинитим

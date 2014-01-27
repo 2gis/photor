@@ -138,7 +138,9 @@ body {
                 bottom: 0;
                 cursor: pointer;
 
-                &._disabled {}
+                &._disabled {
+                    cursor: default;
+                    }
                 }
             &Prev {
                 right: 70%;
@@ -153,23 +155,49 @@ body {
 
     &__thumbs {
         position: absolute;
-        height: 60px;
+        height: 56px;
         right: 0;
         bottom: 0;
         left: 0;
+        padding: 2px 0;
         text-align: center;
         white-space: nowrap;
         overflow: hidden;
+        font-size: 0;
 
-        &Item {
+        &Wrap {
+            position: relative;
             display: inline-block;
-            vertical-align: top;
-            height: 60px;
+            text-align: left;
+            height: 100%;
+            transform: translate3d(0,0,0);
 
-            &Img {
-                width: auto;
-                height: 100%;
+            &Item {
+                display: inline-block;
                 vertical-align: top;
+                height: 100%;
+                margin: 0 1px;
+
+                &Img {
+                    width: auto;
+                    height: 100%;
+                    vertical-align: top;
+                    }
+                }
+
+            // Current thumbs frame
+            &Frame {
+                top: 0;
+                height: 100%;
+                position: absolute;
+                // -webkit-transition-property: top, left, -webkit-transform;
+                // transition-property: top, left, transform;
+                transition-property: all; // Для десктопа можно так
+                transition-duration: .27s;
+                transition-timing-function: cubic-bezier(0.1,0,.25,1);
+                -moz-box-sizing: border-box;
+                box-sizing: border-box;
+                border: 2px solid #fff;
                 }
             }
         }

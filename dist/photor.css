@@ -127,6 +127,10 @@ body {
   bottom: 0;
   cursor: pointer;
 }
+.photor__viewportControlPrev._disabled,
+.photor__viewportControlNext._disabled {
+  cursor: default;
+}
 .photor__viewportControlPrev {
   right: 70%;
   left: 0;
@@ -137,23 +141,44 @@ body {
 }
 .photor__thumbs {
   position: absolute;
-  height: 60px;
+  height: 56px;
   right: 0;
   bottom: 0;
   left: 0;
+  padding: 2px 0;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
+  font-size: 0;
 }
-.photor__thumbsItem {
+.photor__thumbsWrap {
+  position: relative;
+  display: inline-block;
+  text-align: left;
+  height: 100%;
+  transform: translate3d(0, 0, 0);
+}
+.photor__thumbsWrapItem {
   display: inline-block;
   vertical-align: top;
-  height: 60px;
+  height: 100%;
+  margin: 0 1px;
 }
-.photor__thumbsItemImg {
+.photor__thumbsWrapItemImg {
   width: auto;
   height: 100%;
   vertical-align: top;
+}
+.photor__thumbsWrapFrame {
+  top: 0;
+  height: 100%;
+  position: absolute;
+  transition-property: all;
+  transition-duration: .27s;
+  transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  border: 2px solid #fff;
 }
 .photor._dragging .photor__viewportControl {
   cursor: move;
