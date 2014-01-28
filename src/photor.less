@@ -35,7 +35,7 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    // transform: translate3d(0);
+    transform: translate3d(0);
 
     &__viewport {
         position: absolute;
@@ -163,7 +163,6 @@ body {
         white-space: nowrap;
         overflow: hidden;
         font-size: 0;
-        // display: none;
 
         &Wrap {
             position: relative;
@@ -195,14 +194,18 @@ body {
                 top: 0;
                 height: 100%;
                 position: absolute;
-                // -webkit-transition-property: top, left, -webkit-transform;
-                // transition-property: top, left, transform;
-                transition-property: all; // Для десктопа можно так
+                transition-property: all;
                 transition-duration: .27s;
                 transition-timing-function: cubic-bezier(0.1,0,.25,1);
                 -moz-box-sizing: border-box;
                 box-sizing: border-box;
                 border: 2px solid #fff;
+
+                // Для мобилок и планшетов не анимируем изменение ширины
+                @media (max-device-width: 1024px) {
+                    -webkit-transition-property: top, left, -webkit-transform;
+                    transition-property: top, left, transform;
+                    }
                 }
             }
         }

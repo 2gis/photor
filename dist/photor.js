@@ -34,10 +34,6 @@
         data = [],
         params, timer;
 
-    document.addEventListener('touchstart', function(){
-        touchStartTime = new Date().getMilliseconds();
-    }, false);
-
     (function () {
         var touchClick = false;
 
@@ -160,14 +156,15 @@
 
             // Next button
             p.next.on('click fastclick', function() {
-                if (p.allowClick) {
+                if (p.allowClick && !p.dragging) {
                     methods.next(galleryId);
                 }
             });
 
             // Previous button
             p.prev.on('click fastclick', function() {
-                if (p.allowClick) {
+                if (p.allowClick && !p.dragging) {
+                    console.log('!!!');
                     methods.prev(galleryId);
                 }
             });
@@ -220,9 +217,7 @@
                         methods.position(galleryId, i);
                     });
 
-                    if (params.swipe) {
-                        methods.checkThumbs(galleryId);
-                    }
+                    methods.setCurrentThumb(galleryId, p.current);
                 }
             }
 
@@ -249,28 +244,30 @@
                     var self = $(this),
                         offset = self.offset();
 
-                    start = {
-                        x: e.pageX || e.originalEvent.touches[0].pageX,
-                        y: e.pageY || e.originalEvent.touches[0].pageY
-                    };
+                    if (!p.dragging) {
+                        start = {
+                            x: e.pageX || e.originalEvent.touches[0].pageX,
+                            y: e.pageY || e.originalEvent.touches[0].pageY
+                        };
 
-                    delta = {x: 0, y: 0};
+                        delta = {x: 0, y: 0};
 
-                    if (self.hasClass(params.thumbsLayer)) {
-                        if (p.thumbsDragging) {
-                            thumbsStartIndent = methods.getThumbsPosition(self);
-                            thumbsStartTime = new Date();
+                        if (self.hasClass(params.thumbsLayer)) {
+                            if (p.thumbsDragging) {
+                                thumbsStartIndent = methods.getThumbsPosition(self);
+                                thumbsStartTime = new Date();
 
-                            p.thumbsLayer.css('transition-duration', '0s');
+                                p.thumbsLayer.css('transition-duration', '0s');
+                            }
                         }
-                    }
 
-                    if (e.type == 'touchstart') {
-                        return true;
-                    }
+                        if (e.type == 'touchstart') {
+                            return true;
+                        }
 
-                    p.dragging = true;
-                    p.root.addClass(params.mod.dragging);
+                        p.dragging = true;
+                        p.root.addClass(params.mod.dragging);
+                    }
                 })
 
                 // Pointer move
@@ -499,7 +496,7 @@
             p.current = target;
 
             // Mark slide as current
-            methods.setCurrentThumb(galleryId, target, delay);
+            methods.setCurrentThumb(galleryId, target);
             p.slide.removeClass(params.mod.current);
             p.slide
                 .filter('.' + params.slideIdPrefix + target)
@@ -629,11 +626,14 @@
             methods.setCurrentThumb(galleryId, p.current);
         },
 
-        setCurrentThumb: function(galleryId, target, delay) {
+        setCurrentThumb: function(galleryId, target) {
             var p = data[galleryId],
                 frame = p.thumbFrame,
                 styles = {},
-                current = p.galleryThumbs[target];
+                current = p.galleryThumbs[target],
+                containerWidth = p.thumbs.outerWidth(),
+                width = p.thumbsLayer.outerWidth(),
+                indent;
 
             if (p.galleryThumbsLoaded) {
                 styles.width = current.width + 'px';
@@ -646,7 +646,19 @@
                     styles.left = current.left + 'px';
                 }
 
+                indent = -1 * (current.left - 0.5 * (containerWidth - current.width));
+
                 frame.css(styles);
+
+                p.thumbsLayer
+                    .css('transition-duration', '.3s')
+                    .css(methods.setIndent(validateIndent(indent), 'px'));
+            }
+
+            function validateIndent(indent) {
+                var limit = containerWidth - width;
+
+                return indent > 0 ? 0 : indent < limit ? limit : indent;
             }
         },
 

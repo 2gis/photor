@@ -33,6 +33,7 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  transform: translate3d(0);
 }
 .photor__viewport {
   position: absolute;
@@ -182,6 +183,12 @@ body {
   -moz-box-sizing: border-box;
   box-sizing: border-box;
   border: 2px solid #fff;
+}
+@media (max-device-width: 1024px) {
+  .photor__thumbsWrapFrame {
+    -webkit-transition-property: top, left, -webkit-transform;
+    transition-property: top, left, transform;
+  }
 }
 .photor._dragging .photor__viewportControl {
   cursor: move;
