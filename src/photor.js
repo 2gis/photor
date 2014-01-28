@@ -31,12 +31,8 @@
             'MozTransform': '-moz-transform',
             'WebkitTransform': '-webkit-transform'
         },
-        params,
         data = [],
-        timer;
-
-    // Record time it takes to detect 'click'.
-    var touchStartTime = false;
+        params, timer;
 
     document.addEventListener('touchstart', function(){
         touchStartTime = new Date().getMilliseconds();
@@ -733,8 +729,6 @@
 }(jQuery));
 
 
-// + Disabled кнопки
-// Клик на touch (tap)
 // Счетчик
 
 // Тумбы: позиционирование на рамочку
