@@ -56,15 +56,17 @@
                     thumbs = [];
 
                 // Get elements
-                p.root       = root;
-                p.control    = root.find('.' + params.control);
-                p.next       = root.find('.' + params.next);
-                p.prev       = root.find('.' + params.prev);
-                p.thumb      = root.find('.' + params.thumb);
-                p.thumbImg   = root.find('.' + params.thumbImg);
-                p.thumbFrame = root.find('.' + params.thumbFrame);
-                p.viewport   = root.find('.' + params.viewport);
-                p.layer      = root.find('.' + params.layer);
+                p.root        = root;
+                p.control     = root.find('.' + params.control);
+                p.next        = root.find('.' + params.next);
+                p.prev        = root.find('.' + params.prev);
+                p.thumbs      = root.find('.' + params.thumbs);
+                p.thumbsLayer = root.find('.' + params.thumbsLayer);
+                p.thumb       = root.find('.' + params.thumb);
+                p.thumbImg    = root.find('.' + params.thumbImg);
+                p.thumbFrame  = root.find('.' + params.thumbFrame);
+                p.viewport    = root.find('.' + params.viewport);
+                p.layer       = root.find('.' + params.layer);
 
                 // Images info
                 p.gallery = [];
@@ -105,6 +107,10 @@
                 methods.loadThumbs(galleryId);
                 methods.handlers(galleryId);
                 methods.go(galleryId, p.current, 0);
+
+                if (params.swipe) {
+                    methods.checkThumbs(galleryId);
+                }
             });
         },
 
@@ -139,9 +145,11 @@
 
             // Click by thumbnail
             p.thumb.on('click', function() {
-                var target = parseInt($(this).attr('data-rel'));
+                if (p.allowClick) {
+                    var target = parseInt($(this).attr('data-rel'));
 
-                methods.go(galleryId, target);
+                    methods.go(galleryId, target);
+                }
 
                 return false;
             });
@@ -179,6 +187,10 @@
                     p.slide.each(function(i) {
                         methods.position(galleryId, i);
                     });
+
+                    if (params.swipe) {
+                        methods.checkThumbs(galleryId);
+                    }
                 }
             }
 
@@ -186,18 +198,24 @@
 
         bindSwipe: function(galleryId) {
             var p = data[galleryId],
+                element = p.root.find('.' + params.control + ', .' + params.thumbsLayer),
                 start = {},
                 delta = {},
                 isScrolling,
-                isMultiTouch = false;
+                isMultiTouch = false,
+                thumbsStartIndent = 0,
+                thumbsStartTime, thumbsEndTime, self, isThumbs;
 
             p.dragging = false;
 
-            p.control
+            element
 
                 // Pointer start
                 .on('mousedown touchstart', function(e) {
-                    var offset = $(this).offset();
+                    self = $(this);
+                    isThumbs = self.hasClass(params.thumbsLayer);
+
+                    var offset = self.offset();
 
                     start = {
                         x: e.pageX || e.originalEvent.touches[0].pageX,
@@ -205,6 +223,15 @@
                     };
 
                     delta = {x: 0, y: 0};
+
+                    if (isThumbs) {
+                        if (p.thumbsDragging) {
+                            thumbsStartIndent = methods.getThumbsPosition(self);
+                            thumbsStartTime = new Date();
+
+                            p.thumbsLayer.css('transition-duration', '0s');
+                        }
+                    }
 
                     if (e.type == 'touchstart') {
                         return true;
@@ -245,30 +272,27 @@
                         p.root.addClass(params.mod.dragging);
                     }
 
+                    // Moving
                     if (p.dragging) {
-                        p.allowClick = false;
+                        var self = $(this);
 
-                        var self = $(this),
-                            selfWidth = self.outerWidth(),
-                            relativeDeltaX, indent;
-
-                        relativeDeltaX = -delta.x / selfWidth * 100;
-                        indent = -p.current * 100 + relativeDeltaX;
-
-                        p.layer.css(methods.setIndent(indent));
+                        if (self.hasClass(params.thumbsLayer)) {
+                            if (p.thumbsDragging) {
+                                moveThumbs(self);
+                            }
+                        } else {
+                            moveSlides(self);
+                        }
                     }
                 })
 
                 // Pointer end
                 .on('mouseup mouseleave touchend touchcancel', function(e) {
                     p.root.removeClass(params.mod.dragging);
-                    isScrolling = undefined;
                     isMultiTouch = (e.originalEvent.touches && e.originalEvent.touches.length) == 1;
 
                     if (p.dragging) {
-                        var self = $(this),
-                            selfWidth = self.outerWidth(),
-                            target;
+                        var selfWidth, target, tail, currentIndent, direction;
 
                         p.dragging = false;
 
@@ -283,21 +307,119 @@
                             }, 20);
                         }
 
-                        // Target slide
-                        target = delta.x > 0 ? p.current + 1 : p.current - 1;
+                        if (isThumbs) {
 
-                        // Transition executes if delta more then 5% of container width
-                        if (Math.abs(delta.x) > selfWidth * 0.05) {
-                            if (delta.x > 0) {
-                                methods.next(galleryId);
-                            } else {
-                                methods.prev(galleryId);
+                            if (p.thumbsDragging) {
+                                thumbsStartIndent = methods.getThumbsPosition(self);
+                                thumbsEndTime = new Date();
+
+                                currentIndent = methods.getThumbsPosition(p.thumbsLayer);
+                                direction = delta.x > 0 ? -1 : 1;
+
+                                p.thumbsLayer
+                                    .css('transition-duration', '.3s')
+                                    .css(methods.setIndent(calcTailAnimation(currentIndent, direction), 'px'));
                             }
+
                         } else {
-                            methods.go(galleryId, p.current);
+
+                            selfWidth = self.outerWidth();
+
+                            // Target slide
+                            target = delta.x > 0 ? p.current + 1 : p.current - 1;
+
+                            // Transition executes if delta more then 5% of container width
+                            if (Math.abs(delta.x) > selfWidth * 0.05) {
+                                if (delta.x > 0) {
+                                    methods.next(galleryId);
+                                } else {
+                                    methods.prev(galleryId);
+                                }
+                            } else {
+                                methods.go(galleryId, p.current);
+                            }
+
                         }
+
+                        isScrolling = undefined;
+                        isThumbs = undefined;
                     }
                 });
+
+            // Prevent default image drag-n-drop
+            p.thumbImg.on('dragstart', function() {
+                return false;
+            });
+
+            function moveSlides(self) {
+                p.allowClick = false;
+
+                var selfWidth = self.outerWidth(),
+                    relativeDeltaX, indent;
+
+                relativeDeltaX = -delta.x / selfWidth * 100;
+                indent = -p.current * 100 + relativeDeltaX;
+
+                p.layer.css(methods.setIndent(indent));
+            }
+
+            function moveThumbs(self) {
+                var selfWidth = p.thumbs.outerWidth(),
+                    indent;
+
+                indent = -delta.x + thumbsStartIndent;
+
+                p.thumbsLayer.css(methods.setIndent(indent, 'px'));
+            }
+
+            function calcTailAnimation(currentIndent, direction) {
+                var tail = direction * parseInt(Math.pow(10 * delta.x / (thumbsEndTime - thumbsStartTime), 2)) + currentIndent,
+                    limit = p.thumbs.outerWidth() - p.thumbsLayer.outerWidth();
+
+                if (tail > 0) {
+                    return 0;
+                }
+
+                if (tail < limit) {
+                    return limit;
+                }
+
+                return tail;
+            }
+        },
+
+        checkThumbs: function(galleryId) {
+            var p = data[galleryId],
+                thumbsW = p.thumbs.outerWidth(),
+                layerW = p.thumbsLayer.outerWidth(),
+                limit = thumbsW - layerW,
+                currentIndent;
+
+            if (thumbsW > layerW) {
+                p.thumbsDragging = false;
+                p.thumbsLayer
+                    .css('transition-duration', '0s')
+                    .css(methods.setIndent(0, 'px'));
+            } else {
+                currentIndent = methods.getThumbsPosition(p.thumbsLayer);
+                p.thumbsDragging = true;
+
+                if (currentIndent < limit) {
+                    p.thumbsLayer
+                        .css('transition-duration', '0s')
+                        .css(methods.setIndent(limit, 'px'));
+                }
+            }
+        },
+
+        getThumbsPosition: function(element) {
+            if (params.transform) {
+                var matrix = element.css(prefixes[params.transform]);
+
+                return parseFloat(matrix.substr(7, matrix.length - 8).split(', ')[4]);
+            } else {
+                return parseInt(element[0].style.left);
+            }
         },
 
         bindKeyboard: function(galleryId) {
@@ -439,7 +561,8 @@
 
                             if (loaded == count) {
                                 p.galleryThumbsLoaded = true;
-                                methods.getThumbSize(galleryId);
+                                methods.getThumbsSize(galleryId);
+                                // methods.checkThumbs(galleryId);
                             }
                         })
                         .on('error', function() {
@@ -451,7 +574,7 @@
             }
         },
 
-        getThumbSize: function(galleryId) {
+        getThumbsSize: function(galleryId) {
             var p = data[galleryId],
                 thumb = p.thumb;
 
@@ -534,11 +657,15 @@
             }
         },
 
-        setIndent: function(value) {
+        setIndent: function(value, meter) {
             var result = {};
 
+            if (!meter) {
+                meter = '%';
+            }
+
             if (params.transform) {
-                result[prefixes[params.transform]] = 'translate3d(' + value + '%, 0, 0)';
+                result[prefixes[params.transform]] = 'translate3d(' + value + meter + ', 0, 0)';
             } else {
                 result.left = value + '%';
             }
@@ -570,9 +697,7 @@
 // Клик на touch (tap)
 // Счетчик
 
-// Thumbs
-    // + Когда все загружены, составляем объект
-    // + При переходе позиционируем рамку
-    // На ресайзе проверяем размеры
-        // Если Размер слоя меньше, чем размер контейнера, инитим драг-н-дроп
-        // Если нет, разинитим
+// Тумбы: позиционирование на рамочку
+// Оптимизировать обработчики драг-н-дропа
+
+// visibility hidden для изображений, которые далеко

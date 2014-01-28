@@ -84,7 +84,7 @@ body {
                     content: '';
                     border-radius: 50%;
                     border: 2px solid #fff;
-                    border-top: 2px solid transparent;
+                    border-right: 2px solid transparent;
                     -webkit-animation: photor__preloader .8s linear infinite;
                     animation: photor__preloader .8s linear infinite;
                     opacity: 0;
@@ -170,7 +170,11 @@ body {
             display: inline-block;
             text-align: left;
             height: 100%;
+            -webkit-transform: translate3d(0,0,0);
             transform: translate3d(0,0,0);
+            -webkit-transition-property: left, -webkit-transform;
+            transition-property: left, transform;
+            transition-timing-function: cubic-bezier(0.1,0,.25,1);
 
             &Item {
                 display: inline-block;
@@ -208,6 +212,7 @@ body {
         cursor: move;
         cursor: -webkit-grabbing;
         cursor: -moz-grabbing;
+        cursor: grabbing;
 
         &Prev,
         &Next {
