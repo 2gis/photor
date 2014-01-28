@@ -35,6 +35,39 @@
         data = [],
         timer;
 
+    // Record time it takes to detect 'click'.
+    var touchStartTime = false;
+
+    document.addEventListener('touchstart', function(){
+        touchStartTime = new Date().getMilliseconds();
+    }, false);
+
+    (function () {
+        var touchClick = false;
+
+        // Create custom "Fast click" event.
+        document.addEventListener('touchstart', function () {
+            touchClick = true;
+        }, false);
+
+        document.addEventListener('touchmove', function () {
+            touchClick = false;
+        }, false);
+
+        document.addEventListener('touchend', function (e) {
+            if (touchClick) {
+                touchClick = false;
+
+                // Send fast click.
+                var event = document.createEvent('CustomEvent');
+                event.initCustomEvent('fastclick', true, true, e.target);
+
+                e.target.dispatchEvent(event);
+                e.preventDefault();
+            }
+        }, false);
+    }());
+
     var methods = {
         init: function(options) {
             params = $.extend({
@@ -130,29 +163,32 @@
                 delta = 84; // 12 FPS
 
             // Next button
-            p.next.on('click', function() {
+            p.next.on('click fastclick', function() {
                 if (p.allowClick) {
                     methods.next(galleryId);
                 }
             });
 
             // Previous button
-            p.prev.on('click', function() {
+            p.prev.on('click fastclick', function() {
                 if (p.allowClick) {
                     methods.prev(galleryId);
                 }
             });
 
             // Click by thumbnail
-            p.thumb.on('click', function() {
-                if (p.allowClick) {
-                    var target = parseInt($(this).attr('data-rel'));
+            p.thumb
+                .on('click fastclick', function(e) {
+                    e.preventDefault();
 
-                    methods.go(galleryId, target);
-                }
+                    if (p.allowClick) {
+                        var target = parseInt($(this).attr('data-rel'));
 
-                return false;
-            });
+                        methods.go(galleryId, target);
+                    }
+
+                    return false;
+                });
 
             // Scroll
 
@@ -204,7 +240,9 @@
                 isScrolling,
                 isMultiTouch = false,
                 thumbsStartIndent = 0,
-                thumbsStartTime, thumbsEndTime, self, isThumbs;
+                thumbsStartTime,
+                thumbsEndTime,
+                self;
 
             p.dragging = false;
 
@@ -212,10 +250,8 @@
 
                 // Pointer start
                 .on('mousedown touchstart', function(e) {
-                    self = $(this);
-                    isThumbs = self.hasClass(params.thumbsLayer);
-
-                    var offset = self.offset();
+                    var self = $(this),
+                        offset = self.offset();
 
                     start = {
                         x: e.pageX || e.originalEvent.touches[0].pageX,
@@ -224,7 +260,7 @@
 
                     delta = {x: 0, y: 0};
 
-                    if (isThumbs) {
+                    if (self.hasClass(params.thumbsLayer)) {
                         if (p.thumbsDragging) {
                             thumbsStartIndent = methods.getThumbsPosition(self);
                             thumbsStartTime = new Date();
@@ -289,10 +325,11 @@
                 // Pointer end
                 .on('mouseup mouseleave touchend touchcancel', function(e) {
                     p.root.removeClass(params.mod.dragging);
+                    isScrolling = undefined;
                     isMultiTouch = (e.originalEvent.touches && e.originalEvent.touches.length) == 1;
 
                     if (p.dragging) {
-                        var selfWidth, target, tail, currentIndent, direction;
+                        var self = $(this);
 
                         p.dragging = false;
 
@@ -307,42 +344,12 @@
                             }, 20);
                         }
 
-                        if (isThumbs) {
-
-                            if (p.thumbsDragging) {
-                                thumbsStartIndent = methods.getThumbsPosition(self);
-                                thumbsEndTime = new Date();
-
-                                currentIndent = methods.getThumbsPosition(p.thumbsLayer);
-                                direction = delta.x > 0 ? -1 : 1;
-
-                                p.thumbsLayer
-                                    .css('transition-duration', '.3s')
-                                    .css(methods.setIndent(calcTailAnimation(currentIndent, direction), 'px'));
-                            }
-
+                        if (self.hasClass(params.thumbsLayer)) {
+                            endMoveThumbs(self);
                         } else {
-
-                            selfWidth = self.outerWidth();
-
-                            // Target slide
-                            target = delta.x > 0 ? p.current + 1 : p.current - 1;
-
-                            // Transition executes if delta more then 5% of container width
-                            if (Math.abs(delta.x) > selfWidth * 0.05) {
-                                if (delta.x > 0) {
-                                    methods.next(galleryId);
-                                } else {
-                                    methods.prev(galleryId);
-                                }
-                            } else {
-                                methods.go(galleryId, p.current);
-                            }
-
+                            endMoveSlides(self);
                         }
 
-                        isScrolling = undefined;
-                        isThumbs = undefined;
                     }
                 });
 
@@ -363,6 +370,25 @@
                 p.layer.css(methods.setIndent(indent));
             }
 
+            function endMoveSlides(self) {
+                var selfWidth = self.outerWidth(),
+                    target;
+
+                // Target slide
+                target = delta.x > 0 ? p.current + 1 : p.current - 1;
+
+                // Transition executes if delta more then 5% of container width
+                if (Math.abs(delta.x) > selfWidth * 0.05) {
+                    if (delta.x > 0) {
+                        methods.next(galleryId);
+                    } else {
+                        methods.prev(galleryId);
+                    }
+                } else {
+                    methods.go(galleryId, p.current);
+                }
+            }
+
             function moveThumbs(self) {
                 var selfWidth = p.thumbs.outerWidth(),
                     indent;
@@ -370,6 +396,22 @@
                 indent = -delta.x + thumbsStartIndent;
 
                 p.thumbsLayer.css(methods.setIndent(indent, 'px'));
+            }
+
+            function endMoveThumbs(self) {
+                var currentIndent, direction;
+
+                if (p.thumbsDragging) {
+                    thumbsStartIndent = methods.getThumbsPosition(self);
+                    thumbsEndTime = new Date();
+
+                    currentIndent = methods.getThumbsPosition(p.thumbsLayer);
+                    direction = delta.x > 0 ? -1 : 1;
+
+                    p.thumbsLayer
+                        .css('transition-duration', '.3s')
+                        .css(methods.setIndent(calcTailAnimation(currentIndent, direction), 'px'));
+                }
             }
 
             function calcTailAnimation(currentIndent, direction) {
@@ -660,9 +702,7 @@
         setIndent: function(value, meter) {
             var result = {};
 
-            if (!meter) {
-                meter = '%';
-            }
+            meter = meter || '%';
 
             if (params.transform) {
                 result[prefixes[params.transform]] = 'translate3d(' + value + meter + ', 0, 0)';

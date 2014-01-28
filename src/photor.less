@@ -35,7 +35,7 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    transform: translate3d(0);
+    // transform: translate3d(0);
 
     &__viewport {
         position: absolute;
@@ -60,14 +60,12 @@ body {
                 vertical-align: top;
                 width: 100%;
                 height: 100%;
-                background-repeat: no-repeat;
-                background-position: center center;
 
                 &Img {
-                    content: '';
                     width: 100%;
                     height: 100%;
-                    background: inherit;
+                    background-repeat: no-repeat;
+                    background-position: center center;
                     visibility: visible;
                     opacity: 1;
                     display: block;
@@ -137,6 +135,7 @@ body {
                 top: 0;
                 bottom: 0;
                 cursor: pointer;
+                -webkit-tap-highlight-color: rgba(0,0,0,0);
 
                 &._disabled {
                     cursor: default;
@@ -164,6 +163,7 @@ body {
         white-space: nowrap;
         overflow: hidden;
         font-size: 0;
+        // display: none;
 
         &Wrap {
             position: relative;
@@ -181,6 +181,7 @@ body {
                 vertical-align: top;
                 height: 100%;
                 margin: 0 1px;
+                -webkit-tap-highlight-color: rgba(0,0,0,0);
 
                 &Img {
                     width: auto;
