@@ -46,35 +46,40 @@ $(document).ready(function() {
     // Bind events
 
     // Fast click
-    if (Element.prototype.addEventListener) {
-        (function() {
-            var touchClick = false;
+    (function() {
+
+        function fastclick(e) {
+            if (touchClick) {
+                touchClick = false;
+
+                // Send fast click.
+                var event = document.createEvent('CustomEvent');
+                event.initCustomEvent('fastclick', true, true, e.target);
+
+                e.target.dispatchEvent(event);
+                e.preventDefault();
+            }
+        }
+
+        var touchClick = false;
+
+        if (Element.prototype.addEventListener) {
 
             // Create custom "Fast click" event.
-            document.addEventListener(evt[0], function () {
+            document.addEventListener(evt[0], function() {
                 touchClick = true;
             }, false);
 
-            document.addEventListener(evt[1], function () {
+            document.addEventListener(evt[1], function() {
                 touchClick = false;
             }, true);
 
-            document.addEventListener(evt[2], function (e) {
-                if (touchClick) {
-                    touchClick = false;
+            document.addEventListener(evt[2], fastclick, false);
+        }
 
-                    // Send fast click.
-                    var event = document.createEvent('CustomEvent');
-                    event.initCustomEvent('fastclick', true, true, e.target);
+    })();
 
-                    e.target.dispatchEvent(event);
-                    e.preventDefault();
-                }
-            }, false);
-        })();
-    }
-
-    // MS Pointer события через jQuery не содержат orginalEvent и данных о координатах
+    // MS Pointer события через jQuery не содержат originalEvent и данных о координатах
     // Touch события на Андроид, установленные нативно, не срабатывают до зума или скролла
     // iOS устройства просто работают
 
@@ -96,7 +101,6 @@ $(document).ready(function() {
 
     el.prev.on('fastclick', prev);
     el.next.on('fastclick', next);
-
 
     function touchstart(e) {
         if (!dragging) {
