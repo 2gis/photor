@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Touch events test</title>
+    <style>
+    .block {
+        position: relative;
+        width: 640px;
+        height: 480px;
+        margin: 20px auto;
+        border: 10px dotted #ccc;
+        -ms-touch-action: none;
+        touch-action: none;
+        }
+        .block__runner {
+            width: 40px;
+            height: 40px;
+            background: red;
+            position: relative;
+            margin: 220px 0 0 300px;
+            transition: left .2s ease;
+            }
+        .block__control {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            }
+            .block__prev {
+                position: absolute;
+                top: 0;
+                right: 70%;
+                bottom: 0;
+                left: 0;
+                }
+            .block__next {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 30%;
+                }
+    #out {
+        position: relative;
+        width: 640px;
+        margin: 20px auto;
+        font: 12px/12px Monospace;
+        word-wrap: break-word;
+    }
+    </style>
+</head>
+<body>
+
+<div class="block">
+    <div class="block__runner"></div>
+    <div class="block__control">
+        <div class="block__prev"></div>
+        <div class="block__next"></div>
+    </div>
+</div>
+
+<div id="out"></div>
+
+<script src="libs/jquery/jquery.js"></script>
+<!--[if !IE]>-->
+    <script src="dist/hand.min.js"></script>
+<!--<![endif]-->
+
+<script src="test.js"></script>
+
+</body>
+</html>
