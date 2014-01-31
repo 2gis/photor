@@ -30,13 +30,14 @@ module.exports = function(grunt) {
             options: {
                 jshintrc: '.jshintrc'
             },
-            files: ['src/**/*.js', 'gruntfile.js']
+            files: ['src/**/*.js', 'gruntfile.js', 'test.js', 'test2.js']
         },
 
         uglify: {
             regular: {
                 files: {
-                    'dist/photor.min.js': ['<%= concat.js.dest %>']
+                    'dist/photor.min.js': ['<%= concat.js.dest %>'],
+                    'dist/hand.min.js': ['libs/hand.js']
                 }
             }
         },
