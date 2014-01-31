@@ -35,6 +35,7 @@ $(document).ready(function() {
 
             out: $('#out')
         },
+        touchClick = false,
         isScrolling,
         isMultitouch = false,
         dragging = false,
@@ -43,6 +44,35 @@ $(document).ready(function() {
 
 
     // Bind events
+
+    // Fast click
+    if (Element.prototype.addEventListener) {
+        (function() {
+            var touchClick = false;
+
+            // Create custom "Fast click" event.
+            document.addEventListener(evt[0], function () {
+                touchClick = true;
+            }, false);
+
+            document.addEventListener(evt[1], function () {
+                touchClick = false;
+            }, true);
+
+            document.addEventListener(evt[2], function (e) {
+                if (touchClick) {
+                    touchClick = false;
+
+                    // Send fast click.
+                    var event = document.createEvent('CustomEvent');
+                    event.initCustomEvent('fastclick', true, true, e.target);
+
+                    e.target.dispatchEvent(event);
+                    e.preventDefault();
+                }
+            }, false);
+        })();
+    }
 
     // MS Pointer события через jQuery не содержат orginalEvent и данных о координатах
     // Touch события на Андроид, установленные нативно, не срабатывают до зума или скролла
@@ -62,12 +92,13 @@ $(document).ready(function() {
             .on(evt[1], touchmove)
             .on(evt[2], touchend)
             .on(evt[3], touchend);
-
     }
+
+    el.prev.on('fastclick', prev);
+    el.next.on('fastclick', next);
 
 
     function touchstart(e) {
-        // console.log(e.type);
         if (!dragging) {
             var x = e.pageX || e.originalEvent.touches[0].pageX,
                 y = e.pageY || e.originalEvent.touches[0].pageY;
@@ -93,6 +124,7 @@ $(document).ready(function() {
         }
 
         if (!dragging || isMultitouch || isScrolling) {
+            dragging = false;
             return;
         } else {
             e.preventDefault();
@@ -102,7 +134,6 @@ $(document).ready(function() {
             // Start drag
             start = {x: x, y: y};
             delta = {x: 0, y: 0};
-            // console.log('start start(' + x + ', ' + y + ') ' + e.type);
         } else {
             // Continue drag
             delta = {x: x - start.x, y: y - start.y};
@@ -119,8 +150,12 @@ $(document).ready(function() {
     function touchend(e) {
         // Force re-layout (android chrome needs)
         el.control[0].style.display = 'none';
-        el.control[0].offsetWidth(); // no need to store this anywhere, the reference is enough
+        el.control.outerWidth(); // no need to store this anywhere, the reference is enough
         el.control[0].style.display = 'block';
+
+        if (dragging) {
+            console.log('swipe end with delta: x=' + delta.x + ' y=' + delta.y);
+        }
 
         // Reset scrolling detection
         isScrolling = undefined;
@@ -136,6 +171,16 @@ $(document).ready(function() {
 
         dragging = false;
         start = {};
+    }
+
+    function prev(e) {
+        console.log('Previous');
+        e.stopPropagation();
+    }
+
+    function next(e) {
+        console.log('Next');
+        e.stopPropagation();
     }
 
     console.log = function(str) {

@@ -155,16 +155,15 @@
                 delta = 84; // 12 FPS
 
             // Next button
-            p.next.on('click fastclick', function() {
+            p.next.on('fastclick', function() {
                 if (p.allowClick && !p.dragging) {
                     methods.next(galleryId);
                 }
             });
 
             // Previous button
-            p.prev.on('click fastclick', function() {
+            p.prev.on('fastclick', function() {
                 if (p.allowClick && !p.dragging) {
-                    console.log('!!!');
                     methods.prev(galleryId);
                 }
             });
