@@ -5,7 +5,6 @@
 html,
 body {
   height: 100%;
-  overflow: hidden;
 }
 @-webkit-keyframes photor__preloader {
   0% {
@@ -41,7 +40,6 @@ body {
   right: 0;
   bottom: 60px;
   left: 0;
-  background: #090907;
   overflow: hidden;
 }
 .photor__viewportLayer {
@@ -52,7 +50,6 @@ body {
   -webkit-transition-property: left, -webkit-transform;
   transition-property: left, transform;
   transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
-  background: #090907;
 }
 .photor__viewportLayerSlide {
   position: relative;
