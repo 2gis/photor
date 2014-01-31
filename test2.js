@@ -119,7 +119,7 @@ $(document).ready(function() {
     function touchend(e) {
         // Force re-layout (android chrome needs)
         el.control[0].style.display = 'none';
-        el.control[0].offsetWidth; // no need to store this anywhere, the reference is enough
+        el.control[0].offsetWidth(); // no need to store this anywhere, the reference is enough
         el.control[0].style.display = 'block';
 
         // Reset scrolling detection
