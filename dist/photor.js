@@ -236,6 +236,7 @@
                 self;
 
             p.dragging = false;
+            p.thumbsIndent = 0;
 
             element
 
@@ -254,7 +255,7 @@
 
                         if (self.hasClass(params.thumbsLayer)) {
                             if (p.thumbsDragging) {
-                                thumbsStartIndent = methods.getThumbsPosition(self);
+                                thumbsStartIndent = p.thumbsIndent;
                                 thumbsStartTime = new Date();
 
                                 p.thumbsLayer.css('transition-duration', '0s');
@@ -388,28 +389,31 @@
 
                 indent = -delta.x + thumbsStartIndent;
 
+                p.thumbsIndent = indent;
                 p.thumbsLayer.css(methods.setIndent(indent, 'px'));
             }
 
             function endMoveThumbs(self) {
-                var currentIndent, direction;
+                var direction;
 
                 if (p.thumbsDragging) {
-                    thumbsStartIndent = methods.getThumbsPosition(self);
                     thumbsEndTime = new Date();
 
-                    currentIndent = methods.getThumbsPosition(p.thumbsLayer);
                     direction = delta.x > 0 ? -1 : 1;
+                    p.thumbsIndent = calcTailAnimation(p.thumbsIndent, direction);
 
                     p.thumbsLayer
-                        .css('transition-duration', '.3s')
-                        .css(methods.setIndent(calcTailAnimation(currentIndent, direction), 'px'));
+                        .css('transition-duration', '.24s')
+                        .css(methods.setIndent(p.thumbsIndent, 'px'));
                 }
             }
 
             function calcTailAnimation(currentIndent, direction) {
-                var tail = direction * parseInt(Math.pow(10 * delta.x / (thumbsEndTime - thumbsStartTime), 2)) + currentIndent,
-                    limit = p.thumbs.outerWidth() - p.thumbsLayer.outerWidth();
+                var speed = Math.abs(10 * delta.x / (thumbsEndTime - thumbsStartTime)),
+                    tail, limit;
+
+                tail = direction * parseInt(Math.pow(speed, 2)) + currentIndent;
+                limit = p.thumbs.outerWidth() - p.thumbsLayer.outerWidth();
 
                 if (tail > 0) {
                     return 0;
@@ -432,28 +436,20 @@
 
             if (thumbsW > layerW) {
                 p.thumbsDragging = false;
+                p.thumbsIndent = 0;
                 p.thumbsLayer
                     .css('transition-duration', '0s')
-                    .css(methods.setIndent(0, 'px'));
+                    .css(methods.setIndent(p.thumbsIndent, 'px'));
             } else {
-                currentIndent = methods.getThumbsPosition(p.thumbsLayer);
+                currentIndent = p.thumbsIndent;
                 p.thumbsDragging = true;
 
                 if (currentIndent < limit) {
+                    p.thumbsIndent = limit;
                     p.thumbsLayer
                         .css('transition-duration', '0s')
-                        .css(methods.setIndent(limit, 'px'));
+                        .css(methods.setIndent(p.thumbsIndent, 'px'));
                 }
-            }
-        },
-
-        getThumbsPosition: function(element) {
-            if (params.transform) {
-                var matrix = element.css(prefixes[params.transform]);
-
-                return parseFloat(matrix.substr(7, matrix.length - 8).split(', ')[4]);
-            } else {
-                return parseInt(element[0].style.left);
             }
         },
 
@@ -567,7 +563,7 @@
                         methods.position(galleryId, rel);
                     })
                     .on('error', function() {
-                        // @TODO Обработай ошибку, друже
+                        $.error('Image wasn\'t loaded: ' + this.src);
                     });
 
                 img.src = url;
@@ -601,7 +597,7 @@
                             }
                         })
                         .on('error', function() {
-                            // @TODO Обработай ошибку, друже
+                            $.error('Image wasn\'t loaded: ' + this.src);
                         });
 
                     img.src = images[i];
@@ -651,7 +647,7 @@
                 frame.css(styles);
 
                 p.thumbsLayer
-                    .css('transition-duration', '.3s')
+                    .css('transition-duration', '.24s')
                     .css(methods.setIndent(validateIndent(indent), 'px'));
             }
 
@@ -729,11 +725,11 @@
     $.fn.photor = function(method) {
 
         if ( methods[method] ) {
-            return methods[method].apply( this, Array.prototype.slice.call( arguments, 1 ));
-        } else if ( typeof method === 'object' || ! method ) {
-            return methods.init.apply( this, arguments );
+            return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
+        } else if (typeof method === 'object' || ! method) {
+            return methods.init.apply(this, arguments);
         } else {
-            $.error( 'Unknown method: ' +  method );
+            $.error('Unknown method: ' +  method);
         }
 
     };
@@ -742,8 +738,5 @@
 
 
 // Счетчик
-
-// Тумбы: позиционирование на рамочку
 // Оптимизировать обработчики драг-н-дропа
-
 // visibility hidden для изображений, которые далеко
