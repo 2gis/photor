@@ -35,7 +35,6 @@ $(document).ready(function() {
 
             out: $('#out')
         },
-        touchClick = false,
         isScrolling,
         isMultitouch = false,
         dragging = false,

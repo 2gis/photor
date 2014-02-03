@@ -8,20 +8,10 @@
 
 
 (function($) {
-    'use strict';
 
     // Server side
     if (!window) {
         return;
-    }
-
-    function getSupportedTransform() {
-        for (var key in prefixes) {
-            if (document.createElement('div').style[key] !== undefined) {
-                return key;
-            }
-        }
-        return false;
     }
 
     var prefixes = {
@@ -32,21 +22,51 @@
             'WebkitTransform': '-webkit-transform'
         },
         data = [],
+        isMsPointer = navigator.msPointerEnabled,
+        evt = getSupportedEvents(),
+        isFastClick = false,
         params, timer;
 
-    (function () {
-        var touchClick = false;
+    /*
+     * Returns supported property for css-transform
+     *
+     * @return {String} string key
+     */
+    function getSupportedTransform() {
+        for (var key in prefixes) {
+            if (document.createElement('div').style[key] !== undefined) {
+                return key;
+            }
+        }
+        return false;
+    }
 
-        // Create custom "Fast click" event.
-        document.addEventListener('touchstart', function () {
-            touchClick = true;
-        }, false);
+    /*
+     * Returns array of events which device supports
+     *
+     * @return {Array} Array of supported events
+     */
+    function getSupportedEvents() {
+        var isPointer = navigator.pointerEnabled,
+            isTouch = !!('ontouchstart' in window),
+            pointer   = ['pointerdown', 'pointermove', 'pointerup', 'pointerleave'],
+            msPointer = ['MSPointerDown', 'MSPointerMove', 'MSPointerUp', 'MSPointerOut'],
+            touch     = ['touchstart', 'touchmove', 'touchend', 'touchcancel'],
+            mouse     = ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
 
-        document.addEventListener('touchmove', function () {
-            touchClick = false;
-        }, false);
+        return isPointer ? pointer : isMsPointer ? msPointer : isTouch ? touch : mouse;
+    }
 
-        document.addEventListener('touchend', function (e) {
+
+    /*
+     * Click without 300 ms delay on mobile devices
+     */
+    (function() {
+
+        /*
+         * Create custom event
+         */
+        function fastclick(e) {
             if (touchClick) {
                 touchClick = false;
 
@@ -57,8 +77,26 @@
                 e.target.dispatchEvent(event);
                 e.preventDefault();
             }
-        }, false);
-    }());
+        }
+
+        var touchClick = false;
+
+        if (Element.prototype.addEventListener) {
+            isFastClick = true;
+
+            // Create custom "Fast click" event.
+            document.addEventListener(evt[0], function() {
+                touchClick = true;
+            }, false);
+
+            document.addEventListener(evt[1], function() {
+                touchClick = false;
+            }, true);
+
+            document.addEventListener(evt[2], fastclick, false);
+        }
+
+    })();
 
     var methods = {
         init: function(options) {
@@ -122,6 +160,7 @@
                 p.current = params.current;
                 p.count = count - 1;
                 p.dragging = false;
+                p.thumbsDragging = false;
                 p.allowClick = true;
                 p.viewportWidth = p.viewport.outerWidth();
                 p.viewportHeight = p.viewport.outerHeight();
@@ -132,10 +171,6 @@
                 methods.loadThumbs(galleryId);
                 methods.handlers(galleryId);
                 methods.go(galleryId, p.current, 0);
-
-                if (params.swipe) {
-                    methods.checkThumbs(galleryId);
-                }
             });
         },
 
@@ -152,33 +187,40 @@
             var p = data[galleryId],
                 rtime = new Date(1, 1, 2000, 12, 0, 0),
                 timeout = false,
-                delta = 84; // 12 FPS
+                delta = 84,
+                clickEvent = isFastClick ? 'fastclick' : 'click'; // 12 FPS
 
             // Next button
-            p.next.on('fastclick', function() {
+            p.next.on(clickEvent, function(e) {
                 if (p.allowClick && !p.dragging) {
                     methods.next(galleryId);
+                    e.stopPropagation();
                 }
             });
 
             // Previous button
-            p.prev.on('fastclick', function() {
+            p.prev.on(clickEvent, function(e) {
                 if (p.allowClick && !p.dragging) {
                     methods.prev(galleryId);
+                    e.stopPropagation();
                 }
             });
 
             // Click by thumbnail
             p.thumb
-                .on('click fastclick', function(e) {
+                .on(clickEvent, function(e) {
                     e.preventDefault();
 
                     if (p.allowClick) {
                         var target = parseInt($(this).attr('data-rel'));
 
                         methods.go(galleryId, target);
+                        e.stopPropagation();
                     }
 
+                    return false;
+                })
+                .on('click', function(e) {
                     return false;
                 });
 
@@ -216,7 +258,7 @@
                         methods.position(galleryId, i);
                     });
 
-                    methods.setCurrentThumb(galleryId, p.current);
+                    methods.setCurrentThumb(galleryId, p.current, 1);
                 }
             }
 
@@ -228,141 +270,180 @@
                 start = {},
                 delta = {},
                 isScrolling,
-                isMultiTouch = false,
-                thumbsStartIndent = 0,
+                isMultitouch = false,
+                // thumbsStartIndent = 0,
                 thumbsStartTime,
                 thumbsEndTime,
-                self;
+                selfWidth;
 
             p.dragging = false;
             p.thumbsIndent = 0;
 
-            element
+            /*
+             MS Pointer события через jQuery не содержат originalEvent и данных о координатах
+             Touch события на Андроид, установленные нативно, не срабатывают до зума или скролла
+             iOS устройства просто работают =^_^=
+             */
+            if (isMsPointer) {
 
-                // Pointer start
-                .on('mousedown touchstart', function(e) {
-                    var self = $(this),
-                        offset = self.offset();
+                element[0].addEventListener(evt[0], touchstart);
+                element[0].addEventListener(evt[1], touchmove);
+                element[0].addEventListener(evt[2], touchend);
+                element[0].addEventListener(evt[3], touchend);
 
-                    if (!p.dragging) {
-                        start = {
-                            x: e.pageX || e.originalEvent.touches[0].pageX,
-                            y: e.pageY || e.originalEvent.touches[0].pageY
-                        };
+            } else {
 
-                        delta = {x: 0, y: 0};
+                element
+                    .on(evt[0], touchstart)
+                    .on(evt[1], touchmove)
+                    .on(evt[2], touchend)
+                    .on(evt[3], touchend);
 
-                        if (self.hasClass(params.thumbsLayer)) {
-                            if (p.thumbsDragging) {
-                                thumbsStartIndent = p.thumbsIndent;
-                                thumbsStartTime = new Date();
-
-                                p.thumbsLayer.css('transition-duration', '0s');
-                            }
-                        }
-
-                        if (e.type == 'touchstart') {
-                            return true;
-                        }
-
-                        p.dragging = true;
-                        p.root.addClass(params.mod.dragging);
-                    }
-                })
-
-                // Pointer move
-                .on('mousemove touchmove', function(e) {
-                    var touches = e.originalEvent.touches && e.originalEvent.touches.length,
-                        coordX = e.pageX || (e.originalEvent.touches && e.originalEvent.touches[0].pageX),
-                        coordY = e.pageY || (e.originalEvent.touches && e.originalEvent.touches[0].pageY);
-
-                    delta = {
-                        x: start.x - coordX,
-                        y: start.y - coordY
-                    };
-
-                    // Detect scrolling
-                    if (typeof isScrolling == 'undefined') {
-                        isScrolling = !!(isScrolling || Math.abs(delta.x) < Math.abs(delta.y));
-                    }
-
-                    // Detect multitouch
-                    isMultiTouch = isMultiTouch || touches > 1;
-
-                    if (isScrolling || isMultiTouch || touches == 0) {
-                        return;
-                    } else {
-                        e.preventDefault();
-                    }
-
-                    // Start touch
-                    if (e.type == 'touchmove' && !p.dragging) {
-                        p.dragging = true;
-                        p.root.addClass(params.mod.dragging);
-                    }
-
-                    // Moving
-                    if (p.dragging) {
-                        var self = $(this);
-
-                        if (self.hasClass(params.thumbsLayer)) {
-                            if (p.thumbsDragging) {
-                                moveThumbs(self);
-                            }
-                        } else {
-                            moveSlides(self);
-                        }
-                    }
-                })
-
-                // Pointer end
-                .on('mouseup mouseleave touchend touchcancel', function(e) {
-                    p.root.removeClass(params.mod.dragging);
-                    isScrolling = undefined;
-                    isMultiTouch = (e.originalEvent.touches && e.originalEvent.touches.length) == 1;
-
-                    if (p.dragging) {
-                        var self = $(this);
-
-                        p.dragging = false;
-
-                        // Allow or disable click by buttons
-                        if (delta.x == 0) {
-                            p.allowClick = true;
-                            return true;
-                        } else {
-                            p.allowClick = false;
-                            setTimeout(function() {
-                                p.allowClick = true;
-                            }, 20);
-                        }
-
-                        if (self.hasClass(params.thumbsLayer)) {
-                            endMoveThumbs(self);
-                        } else {
-                            endMoveSlides(self);
-                        }
-
-                    }
-                });
+            }
 
             // Prevent default image drag-n-drop
             p.thumbImg.on('dragstart', function() {
                 return false;
             });
 
+            /*
+             * Pointer start
+             */
+            function touchstart(e) {
+                if (!p.dragging) {
+                    var self = $(this),
+                        x = e.pageX || e.originalEvent.touches[0].pageX,
+                        y = e.pageY || e.originalEvent.touches[0].pageY;
+
+                    selfWidth = self.outerWidth();
+                    start = {x: x, y: y};
+                    delta = {x: 0, y: 0};
+
+                    p.dragging = true;
+                    p.root.addClass(params.mod.dragging);
+
+                    if ($(this).hasClass(params.thumbsLayer)) {
+                        if (p.thumbsDragging) {
+                            thumbsStartIndent = p.thumbsIndent;
+                            thumbsStartTime = new Date();
+
+                            p.thumbsLayer.css('transition-duration', '0s');
+                        }
+                    }
+                }
+            }
+
+            /*
+             * Pointer move
+             */
+            function touchmove(e) {
+                var touches = e.originalEvent && e.originalEvent.touches,
+                    x = e.pageX || (touches && touches[0].pageX),
+                    y = e.pageY || (touches && touches[0].pageY),
+                    self = $(this);
+
+                // Detect multitouch
+                isMultitouch = isMultitouch || (touches && touches.length) > 1;
+
+                // Detect scrolling (for windows and windows phone touch-action: pan-y)
+                if (e.type != 'MSPointerMove' && e.type != 'pointermove' && typeof isScrolling == 'undefined') {
+                    isScrolling = !!(isScrolling || Math.abs(x - start.x) < Math.abs(y - start.y));
+                }
+
+                if (!p.dragging || isMultitouch || isScrolling) {
+                    p.dragging = false;
+                    return;
+                } else {
+                    e.preventDefault();
+                }
+
+                /*
+                 Windows Phone и windows во время MSPointerDown / pointerdown не знают координат
+                 */
+                if (!start.x && !start.y) {
+                    start = {x: x, y: y};
+                    delta = {x: 0, y: 0};
+                } else {
+                    delta = {x: x - start.x, y: y - start.y};
+                }
+
+                // Moving
+
+                if (self.hasClass(params.thumbsLayer)) {
+                    if (p.thumbsDragging) {
+                        moveThumbs(self);
+                    }
+                } else {
+                    moveSlides(self);
+                }
+            }
+
+            /*
+             * Pointer end
+             */
+            function touchend(e) {
+                /*
+                 Force re-layout (в хроме под андроидом без этого отключаются обработчики тач-событий)
+                 */
+                // this.style.display = 'none';
+                // $(this).outerWidth(); // no need to store this anywhere, the reference is enough
+                // this.style.display = 'block';
+
+                if (p.dragging) {
+                    var self = $(this);
+
+                    p.dragging = false;
+                    p.root.removeClass(params.mod.dragging);
+
+                    // Allow or disable click by buttons
+                    if (delta.x == 0) {
+                        p.allowClick = true;
+
+                        return true;
+                    } else {
+                        p.allowClick = false;
+                        setTimeout(function() {
+                            p.allowClick = true;
+                        }, 20);
+                    }
+
+                    if (self.hasClass(params.thumbsLayer)) {
+                        endMoveThumbs(self);
+                    } else {
+                        endMoveSlides(self);
+                    }
+
+                }
+
+                // Reset scrolling detection
+                isScrolling = undefined;
+
+                // Update multitouch info
+                if (e.type != 'MSPointerUp' && e.type != 'MSPointerOut' && e.type != 'pointerup' && e.type != 'pointerleave') {
+                    isMultitouch = (e.originalEvent.touches && e.originalEvent.touches.length) == 1;
+                }
+
+                p.dragging = false;
+                start = {};
+            }
+
+            /*
+             * Move slides on drag
+             */
             function moveSlides(self) {
                 p.allowClick = false;
 
-                var selfWidth = self.outerWidth(),
-                    relativeDeltaX, indent;
+                var relativeDeltaX, indent;
 
-                relativeDeltaX = -delta.x / selfWidth * 100;
+                relativeDeltaX = delta.x / selfWidth * 100;
                 indent = -p.current * 100 + relativeDeltaX;
 
                 p.layer.css(methods.setIndent(indent));
             }
 
+            /*
+             * Go to slide on drag end
+             */
             function endMoveSlides(self) {
                 var selfWidth = self.outerWidth(),
                     target;
@@ -372,7 +453,7 @@
 
                 // Transition executes if delta more then 5% of container width
                 if (Math.abs(delta.x) > selfWidth * 0.05) {
-                    if (delta.x > 0) {
+                    if (delta.x < 0) {
                         methods.next(galleryId);
                     } else {
                         methods.prev(galleryId);
@@ -382,23 +463,29 @@
                 }
             }
 
+            /*
+             * Move thumbs on drag
+             */
             function moveThumbs(self) {
                 var selfWidth = p.thumbs.outerWidth(),
                     indent;
 
-                indent = -delta.x + thumbsStartIndent;
+                indent = delta.x + thumbsStartIndent;
 
                 p.thumbsIndent = indent;
                 p.thumbsLayer.css(methods.setIndent(indent, 'px'));
             }
 
+            /*
+             * Inertial motion of thumbnails on drag end
+             */
             function endMoveThumbs(self) {
                 var direction;
 
                 if (p.thumbsDragging) {
                     thumbsEndTime = new Date();
 
-                    direction = delta.x > 0 ? -1 : 1;
+                    direction = delta.x < 0 ? -1 : 1;
                     p.thumbsIndent = calcTailAnimation(p.thumbsIndent, direction);
 
                     p.thumbsLayer
@@ -407,6 +494,9 @@
                 }
             }
 
+            /*
+             * Calculate indent for inertial motion of thumbnails
+             */
             function calcTailAnimation(currentIndent, direction) {
                 var speed = Math.abs(10 * delta.x / (thumbsEndTime - thumbsStartTime)),
                     tail, limit;
@@ -423,32 +513,6 @@
                 }
 
                 return tail;
-            }
-        },
-
-        checkThumbs: function(galleryId) {
-            var p = data[galleryId],
-                thumbsW = p.thumbs.outerWidth(),
-                layerW = p.thumbsLayer.outerWidth(),
-                limit = thumbsW - layerW,
-                currentIndent;
-
-            if (thumbsW > layerW) {
-                p.thumbsDragging = false;
-                p.thumbsIndent = 0;
-                p.thumbsLayer
-                    .css('transition-duration', '0s')
-                    .css(methods.setIndent(p.thumbsIndent, 'px'));
-            } else {
-                currentIndent = p.thumbsIndent;
-                p.thumbsDragging = true;
-
-                if (currentIndent < limit) {
-                    p.thumbsIndent = limit;
-                    p.thumbsLayer
-                        .css('transition-duration', '0s')
-                        .css(methods.setIndent(p.thumbsIndent, 'px'));
-                }
             }
         },
 
@@ -592,7 +656,6 @@
                             if (loaded == count) {
                                 p.galleryThumbsLoaded = true;
                                 methods.getThumbsSize(galleryId);
-                                // methods.checkThumbs(galleryId);
                             }
                         })
                         .on('error', function() {
@@ -618,17 +681,20 @@
                 p.galleryThumbs[i].left = self.position().left + parseInt(self.css('margin-left'));
             });
 
-            methods.setCurrentThumb(galleryId, p.current);
+            methods.setCurrentThumb(galleryId, p.current, 1);
         },
 
-        setCurrentThumb: function(galleryId, target) {
+        setCurrentThumb: function(galleryId, target, noEffects) {
             var p = data[galleryId],
                 frame = p.thumbFrame,
                 styles = {},
                 current = p.galleryThumbs[target],
-                containerWidth = p.thumbs.outerWidth(),
-                width = p.thumbsLayer.outerWidth(),
-                indent;
+                thumbsW = p.thumbs.outerWidth(),
+                layerW = p.thumbsLayer.outerWidth(),
+                delay = noEffects ? '0s' : '.24s',
+                indent, validatedIndent;
+
+            p.thumbsDragging = thumbsW < layerW;
 
             if (p.galleryThumbsLoaded) {
                 styles.width = current.width + 'px';
@@ -641,20 +707,32 @@
                     styles.left = current.left + 'px';
                 }
 
-                indent = -1 * (current.left - 0.5 * (containerWidth - current.width));
+                indent = -1 * (current.left - 0.5 * (thumbsW - current.width));
+                validatedIndent = validateIndent(indent);
+                p.thumbsIndent = validatedIndent;
 
-                frame.css(styles);
+                frame
+                    .css('transition-duration', delay)
+                    .css(styles);
 
                 p.thumbsLayer
-                    .css('transition-duration', '.24s')
-                    .css(methods.setIndent(validateIndent(indent), 'px'));
+                    .css('transition-duration', delay)
+                    .css(methods.setIndent(validatedIndent, 'px'));
+
             }
 
+            /*
+             * Validates recommended indent (inscribes layer into the container correctly)
+             *
+             * @param {number} indent of layer in the container
+             * @return {number} correct indent
+             */
             function validateIndent(indent) {
-                var limit = containerWidth - width;
+                var limit = thumbsW - layerW;
 
-                return indent > 0 ? 0 : indent < limit ? limit : indent;
+                return indent > 0 || !p.thumbsDragging ? 0 : indent < limit ? limit : indent;
             }
+
         },
 
         position: function(galleryId, target) {
