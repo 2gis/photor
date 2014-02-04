@@ -187,8 +187,6 @@
                 delta = 84, // 12 FPS
                 clickEvent = isFastClick ? 'fastclick' : 'click';
 
-            console.log(clickEvent);
-
             // Swipe slides
             if (params.swipe) {
                 methods.bindSwipe(galleryId);
@@ -280,10 +278,14 @@
              */
             if (isMsPointer) {
 
-                element[0].addEventListener(evt[0], touchstart);
-                element[0].addEventListener(evt[1], touchmove);
-                element[0].addEventListener(evt[2], touchend);
-                element[0].addEventListener(evt[3], touchend);
+                // console.log(element.length);
+
+                for (var i = 0; i < element.length; i++) {
+                    element[i].addEventListener(evt[0], touchstart);
+                    element[i].addEventListener(evt[1], touchmove);
+                    element[i].addEventListener(evt[2], touchend);
+                    element[i].addEventListener(evt[3], touchend);
+                }
 
             } else {
 
@@ -338,6 +340,8 @@
                 // Detect multitouch
                 isMultitouch = isMultitouch || (touches && touches.length) > 1;
 
+                console.log(touches, isMultitouch);
+
                 // Detect scrolling (for windows and windows phone touch-action: pan-y)
                 if (e.type != 'MSPointerMove' && e.type != 'pointermove' && typeof isScrolling == 'undefined') {
                     isScrolling = !!(isScrolling || Math.abs(x - start.x) < Math.abs(y - start.y));
@@ -345,6 +349,7 @@
 
                 if (!p.dragging || isMultitouch || isScrolling) {
                     p.dragging = false;
+
                     return;
                 } else {
                     e.preventDefault();
@@ -361,7 +366,6 @@
                 }
 
                 // Moving
-
                 if (self.hasClass(params.thumbsLayer)) {
                     if (p.thumbsDragging) {
                         moveThumbs(self);
@@ -382,9 +386,9 @@
                 // $(this).outerWidth(); // no need to store this anywhere, the reference is enough
                 // this.style.display = 'block';
 
-                if (p.dragging) {
-                    var self = $(this);
+                console.log('end');
 
+                if (p.dragging) {
                     p.dragging = false;
                     p.root.removeClass(params.mod.dragging);
 
@@ -406,18 +410,16 @@
                         endMoveSlides(self);
                     }
 
+                    // Reset scrolling detection
+                    isScrolling = undefined;
+                    start = {};
                 }
-
-                // Reset scrolling detection
-                isScrolling = undefined;
 
                 // Update multitouch info
                 if (e.type != 'MSPointerUp' && e.type != 'MSPointerOut' && e.type != 'pointerup' && e.type != 'pointerleave') {
                     isMultitouch = (e.originalEvent.touches && e.originalEvent.touches.length) == 1;
                 }
 
-                p.dragging = false;
-                start = {};
             }
 
             /*

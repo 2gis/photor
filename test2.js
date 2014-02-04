@@ -80,13 +80,18 @@ $(document).ready(function() {
                     x = e.pageX || touches[0].pageX,
                     y = e.pageY || touches[0].pageY;
 
-                delta = {x: x, y: y};
-
+                delta = {x: x - start.x, y: y - start.y};
                 touchClick = false;
             }, true);
 
             document.addEventListener(evt[2],  function(e) {
-                if (touchClick || (Math.abs(start.x - delta.x) < 20 && Math.abs(start.y - delta.y) < 20) ) {
+                var noDiff = Math.abs(delta.x) < 20 && Math.abs(delta.y) < 20,
+                    touches = e.touches && e.touches.length,
+                    isMultitouch = touches > 0;
+
+                // console.log(touchClick + ' ' + delta.x + ' ' + delta.y + ' ' + !isMultitouch);
+
+                if (touchClick || (noDiff && !isMultitouch) ) {
                     touchClick = false;
 
                     // Send fast click.
@@ -150,7 +155,9 @@ $(document).ready(function() {
         }
 
         if (!dragging || isMultitouch || isScrolling) {
-            dragging = false;
+            dragging = false; // other end
+            touchend(e);
+
             return;
         } else {
             e.preventDefault();
@@ -179,8 +186,10 @@ $(document).ready(function() {
         el.control.outerWidth(); // no need to store this anywhere, the reference is enough
         el.control[0].style.display = 'block';
 
-        if (dragging) {
-            console.log('swipe end with delta: x=' + delta.x + ' y=' + delta.y);
+        var isMoved = Math.abs(delta.x) > 20 || Math.abs(delta.y) > 20;
+
+        if (dragging && isMoved) {
+            console.log('Swipe end with delta: x=' + delta.x + ' y=' + delta.y);
         }
 
         // Reset scrolling detection
@@ -214,5 +223,11 @@ $(document).ready(function() {
 
         el.out.html(old + '\n' + str);
     };
+
+    // console.error = function(str) {
+    //     var old = el.out.html();
+
+    //     el.out.html(old + '\n' + str);
+    // };
 
 });
