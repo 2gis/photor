@@ -335,8 +335,6 @@
                     x = e.pageX || (touches && touches[0].pageX),
                     y = e.pageY || (touches && touches[0].pageY);
 
-                // console.log(JSON.stringify(self));
-
                 // Detect multitouch
                 isMultitouch = isMultitouch || (touches && touches.length) > 1;
 

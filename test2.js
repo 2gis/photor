@@ -68,20 +68,14 @@ $(document).ready(function() {
 
             // Create custom "Fast click" event.
             document.addEventListener(evt[0], function(e) {
-                // console.log(JSON.stringify(_.clone(e)));
                 var x = e.pageX || touches[0].pageX,
                     y = e.pageY || touches[0].pageY;
 
                 start = {x: x, y: y};
-
-                // console.log(JSON.stringify(coord));
                 touchClick = true;
             }, false);
 
             document.addEventListener(evt[1], function(e) {
-                // console.log(evt[1]);
-                // console.log(JSON.stringify(_.clone(e)));
-                // console.log(JSON.stringify(delta));
                 var touches = e.originalEvent && e.originalEvent.touches,
                     x = e.pageX || touches[0].pageX,
                     y = e.pageY || touches[0].pageY;
@@ -92,9 +86,6 @@ $(document).ready(function() {
             }, true);
 
             document.addEventListener(evt[2],  function(e) {
-
-                // console.log(evt[2]);
-                // console.log(Math.abs(start.x - delta.x) + ' ' + Math.abs(start.y - delta.y));
                 if (touchClick || (Math.abs(start.x - delta.x) < 20 && Math.abs(start.y - delta.y) < 20) ) {
                     touchClick = false;
 
