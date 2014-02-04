@@ -348,7 +348,7 @@
                 }
 
                 if (!p.dragging || isMultitouch || isScrolling) {
-                    p.dragging = false;
+                    // p.dragging = false;
 
                     return;
                 } else {

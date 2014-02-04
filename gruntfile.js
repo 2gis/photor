@@ -37,7 +37,8 @@ module.exports = function(grunt) {
             regular: {
                 files: {
                     'dist/photor.min.js': ['<%= concat.js.dest %>'],
-                    'dist/hand.min.js': ['libs/hand.js']
+                    'dist/hand.min.js': ['libs/hand.js'],
+                    'dist/fast-click.js': ['libs/fast-click.js']
                 }
             }
         },
