@@ -1,12 +1,3 @@
-/*
-* Photor
-* https://github.com/Chaptykov/photor
-*
-* Copyright (c) 2014 Chaptykov
-* Licensed under the MIT license.
-*/
-
-
 (function($) {
 
     // Server side
@@ -26,6 +17,7 @@
         evt = getSupportedEvents(),
         isFastClick = false,
         params, timer;
+
 
     /*
      * Returns supported property for css-transform
@@ -48,7 +40,7 @@
      */
     function getSupportedEvents() {
         var isPointer = navigator.pointerEnabled,
-            isTouch = !!('ontouchstart' in window),
+            isTouch   = !!('ontouchstart' in window),
             pointer   = ['pointerdown', 'pointermove', 'pointerup', 'pointerleave'],
             msPointer = ['MSPointerDown', 'MSPointerMove', 'MSPointerUp', 'MSPointerOut'],
             touch     = ['touchstart', 'touchmove', 'touchend', 'touchcancel'],
@@ -62,38 +54,43 @@
      * Click without 300 ms delay on mobile devices
      */
     (function() {
-
-        /*
-         * Create custom event
-         */
-        function fastclick(e) {
-            if (touchClick) {
-                touchClick = false;
-
-                // Send fast click.
-                var event = document.createEvent('CustomEvent');
-                event.initCustomEvent('fastclick', true, true, e.target);
-
-                e.target.dispatchEvent(event);
-                e.preventDefault();
-            }
-        }
-
-        var touchClick = false;
+        var start = {},
+            delta = {},
+            touchClick = false;
 
         if (Element.prototype.addEventListener) {
             isFastClick = true;
 
             // Create custom "Fast click" event.
-            document.addEventListener(evt[0], function() {
+            document.addEventListener(evt[0], function(e) {
+                var x = e.pageX || touches[0].pageX,
+                    y = e.pageY || touches[0].pageY;
+
+                start = {x: x, y: y};
                 touchClick = true;
             }, false);
 
-            document.addEventListener(evt[1], function() {
+            document.addEventListener(evt[1], function(e) {
+                var touches = e.originalEvent && e.originalEvent.touches,
+                    x = e.pageX || touches[0].pageX,
+                    y = e.pageY || touches[0].pageY;
+
+                delta = {x: x, y: y};
                 touchClick = false;
             }, true);
 
-            document.addEventListener(evt[2], fastclick, false);
+            document.addEventListener(evt[2], function(e) {
+                if (touchClick || (Math.abs(start.x - delta.x) < 20 && Math.abs(start.y - delta.y) < 20)) {
+                    touchClick = false;
+
+                    // Send fast click.
+                    var event = document.createEvent('CustomEvent');
+                    event.initCustomEvent('fastclick', true, true, e.target);
+
+                    e.target.dispatchEvent(event);
+                    e.preventDefault();
+                }
+            }, false);
         }
 
     })();
@@ -187,23 +184,26 @@
             var p = data[galleryId],
                 rtime = new Date(1, 1, 2000, 12, 0, 0),
                 timeout = false,
-                delta = 84,
-                clickEvent = isFastClick ? 'fastclick' : 'click'; // 12 FPS
+                delta = 84, // 12 FPS
+                clickEvent = isFastClick ? 'fastclick' : 'click';
+
+            console.log(clickEvent);
+
+            // Swipe slides
+            if (params.swipe) {
+                methods.bindSwipe(galleryId);
+            }
 
             // Next button
             p.next.on(clickEvent, function(e) {
-                if (p.allowClick && !p.dragging) {
-                    methods.next(galleryId);
-                    e.stopPropagation();
-                }
+                methods.next(galleryId);
+                e.stopPropagation();
             });
 
             // Previous button
             p.prev.on(clickEvent, function(e) {
-                if (p.allowClick && !p.dragging) {
-                    methods.prev(galleryId);
-                    e.stopPropagation();
-                }
+                methods.prev(galleryId);
+                e.stopPropagation();
             });
 
             // Click by thumbnail
@@ -223,13 +223,6 @@
                 .on('click', function(e) {
                     return false;
                 });
-
-            // Scroll
-
-            // Swipe slides
-            if (params.swipe) {
-                methods.bindSwipe(galleryId);
-            }
 
             // Keyboard
             if (params.keyboard) {
@@ -274,6 +267,7 @@
                 // thumbsStartIndent = 0,
                 thumbsStartTime,
                 thumbsEndTime,
+                self,
                 selfWidth;
 
             p.dragging = false;
@@ -311,10 +305,10 @@
              */
             function touchstart(e) {
                 if (!p.dragging) {
-                    var self = $(this),
-                        x = e.pageX || e.originalEvent.touches[0].pageX,
+                    var x = e.pageX || e.originalEvent.touches[0].pageX,
                         y = e.pageY || e.originalEvent.touches[0].pageY;
 
+                    self = $(this);
                     selfWidth = self.outerWidth();
                     start = {x: x, y: y};
                     delta = {x: 0, y: 0};
@@ -339,8 +333,9 @@
             function touchmove(e) {
                 var touches = e.originalEvent && e.originalEvent.touches,
                     x = e.pageX || (touches && touches[0].pageX),
-                    y = e.pageY || (touches && touches[0].pageY),
-                    self = $(this);
+                    y = e.pageY || (touches && touches[0].pageY);
+
+                // console.log(JSON.stringify(self));
 
                 // Detect multitouch
                 isMultitouch = isMultitouch || (touches && touches.length) > 1;

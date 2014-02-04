@@ -47,33 +47,65 @@ $(document).ready(function() {
     // Fast click
     (function() {
 
-        function fastclick(e) {
-            if (touchClick) {
-                touchClick = false;
+        // function fastclick(e) {
+        //     if (touchClick) {
+        //         touchClick = false;
 
-                // Send fast click.
-                var event = document.createEvent('CustomEvent');
-                event.initCustomEvent('fastclick', true, true, e.target);
+        //         // Send fast click.
+        //         var event = document.createEvent('CustomEvent');
+        //         event.initCustomEvent('fastclick', true, true, e.target);
 
-                e.target.dispatchEvent(event);
-                e.preventDefault();
-            }
-        }
+        //         e.target.dispatchEvent(event);
+        //         e.preventDefault();
+        //     }
+        // }
 
         var touchClick = false;
 
         if (Element.prototype.addEventListener) {
+            var start = {},
+                delta = {};
 
             // Create custom "Fast click" event.
-            document.addEventListener(evt[0], function() {
+            document.addEventListener(evt[0], function(e) {
+                // console.log(JSON.stringify(_.clone(e)));
+                var x = e.pageX || touches[0].pageX,
+                    y = e.pageY || touches[0].pageY;
+
+                start = {x: x, y: y};
+
+                // console.log(JSON.stringify(coord));
                 touchClick = true;
             }, false);
 
-            document.addEventListener(evt[1], function() {
+            document.addEventListener(evt[1], function(e) {
+                // console.log(evt[1]);
+                // console.log(JSON.stringify(_.clone(e)));
+                // console.log(JSON.stringify(delta));
+                var touches = e.originalEvent && e.originalEvent.touches,
+                    x = e.pageX || touches[0].pageX,
+                    y = e.pageY || touches[0].pageY;
+
+                delta = {x: x, y: y};
+
                 touchClick = false;
             }, true);
 
-            document.addEventListener(evt[2], fastclick, false);
+            document.addEventListener(evt[2],  function(e) {
+
+                // console.log(evt[2]);
+                // console.log(Math.abs(start.x - delta.x) + ' ' + Math.abs(start.y - delta.y));
+                if (touchClick || (Math.abs(start.x - delta.x) < 20 && Math.abs(start.y - delta.y) < 20) ) {
+                    touchClick = false;
+
+                    // Send fast click.
+                    var event = document.createEvent('CustomEvent');
+                    event.initCustomEvent('fastclick', true, true, e.target);
+
+                    e.target.dispatchEvent(event);
+                    e.preventDefault();
+                }
+            }, false);
         }
 
     })();
