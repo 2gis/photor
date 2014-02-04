@@ -203,4 +203,5 @@ body {
   cursor: -webkit-grabbing;
   cursor: -moz-grabbing;
   cursor: grabbing;
+  pointer-events: none;
 }
