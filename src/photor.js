@@ -98,6 +98,7 @@
 
             // Elements and properties
             control = p.control[0],
+            thumbs = p.thumbs[0],
             self,
             selfWidth,
 
@@ -121,8 +122,21 @@
         addListener(control, evt[2], touchend, false);
         addListener(control, evt[3], touchend, false);
 
-        // Prevent default image drag-n-drop
-        for (var i = 0, len = p.thumbImg.length; i < len; i++) {
+        // Перетаскивание и клики по по миниатюрам
+        addListener(thumbs, evt[0], touchstart, false);
+        addListener(thumbs, evt[1], touchmove, true);
+        addListener(thumbs, evt[2], touchend, false);
+        addListener(thumbs, evt[3], touchend, false);
+
+        // Не переходить по ссылке миниатюры
+        for (var i = 0, len = p.thumb.length; i < len; i++) {
+            addListener(p.thumbImg[i], 'click', function(e) {
+                e.preventDefault();
+            }, false);
+        }
+
+        // Отменить встроенный драг-н-дроп для картинок
+        for (i = 0, len = p.thumbImg.length; i < len; i++) {
             addListener(p.thumbImg[i], 'dragstart', function(e) {
                 e.preventDefault();
             }, false);
@@ -145,8 +159,8 @@
 
                 p.dragging = true;
 
-                self = $(this);
-                selfWidth = self.outerWidth();
+                self = this;
+                selfWidth = self.offsetWidth;
             }
         }
 
@@ -169,24 +183,27 @@
                 }
 
                 if (!p.dragging || isMultitouch || isScrolling) {
-                    p.dragging = false; // other end
-                    slidesEnd(e);
+                    p.dragging = false;
+
+                    if (hasClass(self, params.control)) {
+                        slidesEnd();
+                    } else {
+                        thumbsEnd();
+                    }
 
                     return;
                 } else {
                     e.preventDefault();
                 }
 
-                if (!start.x && !start.y) {
-                    // Start drag
-                    start = {x: x, y: y};
-                    delta = {x: 0, y: 0};
-                } else {
-                    // Continue drag
-                    delta = {x: x - start.x, y: y - start.y};
-                }
+                // Continue drag
+                delta = {x: x - start.x, y: y - start.y};
 
-                slidesMove();
+                if (hasClass(self, params.control)) {
+                    slidesMove();
+                } else {
+                    thumbsMove();
+                }
             }
         }
 
@@ -206,13 +223,27 @@
                 slidesEnd();
             }
 
-            if (!isMoved) {
+            // Если указатель не двигался, значит обрабатываем клик
+            if (!isMoved && !isScrolling) {
+
+                // Назад
                 if (hasClass(e.target, params.prev)) {
                     methods.prev(galleryId);
                 }
+
+                // Вперед
                 if (hasClass(e.target, params.next)) {
                     methods.next(galleryId);
                 }
+
+                // Клик по миниатюре
+                if (hasClass(e.target, params.thumbImg)) {
+                    var target = parseInt(e.target.getAttribute('data-rel'));
+
+                    methods.go(galleryId, target);
+                    e.stopPropagation();
+                }
+
                 e.stopPropagation();
                 e.preventDefault(); // Нужно для отмены зума по doubletap
             }
@@ -230,8 +261,6 @@
 
         /*
          * Движение слайдов во время перетаскивания
-         *
-         * @param
          */
         function slidesMove() {
             p.allowClick = false;
@@ -246,16 +275,9 @@
 
         /*
          * Завершение движения слайдов
-         *
-         * @param
          */
         function slidesEnd() {
-            var target;
-
-            console.log('Swipe end with delta: x=' + delta.x + ' y=' + delta.y);
-
-            // Target slide
-            target = delta.x > 0 ? p.current + 1 : p.current - 1;
+            var target = delta.x > 0 ? p.current + 1 : p.current - 1;
 
             // Transition executes if delta more then 5% of container width
             if (Math.abs(delta.x) > selfWidth * 0.05) {
@@ -271,11 +293,9 @@
 
         /*
          * Движение слайдов прервано
-         *
-         * @param
          */
         function slidesCancel() {
-            // slidesEnd();
+
         }
 
         /*
@@ -295,10 +315,8 @@
 
         /*
          * Завершение движения миниатюр
-         *
-         * @param
          */
-        function thumbsEndMove() {
+        function thumbsEnd() {
             var direction;
 
             if (p.thumbsDragging) {
@@ -370,7 +388,6 @@
         }, false);
     }
 
-
     var methods = {
         init: function(options) {
             params = $.extend({
@@ -419,7 +436,7 @@
                     content += methods.getTemplate(j);
                     count++;
 
-                    self
+                    $(thumbImg)
                         .attr('data-rel', j)
                         .addClass(params.slideIdPrefix + j);
 
