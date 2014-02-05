@@ -89,6 +89,32 @@
     }
 
     /*
+     *
+     */
+    function throttle(fn, timeout, ctx) {
+        var timer, args, needInvoke;
+
+        return function() {
+            args = arguments;
+            needInvoke = true;
+            ctx = ctx || this;
+
+            if (!timer) {
+                (function() {
+                    if (needInvoke) {
+                        fn.apply(ctx, args);
+                        needInvoke = false;
+                        timer = setTimeout(arguments.callee, timeout);
+                    } else {
+                        timer = null;
+                    }
+                })();
+            }
+
+        };
+    }
+
+    /*
      * Устанавливает обработчики управления указателем (touch, mouse, pen)
      *
      * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
@@ -109,6 +135,11 @@
             fingers = 0,
             isMultitouch = false,
 
+            // Thumbs
+            thumbsStartIndent = 0,
+            thumbsStartTime,
+            thumbsEndTime,
+
             // Coordinates
             start = {},
             delta = {};
@@ -118,13 +149,13 @@
 
         // Перетаскивание и клики по основной части галереи
         addListener(control, evt[0], touchstart, false);
-        addListener(control, evt[1], touchmove, true);
+        addListener(control, evt[1], throttle(touchmove, 13), true);
         addListener(control, evt[2], touchend, false);
         addListener(control, evt[3], touchend, false);
 
         // Перетаскивание и клики по по миниатюрам
         addListener(thumbs, evt[0], touchstart, false);
-        addListener(thumbs, evt[1], touchmove, true);
+        addListener(thumbs, evt[1], throttle(touchmove, 13), true);
         addListener(thumbs, evt[2], touchend, false);
         addListener(thumbs, evt[3], touchend, false);
 
@@ -161,6 +192,13 @@
 
                 self = this;
                 selfWidth = self.offsetWidth;
+
+                if (hasClass(self, params.thumbs) && p.thumbsDragging) {
+                    thumbsStartIndent = p.thumbsIndent;
+                    thumbsStartTime = new Date();
+
+                    p.thumbsLayer.css('transition-duration', '0s');
+                }
             }
         }
 
@@ -188,7 +226,9 @@
                     if (hasClass(self, params.control)) {
                         slidesEnd();
                     } else {
-                        thumbsEnd();
+                        if (p.thumbsDragging) {
+                            thumbsEnd();
+                        }
                     }
 
                     return;
@@ -202,7 +242,9 @@
                 if (hasClass(self, params.control)) {
                     slidesMove();
                 } else {
-                    thumbsMove();
+                    if (p.thumbsDragging) {
+                        thumbsMove();
+                    }
                 }
             }
         }
@@ -217,10 +259,18 @@
                 fingers--;
             }
 
+            if (typeof self == 'undefined') {
+                return;
+            }
+
             var isMoved = Math.abs(delta.x) > 20 || Math.abs(delta.y) > 20;
 
-            if (p.dragging && isMoved) {
+            if (p.dragging && isMoved && hasClass(self, params.control)) {
                 slidesEnd();
+            }
+
+            if (p.thumbsDragging && isMoved && hasClass(self, params.thumbs)) {
+                thumbsEnd();
             }
 
             // Если указатель не двигался, значит обрабатываем клик
@@ -256,6 +306,7 @@
 
             // Stop dragging
             p.dragging = false;
+            self = undefined;
             start = {};
         }
 
@@ -294,20 +345,15 @@
         /*
          * Движение слайдов прервано
          */
-        function slidesCancel() {
-
-        }
+        function slidesCancel() {}
 
         /*
          * Движение миниатюр при перетаскивании
-         *
-         * @param
          */
         function thumbsMove() {
-            var selfWidth = p.thumbs.outerWidth(),
-                indent;
+            var indent = delta.x + thumbsStartIndent;
 
-            indent = delta.x + thumbsStartIndent;
+            // console.log(delta.x, thumbsStartIndent);
 
             p.thumbsIndent = indent;
             p.thumbsLayer.css(methods.setIndent(indent, 'px'));
@@ -317,12 +363,10 @@
          * Завершение движения миниатюр
          */
         function thumbsEnd() {
-            var direction;
-
             if (p.thumbsDragging) {
-                thumbsEndTime = new Date();
+                var direction = delta.x < 0 ? -1 : 1;
 
-                direction = delta.x < 0 ? -1 : 1;
+                thumbsEndTime = new Date();
                 p.thumbsIndent = calcTailAnimation(p.thumbsIndent, direction);
 
                 p.thumbsLayer
