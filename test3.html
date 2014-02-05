@@ -71,7 +71,7 @@
     </div>
 </div>
 
-<div id="out"></div>
+<pre id="out"></pre>
 
 <script src="libs/jquery/jquery.js"></script>
 <script src="http://yandex.st/underscore/1.5.2/underscore-min.js"></script>
@@ -103,7 +103,6 @@ var el = {
 };
 
 function touchstart(e) {
-    // console.log('start', e.pageX, e.pageY, e.touches && es.touches.length);
     fingers++;
 
     if (!dragging) {
@@ -119,7 +118,6 @@ function touchstart(e) {
 
 function touchmove(e) {
     if (dragging) {
-        // console.log('move', e.pageX, e.pageY, e.touches && es.touches.length);
         var x = e.pageX || touches[0].pageX,
             y = e.pageY || touches[0].pageY;
 
@@ -147,7 +145,6 @@ function touchmove(e) {
         } else {
             // Continue drag
             delta = {x: x - start.x, y: y - start.y};
-            // console.log('move  delta(' + delta.x + ', ' + delta.y + ') ' + e.type);
         }
 
         slidesMove();
@@ -159,12 +156,14 @@ function touchend(e) {
         fingers--;
     }
 
-    // console.log('end', e.pageX, e.pageY, e.touches && es.touches.length);
-
     var isMoved = Math.abs(delta.x) > 20 || Math.abs(delta.y) > 20;
 
     if (dragging && isMoved) {
         slidesEnd();
+    }
+
+    if (!isMoved) {
+        console.log('click ' + e.target);
     }
 
     // Reset scrolling detection
@@ -173,23 +172,24 @@ function touchend(e) {
     // Update multitouch info
     isMultitouch = !!fingers;
 
-    slidesCancel();
-
+    // Stop dragging
     dragging = false;
     start = {};
 }
 
 function touchcancel(e) {
-    // console.log('cancel', e.pageX, e.pageY, e.touches && es.touches.length);
-
+    // Reset multitouch data
     fingers = 0;
-    console.log('cancel: ', fingers);
+    isMultitouch = false;
 
-    slidesCancel();
+    // Reset scrolling data
+    isScrolling = undefined;
+
+    // Stop dragging
     dragging = false;
     start = {};
-    isMultitouch = false;
-    isScrolling = undefined;
+
+    slidesCancel();
 }
 
 function slidesMove() {
@@ -208,11 +208,11 @@ function slidesCancel() {
         .css('transform', 'translate3d(0, 0, 0)');
 }
 
-// console.log = function(str) {
-//     var old = el.out.html();
+console.log = function(str) {
+    var old = el.out.html();
 
-//     el.out.html(old + '\n' + str);
-// };
+    el.out.html(old + '\n' + str);
+};
 
 });
 
