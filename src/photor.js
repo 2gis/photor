@@ -366,7 +366,7 @@
     function bindKeyboard(galleryId) {
         var p = data[galleryId];
 
-        window.addEventListener('keydown', function(e) {
+        addListener(window, 'keydown', function(e) {
             var key = e.which || e.keyCode;
 
             switch(key) {
