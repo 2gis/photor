@@ -89,7 +89,11 @@
     }
 
     /*
+     * Вызывает передаваемую функцию не чаще чем timeout
      *
+     * @param {function} fn Функция
+     * @param {number} timeout Таймаут в миллисекундах
+     * @param {object} ctx Контекст вызова
      */
     function throttle(fn, timeout, ctx) {
         var timer, args, needInvoke;
