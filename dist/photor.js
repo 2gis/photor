@@ -28,6 +28,7 @@
                 return key;
             }
         }
+
         return false;
     }
 
@@ -88,8 +89,35 @@
         return ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
     }
 
+    function debounce(fn, timeout, invokeAsap, ctx) {
+        if (arguments.length == 3 && typeof invokeAsap != 'boolean') {
+            ctx = invokeAsap;
+            invokeAsap = false;
+        }
+
+        var timer;
+
+        return function() {
+            var args = arguments;
+
+            ctx = ctx || this;
+            if (invokeAsap && !timer) {
+                fn.apply(ctx, args);
+            }
+
+            clearTimeout(timer);
+
+            timer = setTimeout(function() {
+                if (!invokeAsap) {
+                    fn.apply(ctx, args);
+                }
+                timer = null;
+            }, timeout);
+        };
+    }
+
     /*
-     * Вызывает передаваемую функцию не чаще чем timeout
+     * Throttle декоратор
      *
      * @param {function} fn Функция
      * @param {number} timeout Таймаут в миллисекундах
@@ -114,7 +142,6 @@
                     }
                 })();
             }
-
         };
     }
 
@@ -224,9 +251,11 @@
                     isScrolling = !!(isScrolling || Math.abs(x - start.x) < Math.abs(y - start.y));
                 }
 
+                // Жест прерван / отменен (используем нативное поведение)
                 if (!p.dragging || isMultitouch || isScrolling) {
                     p.dragging = false;
 
+                    // Завершаем взаимодействие с UI
                     if (hasClass(self, params.control)) {
                         slidesEnd();
                     } else {
@@ -318,8 +347,6 @@
          * Движение слайдов во время перетаскивания
          */
         function slidesMove() {
-            p.allowClick = false;
-
             var relativeDeltaX, indent;
 
             relativeDeltaX = delta.x / selfWidth * 100;
@@ -403,7 +430,31 @@
 
             return tail;
         }
+    }
 
+    /*
+     * Устанавливает обработчик изменения размера окна
+     *
+     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+     */
+    function bindResize(galleryId) {
+        var p = data[galleryId];
+
+        addListener(window, 'resize', debounce(resize, 84));
+
+        /*
+         * Resize handler
+         */
+        function resize() {
+            p.viewportWidth = p.viewport.outerWidth();
+            p.viewportHeight = p.viewport.outerHeight();
+
+            p.slide.each(function(i) {
+                methods.position(galleryId, i);
+            });
+
+            methods.setCurrentThumb(galleryId, p.current, 1);
+        }
     }
 
     /*
@@ -522,32 +573,10 @@
         },
 
         handlers: function(galleryId) {
-            var p = data[galleryId],
-                rtime = new Date(1, 1, 2000, 12, 0, 0),
-                timeout = false,
-                delta = 84; // 12 FPS
-                // clickEvent = isFastClick ? 'fastclick' : 'click';
+            var p = data[galleryId];
 
             // Swipe slides
             bindControl(galleryId);
-
-            // Click by thumbnail
-            // p.thumb
-            //     .on(clickEvent, function(e) {
-            //         e.preventDefault();
-
-            //         if (p.allowClick) {
-            //             var target = parseInt($(this).attr('data-rel'));
-
-            //             methods.go(galleryId, target);
-            //             e.stopPropagation();
-            //         }
-
-            //         return false;
-            //     })
-            //     .on('click', function(e) {
-            //         return false;
-            //     });
 
             // Keyboard
             if (params.keyboard) {
@@ -555,31 +584,7 @@
             }
 
             // Resize
-            $(window).on('resize', function() {
-                rtime = new Date();
-                if (timeout === false) {
-                    timeout = true;
-                    setTimeout(resize, delta);
-                }
-            });
-
-            function resize() {
-                if (new Date() - rtime < delta) {
-                    setTimeout(resize, delta);
-                } else {
-                    timeout = false;
-
-                    p.viewportWidth = p.viewport.outerWidth();
-                    p.viewportHeight = p.viewport.outerHeight();
-
-                    p.slide.each(function(i) {
-                        methods.position(galleryId, i);
-                    });
-
-                    methods.setCurrentThumb(galleryId, p.current, 1);
-                }
-            }
-
+            bindResize(galleryId);
         },
 
         go: function(galleryId, target, delay) {
