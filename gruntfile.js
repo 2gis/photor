@@ -30,7 +30,7 @@ module.exports = function(grunt) {
             options: {
                 jshintrc: '.jshintrc'
             },
-            files: ['src/**/*.js', 'gruntfile.js', 'test.js', 'test2.js']
+            files: ['src/**/*.js', 'gruntfile.js', 'test.js', 'test2.js', 'libs/hand.js']
         },
 
         uglify: {

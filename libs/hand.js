@@ -1,7 +1,12 @@
 ﻿(function () {
     // If the user agent is already support Pointer Events, do nothing
-    if (window.PointerEvent)
+    if (window.PointerEvent) {
         return;
+    }
+
+    if (!Element.prototype.contains) {
+        Element.prototype.contains = function() {};
+    }
 
     // Installing Hand.js
     var supportedEventsNames = ["pointerdown", "pointerup", "pointermove", "pointerover", "pointerout", "pointercancel", "pointerenter", "pointerleave"];
@@ -203,7 +208,8 @@
 
     var checkEventRegistration = function (node, eventName) {
         return node.__handjsGlobalRegisteredEvents && node.__handjsGlobalRegisteredEvents[eventName];
-    }
+    };
+
     var findEventRegisteredNode = function (node, eventName) {
         while (node && !checkEventRegistration(node, eventName))
             node = node.parentNode;
@@ -428,7 +434,7 @@
         var parents1 = getDomUpperHierarchy(node1);
         var parents2 = getDomUpperHierarchy(node2);
 
-        var lastmatch = null
+        var lastmatch = null;
         while (parents1.length > 0 && parents1[0] == parents2.shift())
             lastmatch = parents1.shift();
         return lastmatch;
@@ -516,7 +522,7 @@
                         //pointerenter should not be bubbled
                         dispatchPointerEnter(touchPoint.target, null, function (targetNode) {
                             generateTouchEventProxy("pointerenter", touchPoint, targetNode, eventObject, false);
-                        })
+                        });
 
                         generateTouchEventProxyIfRegistered("pointerdown", touchPoint, touchPoint.target, eventObject, true);
                     }
@@ -534,7 +540,7 @@
                         //pointerleave should not be bubbled
                         dispatchPointerLeave(currentTarget, null, function (targetNode) {
                             generateTouchEventProxy("pointerleave", touchPoint, targetNode, eventObject, false);
-                        })
+                        });
                     }
                     setTouchTimer();
                 });
@@ -573,7 +579,7 @@
                             if (!newTarget.contains(currentTarget)) { // Leave must be called if the new target is not the parent of the current
                                 dispatchPointerEnter(newTarget, currentTarget, function (targetNode) {
                                     generateTouchEventProxy("pointerenter", touchPoint, targetNode, eventObject, false);
-                                })
+                                });
                             }
                         }
                         previousTargets[touchPoint.identifier] = newTarget;

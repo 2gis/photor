@@ -56,81 +56,6 @@ $(document).ready(function() {
         }
     }
 
-    /*
-     * Быстрый клик для мобильных устройств (устранение задержки в 300 мс перед вызовом)
-     */
-    function fastClickHandler() {
-
-        addListener(document, evt[0], fcTouchstart, false);
-        addListener(document, evt[1], fcTouchmove, true);
-        addListener(document, evt[2], fcTouchend, false);
-
-        /*
-         * Touch start handler
-         */
-        function fcTouchstart(e) {
-            var touches = e.originalEvent && e.originalEvent.touches,
-                x, y;
-
-            fcClick = true;
-
-            if (touches && touches.length == 1) {
-                x = e.pageX || touches[0].pageX;
-                y = e.pageY || touches[0].pageY;
-
-                fcStart = {x: x, y: y};
-                fcMultitouch = false;
-            }
-        }
-
-        /*
-         * Touch move handler
-         */
-        function fcTouchmove(e) {
-            var touches = e.originalEvent && e.originalEvent.touches,
-                x, y;
-
-            fcClick = false;
-
-            if (touches && touches.length > 1) {
-                fcMultitouch = true;
-            }
-
-            if (touches && touches.length == 1) {
-                x = e.pageX || touches[0].pageX;
-                y = e.pageY || touches[0].pageY;
-
-                fcDelta = {x: x - fcStart.x, y: y - fcStart.y};
-            }
-
-            if (e.type != 'MSPointerMove' && e.type != 'pointermove' && typeof fcScrolling == 'undefined') {
-                fcScrolling = !!(fcScrolling || Math.abs(fcDelta.x) < Math.abs(fcDelta.y));
-            }
-
-        }
-
-        /*
-         * Touch end handler
-         */
-        function fcTouchend(e) {
-            var touches = e.originalEvent && e.originalEvent.touches,
-                noDiff = Math.abs(fcDelta.x) < 20 && Math.abs(fcDelta.y) < 20;
-
-            if (!fcMultitouch && !fcScrolling && (fcClick || noDiff)) {
-                var event = document.createEvent('CustomEvent');
-                event.initCustomEvent('fastclick', true, true, e.target);
-
-                e.target.dispatchEvent(event);
-                e.preventDefault();
-            }
-
-            fcClick = false;
-            fcStart = {};
-            fcScrolling = undefined;
-        }
-
-    }
-
     function touchHandler() {
         var isScrolling,
             isMultitouch = false,
@@ -143,8 +68,8 @@ $(document).ready(function() {
         addListener(el.control[0], evt[2], touchend);
         addListener(el.control[0], evt[3], touchend);
 
-        addListener(el.prev[0], 'fastclick', prev);
-        addListener(el.next[0], 'fastclick', next);
+        addListener(el.prev[0], 'click', prev);
+        addListener(el.next[0], 'click', next);
 
         /*
          * Touch start handler
@@ -281,7 +206,7 @@ $(document).ready(function() {
         };
 
 
-    fastClickHandler();
+    // fastClickHandler();
     touchHandler();
 
 
