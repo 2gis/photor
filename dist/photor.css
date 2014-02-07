@@ -235,5 +235,8 @@ body {
 }
 .photor._dragging .photor__viewportControlPrev,
 .photor._dragging .photor__viewportControlNext {
-  pointer-events: none;
+  cursor: move;
+  cursor: -webkit-grabbing;
+  cursor: -moz-grabbing;
+  cursor: grabbing;
 }
