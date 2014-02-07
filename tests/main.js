@@ -39,22 +39,26 @@ var defaultParams = {
     control: 'photor__viewportControl',
     next: 'photor__viewportControlNext',
     prev: 'photor__viewportControlPrev',
-    thumb: 'photor__thumbsItem',
-    thumbImg: 'photor__thumbsItemImg',
+    thumbs: 'photor__thumbs',
+    thumbsLayer: 'photor__thumbsWrap',
+    thumb: 'photor__thumbsWrapItem',
+    thumbImg: 'photor__thumbsWrapItemImg',
+    thumbFrame: 'photor__thumbsWrapFrame',
     viewport: 'photor__viewport',
     layer: 'photor__viewportLayer',
     slide: 'photor__viewportLayerSlide',
+    slideImg: 'photor__viewportLayerSlideImg',
 
     // Settings
     delay: 300,
     keyboard: true,
-    swipe: true,
 
     mod: {
         // States
         loading: '_loading',
         current: '_current',
         dragging: '_dragging',
+        disabled: '_disabled',
 
         // Algorithm
         auto: '_auto',
@@ -62,7 +66,10 @@ var defaultParams = {
 
         // Orientation
         portrait: '_portrait',
-        landscape: '_landscape'
+        landscape: '_landscape',
+
+        // Thumbs
+        draggable: '_draggable'
     }
 };
 

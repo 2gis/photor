@@ -21,7 +21,7 @@ module.exports = function(grunt) {
 
         concat: {
             js: {
-                src: ['src/**/*.js'],
+                src: ['partials/start.js', 'src/**/*.js', 'partials/end.js'],
                 dest: 'dist/photor.js'
             }
         },
@@ -30,7 +30,7 @@ module.exports = function(grunt) {
             options: {
                 jshintrc: '.jshintrc'
             },
-            files: ['src/**/*.js', 'gruntfile.js', 'test.js', 'test2.js', 'libs/hand.js']
+            files: ['src/**/*.js', 'gruntfile.js', 'libs/hand.js']
         },
 
         uglify: {
@@ -125,6 +125,5 @@ module.exports = function(grunt) {
     grunt.registerTask('default', ['clean', 'js', 'css']);
     grunt.registerTask('dev', ['default', 'connect', 'watch']);
 
-    grunt.registerTask('test', ['mocha-phantomjs']);
-    grunt.registerTask('build', ['gruntHtml']);
+    grunt.registerTask('test', ['gruntHtml', 'mocha-phantomjs']);
 };

@@ -22,10 +22,14 @@
                 position: relative;
                 width: 100%;
                 white-space: nowrap;
-                -webkit-transition-property: -webkit-transform;
-                transition-property: transform;
-                -webkit-transition-timing-function: cubic-bezier(0.1,0,.25,1);
-                transition-timing-function: cubic-bezier(0.1,0,.25,1);
+                }
+            .root__layer._effects {
+                -webkit-transition:
+                    left .3s cubic-bezier(0.1,0,.25,1),
+                    -webkit-transform .3s cubic-bezier(0.1,0,.25,1);
+                transition:
+                    left .3s cubic-bezier(0.1,0,.25,1),
+                    transform .3s cubic-bezier(0.1,0,.25,1);
                 }
                 .root__layer-slide {
                     display: none;
@@ -111,6 +115,8 @@ $(document).ready(function() {
 
     isAnimate = 0;
 
+    layer[0].addEventListener('webkitTransitionEnd', debounce(end, 300), false);
+
     function calcIndent(target) {
         var indent = 0;
 
@@ -147,17 +153,13 @@ $(document).ready(function() {
         $('.root__wrap').css('left', extIndent * 100 + '%')
 
         layer
-            .css('transition-duration', '.3s')
+            .addClass('_effects')
             .css({
                 'transform': 'translate3d(' + calcIndent(target) * 100 + '%, 0, 0)'
             });
 
 
         baseIndent = calcIndent(target);
-
-        (function(target) {
-            layer[0].addEventListener('webkitTransitionEnd', debounce(end, 150), false)
-        })(target);
 
         current = target;
 
@@ -215,7 +217,7 @@ $(document).ready(function() {
         }
 
         layer
-            .css('transition-duration', '0s')
+            .removeClass('_effects')
             .css({
                 'transform': 'translate3d(' + finalIndent + '%, 0, 0)'
             });
