@@ -14,7 +14,7 @@
         },
         data = [],
         evt = getSupportedEvents(),
-        params, timer;
+        params;
 
 
     /*
@@ -493,6 +493,8 @@
         addListener(p.layer[0], 'webkitTransitionEnd', transitionEnd, false);
 
         function transitionEnd() {
+            p.layer.css('transition-duration', '0s');
+
             for (var i = 0; i < p.count; i++) {
                 var elem = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + i);
 
@@ -637,12 +639,6 @@
             // Load slide's range
             methods.loadSlides(galleryId, target);
             methods.checkButtons(galleryId);
-
-            // Reset duration
-            clearTimeout(timer);
-            timer = setTimeout(function() {
-                p.layer.css('transition-duration', '0s');
-            }, delay);
         },
 
         next: function(galleryId) {

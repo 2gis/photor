@@ -28,8 +28,8 @@ body {
 
 .photor {
     position: relative;
-    width: 100%;
-    height: 100%;
+    width: 640px;
+    height: 480px;
     background: #090907;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -52,14 +52,17 @@ body {
             width: 100%;
             height: 100%;
             white-space: nowrap;
-            -webkit-transition-property: left, -webkit-transform;
-            transition-property: left, transform;
-            transition-timing-function: cubic-bezier(0.1,0,.25,1);
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+
+            &._effects {
+                -webkit-transition-property: left, -webkit-transform;
+                transition-property: left, transform;
+                transition-timing-function: cubic-bezier(0.1,0,.25,1);
+                transition-duration: .24s;
+                }
 
             &Slide {
-                // position: relative;
-                // display: inline-block;
-                // vertical-align: top;
                 width: 100%;
                 height: 100%;
                 position: absolute;
@@ -72,10 +75,8 @@ body {
                     background-position: center center;
                     opacity: 1;
                     display: block;
-                    // transition: opacity .3s ease;
-                    // visibility: visible;
-                    // opacity: 1;
-                    transition: all .3s cubic-bezier(0.1,0,.25,1);
+                    transition: opacity .3s ease;
+                    visibility: visible;
                     }
                 &:after {
                     position: absolute;
@@ -109,7 +110,7 @@ body {
                 &._hidden {
 
                     & .photor__viewportLayerSlideImg {
-                        // visibility: hidden;
+                        visibility: hidden;
                         opacity: 0;
                         }
                     &:after {
@@ -186,11 +187,18 @@ body {
             display: inline-block;
             text-align: left;
             height: 100%;
-            -webkit-transform: translate3d(0,0,0);
-            transform: translate3d(0,0,0);
-            -webkit-transition-property: left, -webkit-transform;
-            transition-property: left, transform;
-            transition-timing-function: cubic-bezier(0.1,0,.25,1);
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+            // -webkit-transition-property: left, -webkit-transform;
+            // transition-property: left, transform;
+            // transition-timing-function: cubic-bezier(0.1,0,.25,1);
+
+            &._effects {
+                -webkit-transition-property: left, -webkit-transform;
+                transition-property: left, transform;
+                transition-timing-function: cubic-bezier(0.1,0,.25,1);
+                transition-duration: .24s;
+                }
 
             &Item {
                 display: inline-block;
@@ -221,7 +229,7 @@ body {
                 border: 2px solid #fff;
 
                 // Для мобилок и планшетов не анимируем изменение ширины
-                @media (max-device-width: 1024px) {
+                @media (max-device-width: 1280px) {
                     -webkit-transition-property: top, left, -webkit-transform;
                     transition-property: top, left, transform;
                     }
