@@ -57,11 +57,13 @@ body {
             transition-timing-function: cubic-bezier(0.1,0,.25,1);
 
             &Slide {
-                position: relative;
-                display: inline-block;
-                vertical-align: top;
+                // position: relative;
+                // display: inline-block;
+                // vertical-align: top;
                 width: 100%;
                 height: 100%;
+                position: absolute;
+                top: 0;
 
                 &Img {
                     width: 100%;
@@ -70,7 +72,10 @@ body {
                     background-position: center center;
                     opacity: 1;
                     display: block;
-                    transition: opacity .3s ease;
+                    // transition: opacity .3s ease;
+                    // visibility: visible;
+                    // opacity: 1;
+                    transition: all .3s cubic-bezier(0.1,0,.25,1);
                     }
                 &:after {
                     position: absolute;
@@ -99,8 +104,20 @@ body {
                         visibility: visible;
                         opacity: 1;
                         }
-
                     }
+
+                &._hidden {
+
+                    & .photor__viewportLayerSlideImg {
+                        // visibility: hidden;
+                        opacity: 0;
+                        }
+                    &:after {
+                        visibility: visible;
+                        opacity: 1;
+                        }
+                    }
+
                 &._auto {
                     & .photor__viewportLayerSlideImg {
                         -webkit-background-size: contain;

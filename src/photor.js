@@ -1,4 +1,4 @@
-(function($) {
+(function() {
 
     // Server side
     if (!window) {
@@ -487,6 +487,25 @@
         }, false);
     }
 
+    function bindTransitionEnd(galleryId) {
+        var p = data[galleryId];
+
+        addListener(p.layer[0], 'webkitTransitionEnd', transitionEnd, false);
+
+        function transitionEnd() {
+            for (var i = 0; i < p.count; i++) {
+                var elem = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + i);
+
+                if (i < p.current - 1 || i > p.current + 1) {
+                    elem.addClass('_hidden');
+                } else {
+                    elem.removeClass('_hidden');
+                }
+            }
+        }
+
+    }
+
     var methods = {
         init: function(options) {
             params = $.extend({
@@ -543,7 +562,11 @@
                     thumbs[j] = thumbImg.src;
                 });
                 p.layer.html(content);
+
                 p.slide = root.find('.' + params.slide);
+                p.slide.each(function(i) {
+                    $(this).css('left', i * 100 + '%');
+                });
 
                 // Settings
                 p.current = params.current;
@@ -556,10 +579,12 @@
                 p.thumbSrc = thumbs;
 
                 data[galleryId] = p;
+                root.attr('data-photor-id', galleryId);
 
                 methods.loadThumbs(galleryId);
                 methods.handlers(galleryId);
                 methods.go(galleryId, p.current, 0);
+
             });
         },
 
@@ -585,6 +610,8 @@
 
             // Resize
             bindResize(galleryId);
+
+            bindTransitionEnd(galleryId);
         },
 
         go: function(galleryId, target, delay) {
@@ -653,7 +680,7 @@
 
         loadSlide: function(galleryId, target) {
             var p = data[galleryId],
-                slide = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + target + ' '),
+                slide = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + target),
                 slideImg = slide.find('.' + params.slideImg),
                 url = p.gallery[target].url,
                 img = document.createElement('img');
@@ -771,7 +798,7 @@
              * Validates recommended indent (inscribes layer into the container correctly)
              *
              * @param {number} indent of layer in the container
-             * @return {number} correct indent
+             * @returns {number} correct indent
              */
             function validateIndent(indent) {
                 var limit = thumbsW - layerW;
@@ -857,9 +884,11 @@
 
     };
 
-}(jQuery));
+})(jQuery);
 
 
-// Счетчик
-// Оптимизировать обработчики драг-н-дропа
-// visibility hidden для изображений, которые далеко
+// Клик по случайной миниатюре, проверить позицию рамочки
+// Клик по случайной миниатюре, проверить размер рамочки соответствует размеру изображения
+// Если миниатюры не помещаются в экран, проверить разрешен ли драг
+// Если миниатюры помещаются в экран, проверить запрещен ли драг
+// После инициализации без явно указанного параметра, выбрана первая миниатюра
