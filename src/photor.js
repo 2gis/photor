@@ -220,6 +220,7 @@
                 delta = {x: 0, y: 0};
 
                 p.dragging = true;
+                p.root.addClass(params.mod.dragging);
 
                 self = this;
                 selfWidth = self.offsetWidth;
@@ -339,6 +340,7 @@
 
             // Stop dragging
             p.dragging = false;
+            p.root.removeClass(params.mod.dragging);
             self = undefined;
             start = {};
         }
@@ -551,7 +553,8 @@
                         url: this.href,
                         width: 0,
                         height: 0,
-                        loaded: false
+                        loaded: false,
+                        alt: thumbImg.alt
                     });
                     content += methods.getTemplate(j);
                     count++;
@@ -672,12 +675,15 @@
                     methods.loadSlide(galleryId, i);
                 }
             }
+
+            console.log(p.gallery);
         },
 
         loadSlide: function(galleryId, target) {
             var p = data[galleryId],
                 slide = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + target),
                 slideImg = slide.find('.' + params.slideImg),
+                alt = p.gallery[target].alt,
                 url = p.gallery[target].url,
                 img = document.createElement('img');
 
@@ -701,6 +707,13 @@
                 img.src = url;
 
                 slideImg.css('background-image', 'url(' + img.src + ')');
+
+                if (alt) {
+                    slideImg
+                        .addClass(params.mod.alt)
+                        .attr('data-alt', alt);
+                }
+
             })(target);
         },
 

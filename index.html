@@ -21,7 +21,7 @@
     <div class="photor__thumbs">
         <div class="photor__thumbsWrap">
             <a href="demo/images/1.jpg" class="photor__thumbsWrapItem">
-                <img src="demo/thumbs/1.jpg" alt="" class="photor__thumbsWrapItemImg">
+                <img src="demo/thumbs/1.jpg" alt="Подпись к фотографии" class="photor__thumbsWrapItemImg">
             </a>
             <a href="demo/images/2.jpg" class="photor__thumbsWrapItem">
                 <img src="demo/thumbs/2.jpg" alt="" class="photor__thumbsWrapItemImg">
@@ -53,7 +53,7 @@
     </div>
 </div>
 
-<script src="libs/jquery/jquery.js"></script>
+<script src="http://yandex.st/jquery/2.1.0/jquery.min.js"></script>
 <script src="dist/hand.min.js"></script>
 <script src="dist/photor.js"></script>
 <script>
@@ -84,6 +84,7 @@ $(document).ready(function() {
             current: '_current',
             dragging: '_dragging',
             disabled: '_disabled',
+            alt: '_alt',
 
             // Algorithm
             auto: '_auto',
