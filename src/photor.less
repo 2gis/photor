@@ -35,7 +35,7 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    // transform: translate3d(0);
+    transform: translate3d(0);
     -ms-touch-action: pan-y;
     touch-action: pan-y;
 
@@ -54,13 +54,9 @@ body {
             white-space: nowrap;
             -webkit-transform: translate3d(0, 0, 0);
             transform: translate3d(0, 0, 0);
-
-            &._effects {
-                -webkit-transition-property: left, -webkit-transform;
-                transition-property: left, transform;
-                transition-timing-function: cubic-bezier(0.1,0,.25,1);
-                transition-duration: .24s;
-                }
+            -webkit-transition-property: left, -webkit-transform;
+            transition-property: left, transform;
+            transition-timing-function: cubic-bezier(0.1,0,.25,1);
 
             &Slide {
                 width: 100%;
@@ -189,16 +185,9 @@ body {
             height: 100%;
             -webkit-transform: translate3d(0, 0, 0);
             transform: translate3d(0, 0, 0);
-            // -webkit-transition-property: left, -webkit-transform;
-            // transition-property: left, transform;
-            // transition-timing-function: cubic-bezier(0.1,0,.25,1);
-
-            &._effects {
-                -webkit-transition-property: left, -webkit-transform;
-                transition-property: left, transform;
-                transition-timing-function: cubic-bezier(0.1,0,.25,1);
-                transition-duration: .24s;
-                }
+            -webkit-transition-property: left, -webkit-transform;
+            transition-property: left, transform;
+            transition-timing-function: cubic-bezier(0.1,0,.25,1);
 
             &Item {
                 display: inline-block;
@@ -247,11 +236,6 @@ body {
 
         &Prev,
         &Next {
-            // cursor: move;
-            // cursor: -webkit-grabbing;
-            // cursor: -moz-grabbing;
-            // cursor: grabbing;
-            // visibility: hidden;
             pointer-events: none;
             }
         }
