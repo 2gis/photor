@@ -1,11 +1,43 @@
-﻿(function () {
+﻿var HANDJS = HANDJS || {};
+
+(function () {
     // If the user agent is already support Pointer Events, do nothing
     if (window.PointerEvent) {
         return;
     }
 
-    if (!Element.prototype.contains) {
-        Element.prototype.contains = function() {};
+    if (!window.Element.prototype.contains) {
+        window.Element.prototype.contains = function() {};
+    }
+
+    // Polyfilling indexOf for old browsers
+    if (!Array.prototype.indexOf) {
+        Array.prototype.indexOf = function (searchElement) {
+            var t = Object(this);
+            var len = t.length >>> 0;
+            if (len === 0) {
+                return -1;
+            }
+            var n = 0;
+            if (arguments.length > 0) {
+                n = Number(arguments[1]);
+                if (n != n) { // shortcut for verifying if it's NaN
+                    n = 0;
+                } else if (n != 0 && n != Infinity && n != -Infinity) {
+                    n = (n > 0 || -1) * Math.floor(Math.abs(n));
+                }
+            }
+            if (n >= len) {
+                return -1;
+            }
+            var k = n >= 0 ? n : Math.max(len - Math.abs(n), 0);
+            for (; k < len; k++) {
+                if (k in t && t[k] === searchElement) {
+                    return k;
+                }
+            }
+            return -1;
+        };
     }
 
     // Installing Hand.js
@@ -237,9 +269,9 @@
             }
 
             if (checkRegistration) {
-                generateTouchEventProxyIfRegistered(name, touchPoint, previousTargets[touchPoint.identifier], eventObject);
+                generateTouchEventProxyIfRegistered(name, touchPoint, previousTargets[touchPoint.identifier], eventObject, true);
             } else {
-                generateTouchEventProxy(name, touchPoint, previousTargets[touchPoint.identifier], eventObject);
+                generateTouchEventProxy(name, touchPoint, previousTargets[touchPoint.identifier], eventObject, true);
             }
         }
     };
@@ -364,7 +396,7 @@
 
     // Hooks
     interceptAddEventListener(window);
-    interceptAddEventListener(typeof HTMLElement !== "undefined" ? HTMLElement : Element);
+    interceptAddEventListener(HTMLElement || Element);
     interceptAddEventListener(document);
     interceptAddEventListener(HTMLBodyElement);
     interceptAddEventListener(HTMLDivElement);
@@ -384,7 +416,7 @@
     }
 
     interceptRemoveEventListener(window);
-    interceptRemoveEventListener(typeof HTMLElement !== "undefined" ? HTMLElement : Element);
+    interceptRemoveEventListener(HTMLElement || Element);
     interceptRemoveEventListener(document);
     interceptRemoveEventListener(HTMLBodyElement);
     interceptRemoveEventListener(HTMLDivElement);
@@ -431,10 +463,10 @@
     }
 
     function getFirstCommonNode(node1, node2) {
-        var parents1 = getDomUpperHierarchy(node1);
-        var parents2 = getDomUpperHierarchy(node2);
+        var parents1 = getDomUpperHierarchy(node1),
+            parents2 = getDomUpperHierarchy(node2),
+            lastmatch = null;
 
-        var lastmatch = null;
         while (parents1.length > 0 && parents1[0] == parents2.shift())
             lastmatch = parents1.shift();
         return lastmatch;
@@ -468,7 +500,7 @@
     // Handling events on window to prevent unwanted super-bubbling
     // All mouse events are affected by touch fallback
     function applySimpleEventTunnels(nameGenerator, eventGenerator) {
-        ["pointerdown", "pointermove", "pointerup", "pointerover", "pointerout"].map(function (eventName) {
+        ["pointerdown", "pointermove", "pointerup", "pointerover", "pointerout"].forEach(function (eventName) {
             window.addEventListener(nameGenerator(eventName), function (evt) {
                 if (!touching && findEventRegisteredNode(evt.target, eventName))
                     eventGenerator(evt, eventName, true);
@@ -492,7 +524,7 @@
             var foundNode = findEventRegisteredNode(evt.target, "pointerleave");
             if (!foundNode || foundNode === window)
                 return;
-            else if (!foundNode.contains(evt.relatedTarget)) {
+            else if (foundNode.contains && !foundNode.contains(evt.relatedTarget)) {
                 dispatchPointerLeave(foundNode, evt.relatedTarget, function (targetNode) {
                     eventGenerator(evt, "pointerleave", false, targetNode);
                 });
@@ -590,7 +622,6 @@
         }
     })();
 
-
     // Extension to navigator
     if (navigator.pointerEnabled === undefined) {
 
@@ -601,6 +632,81 @@
         if (navigator.msPointerEnabled) {
             navigator.maxTouchPoints = navigator.msMaxTouchPoints;
         }
+    }
+
+    // Handling touch-action css rule
+    if (document.styleSheets && document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", function () {
+
+            if (HANDJS.doNotProcessCSS) {
+                return;
+            }
+
+            var trim = function (string) {
+                return string.replace(/^\s+|\s+$/, '');
+            };
+
+            var processStylesheet = function (unfilteredSheet) {
+                var globalRegex = new RegExp(".+?{.*?}", "m");
+                var selectorRegex = new RegExp(".+?{", "m");
+
+                while (unfilteredSheet != "") {
+                    var filter = globalRegex.exec(unfilteredSheet);
+                    if (!filter) {
+                        break;
+                    }
+                    var block = filter[0];
+                    unfilteredSheet = trim(unfilteredSheet.replace(block, ""));
+                    var selectorText = trim(selectorRegex.exec(block)[0].replace("{", ""));
+
+                    // Checking if the user wanted to deactivate the default behavior
+                    if (block.replace(/\s/g, "").indexOf("touch-action:none") != -1) {
+                        var elements = document.querySelectorAll(selectorText);
+
+                        for (var elementIndex = 0; elementIndex < elements.length; elementIndex++) {
+                            var element = elements[elementIndex];
+
+                            if (element.style.msTouchAction !== undefined) {
+                                element.style.msTouchAction = "none";
+                            }
+                            else {
+                                element.handjs_forcePreventDefault = true;
+                            }
+                        }
+                    }
+                }
+            }; // Looking for touch-action in referenced stylesheets
+            try {
+                for (var index = 0; index < document.styleSheets.length; index++) {
+                    var sheet = document.styleSheets[index];
+
+                    if (sheet.href == undefined) { // it is an inline style
+                        continue;
+                    }
+
+                    // Loading the original stylesheet
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("get", sheet.href, false);
+                    xhr.send();
+
+                    var unfilteredSheet = xhr.responseText.replace(/(\n|\r)/g, "");
+
+                    processStylesheet(unfilteredSheet);
+                }
+            } catch (e) {
+                // Silently fail...
+            }
+
+            // Looking for touch-action in inline styles
+            var styles = document.getElementsByTagName("style");
+            for (var i = 0; i < styles.length; i++) {
+                var inlineSheet = styles[i];
+
+                var inlineUnfilteredSheet = trim(inlineSheet.innerHTML.replace(/(\n|\r)/g, ""));
+
+                processStylesheet(inlineUnfilteredSheet);
+            }
+        }, false);
     }
 
 })();
