@@ -1,3 +1,131 @@
+Event = (function() {
+    var guid = 0;
+
+    function fixEvent(event) {
+        event = event || window.event;
+
+        if (event.isFixed) {
+            return event;
+        }
+
+        event.isFixed = true;
+
+        event.preventDefault = event.preventDefault || function() {
+            this.returnValue = false;
+        };
+
+        event.stopPropagation = event.stopPropagaton || function() {
+            this.cancelBubble = true;
+        };
+
+        if (!event.target) {
+            event.target = event.srcElement;
+        }
+
+        if (!event.relatedTarget && event.fromElement) {
+            event.relatedTarget = event.fromElement == event.target ? event.toElement : event.fromElement;
+        }
+
+        if (event.pageX == null && event.clientX != null) {
+            var html = document.documentElement,
+                body = document.body;
+
+            event.pageX = event.clientX + (html && html.scrollLeft || body && body.scrollLeft || 0) - (html.clientLeft || 0);
+            event.pageY = event.clientY + (html && html.scrollTop || body && body.scrollTop || 0) - (html.clientTop || 0);
+        }
+
+        if (!event.which && event.button) {
+            event.which = (event.button & 1 ? 1 : ( event.button & 2 ? 3 : ( event.button & 4 ? 2 : 0 ) ));
+        }
+
+        return event;
+    }
+
+    /* Вызывается в контексте элемента всегда this = element */
+    function commonHandle(event) {
+        event = fixEvent(event);
+
+        var handlers = this.events[event.type];
+
+        for (var g in handlers) {
+            var handler = handlers[g],
+                ret = handler.call(this, event);
+
+            if (ret === false) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        }
+    }
+
+    return {
+        add: function(elem, type, handler) {
+            if (elem.setInterval && (elem != window && !elem.frameElement)) {
+                elem = window;
+            }
+
+            if (!handler.guid) {
+                handler.guid = ++guid;
+            }
+
+            if (!elem.events) {
+                elem.events = {};
+
+                elem.handle = function(event) {
+                    if (typeof Event !== "undefined") {
+                        return commonHandle.call(elem, event);
+                    }
+                };
+            }
+
+            if (!elem.events[type]) {
+                elem.events[type] = {};
+
+                if (elem.addEventListener) {
+                    elem.addEventListener(type, elem.handle, false);
+                } else if (elem.attachEvent) {
+                    elem.attachEvent("on" + type, elem.handle);
+                }
+            }
+        },
+
+        remove: function(elem, type, handler) {
+            var handlers = elem.events && elem.events[type];
+
+            if (!handlers) {
+                return;
+            }
+
+            delete handlers[handler.guid];
+
+            for(var i in handlers) {
+                return;
+            }
+
+            if (elem.removeEventListener) {
+                elem.removeEventListener(type, elem.handle, false);
+            } else {
+                if (elem.detachEvent) {
+                    elem.detachEvent("on" + type, elem.handle);
+                }
+            }
+
+            delete elem.events[type];
+
+            for (var j in elem.events) {
+                return;
+            }
+
+            try {
+                delete elem.handle;
+                delete elem.events;
+            } catch(e) { // IE
+                elem.removeAttribute("handle");
+                elem.removeAttribute("events");
+            }
+        }
+    };
+}());
 (function() {
 
     // Server side
@@ -14,6 +142,7 @@
         },
         data = [],
         evt = getSupportedEvents(),
+        handlers = [],
         params;
 
 
@@ -40,19 +169,36 @@
      * @param {function} handler Обработчик события
      * @param {bool} capture Capturing
      */
-    function addListener(element, e, handler, capture) {
+    function eventManager(element, on, e, handler, capture) {
         capture = !!capture;
 
-        if (element.addEventListener) {
-            element.addEventListener(e, handler, capture);
-        } else {
-            if (element.attachEvent) {
-                element.attachEvent('on' + e, handler);
+        if (on) {
+
+            if (element.addEventListener) {
+                element.addEventListener(e, handler, capture);
             } else {
-                element[e] = handler;
+                if (element.attachEvent) {
+                    element.attachEvent('on' + e, handler);
+                } else {
+                    element[e] = handler;
+                }
             }
+
+        } else {
+
+            if (element.removeEventListener) {
+                element.removeEventListener(e, handler, capture);
+            } else {
+                if (element.detachEvent) {
+                    element.detachEvent('on' + e, handler);
+                } else {
+                    element[e] = undefined;
+                }
+            }
+
         }
     }
+
 
     /*
      * Проверяет наличие класса у нативного HTML-элемент
@@ -156,35 +302,13 @@
             thumbs = p.thumbs,
             touch = {};
 
-        // Touch-события для области с фотографиями
-        addListener(control[0], evt[0], onStart, false);
-        addListener(control[0], evt[1], onMove, true);
-        addListener(control[0], evt[2], onEnd, false);
-        addListener(control[0], evt[3], onEnd, false);
-
-        // Touch-события для миниатюр
-        addListener(thumbs[0], evt[0], onStart, false);
-        addListener(thumbs[0], evt[1], onMove, true);
-        addListener(thumbs[0], evt[2], onEnd, false);
-        addListener(thumbs[0], evt[3], onEnd, false);
-
-        // Не переходить по ссылке миниатюры
-        p.thumb.on('click', function() {
-            e.preventDefault();
-        });
-
-        // Отменить встроенный драг-н-дроп для картинок
-        p.thumbImg.on('dragstart', function() {
-            e.preventDefault();
-        });
-
-
         /*
          * Обработчик touch start
          *
          * @param {event} e Событие pointerdown
          */
-        function onStart(e) {
+        handlers.onStart = function(e) {
+            console.log('Touch start');
             // запоминаем координаты и время
             touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
             touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
@@ -196,15 +320,16 @@
             touch.thumbsStartX = p.thumbsIndent;
 
             p.root.addClass(params.mod.dragging);
-        }
+        };
 
         /*
          * Обработчик touch move
          *
          * @param {event} e Событие pointermove
          */
-        function onMove(e) {
+        handlers.onMove = function(e) {
             if (touch.isPressed) {
+                console.log('Touch move');
 
                 // смещения
                 touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
@@ -218,7 +343,6 @@
                 touch.isMultitouch = touch.isMultitouch || (e.touches && e.touches.length) > 1;
 
                 if (touch.isMultitouch) {
-                    console.log('panic!');
                     end();
 
                     return;
@@ -251,14 +375,15 @@
                     }
                 }
             }
-        }
+        };
 
         /*
          * Обработчик touch end
          *
          * @param {event} e Событие pointerup
          */
-        function onEnd(e) {
+        handlers.onEnd = function(e) {
+            console.log('Touch end');
 
             // Ловим клик
             if (!touch.isSlide && !touch.isScroll && touch.isPressed) {
@@ -283,7 +408,7 @@
             }
 
             end();
-        }
+        };
 
         /*
          * Завершение перемещения
@@ -375,6 +500,28 @@
 
             return tail;
         }
+
+        // Touch-события для области с фотографиями
+        eventManager(control[0], true, evt[0], handlers.onStart, false);
+        eventManager(control[0], true, evt[1], handlers.onMove, true);
+        eventManager(control[0], true, evt[2], handlers.onEnd, false);
+        eventManager(control[0], true, evt[3], handlers.onEnd, false);
+
+        // Touch-события для миниатюр
+        eventManager(thumbs[0], true, evt[0], handlers.onStart, false);
+        eventManager(thumbs[0], true, evt[1], handlers.onMove, true);
+        eventManager(thumbs[0], true, evt[2], handlers.onEnd, false);
+        eventManager(thumbs[0], true, evt[3], handlers.onEnd, false);
+
+        // Не переходить по ссылке миниатюры
+        p.thumb.on('click', function() {
+            e.preventDefault();
+        });
+
+        // Отменить встроенный драг-н-дроп для картинок
+        p.thumbImg.on('dragstart', function() {
+            e.preventDefault();
+        });
     }
 
     /*
@@ -385,12 +532,15 @@
     function bindResize(galleryId) {
         var p = data[galleryId];
 
-        addListener(window, 'resize', debounce(resize, 84));
+        handlers.resize = debounce(resize, 84);
+
+        eventManager(window, true, 'resize', handlers.resize);
 
         /*
          * Resize handler
          */
         function resize() {
+            console.log('Resize');
             p.viewportWidth = p.viewport.outerWidth();
             p.viewportHeight = p.viewport.outerHeight();
             p.controlWidth = p.control.outerWidth();
@@ -414,8 +564,10 @@
     function bindKeyboard(galleryId) {
         var p = data[galleryId];
 
-        addListener(window, 'keydown', function(e) {
+        handlers.keydown = function(e) {
             var key = e.which || e.keyCode;
+
+            console.log('Keydown ' + key);
 
             switch(key) {
                 // Space
@@ -433,15 +585,18 @@
                     methods.next(galleryId);
                     break;
             }
-        }, false);
+        };
+
+        eventManager(window, true, 'keydown', handlers.keydown, false);
     }
 
     function bindTransitionEnd(galleryId) {
         var p = data[galleryId];
 
-        addListener(p.layer[0], 'webkitTransitionEnd', transitionEnd, false);
+        eventManager(p.layer[0], 'transitionend', handler.transitionEnd, false);
 
-        function transitionEnd() {
+        handlers.transitionEnd = function(e) {
+            console.log('Transition end');
             p.layer.css('transition-duration', '0s');
 
             for (var i = 0; i < p.count; i++) {
@@ -453,7 +608,7 @@
                     elem.removeClass('_hidden');
                 }
             }
-        }
+        };
 
     }
 
@@ -544,13 +699,56 @@
             });
         },
 
-        destroy: function() {
+        destroy: function(galleryId) {
+
+            if (typeof galleryId != 'undefined') {
+                var p = data[galleryId];
+
+            } else {
+
+            }
+
+            function clearBinds(id) {
+                // Touch-события для области с фотографиями
+                //eventManager(data[id].control[0], false, evt[0], handlers.onStart);
+                //eventManager(data[id].control[0], false, evt[1], handlers.onMove);
+                //eventManager(data[id].control[0], false, evt[2], handlers.onEnd);
+                //eventManager(data[id].control[0], false, evt[3], handlers.onEnd);
+
+                // Touch-события для миниатюр
+                //eventManager(data[id].thumbs[0], false, evt[0], handlers.onStart);
+                //eventManager(data[id].thumbs[0], false, evt[1], handlers.onMove);
+                //eventManager(data[id].thumbs[0], false, evt[2], handlers.onEnd);
+                //eventManager(data[id].thumbs[0], false, evt[3], handlers.onEnd);
+
+                // Transition end
+                //eventManager(data[id].layer[0], false, 'transitionend', handlers.transitionEnd);
+
+                // Keydown
+                //eventManager(window, false, 'keydown', handlers.transitionEnd);
+
+                // Resize
+                //eventManager(window, false, 'resize', handlers.transitionEnd);
+
+                // Не переходить по ссылке миниатюры
+                //data[id].thumb.off();
+
+                // Отменить встроенный драг-н-дроп для картинок
+                //data[id].thumbImg.off();
+            }
+
+            // $(window).unbind('.photor');
+
+            console.log('destroy');
+
+
+
             // $(window).unbind('.photor'); // @TODO НУ ТЫ ПОНЕЛ
 
             // @TODO Не убивай соседний инстанс, друг
-            $('.' + params.next).off();
-            $('.' + params.prev).off();
-            $('.' + params.thumb).off();
+            // $('.' + params.next).off();
+            // $('.' + params.prev).off();
+            // $('.' + params.thumb).off();
         },
 
         handlers: function(galleryId) {
@@ -567,6 +765,7 @@
             // Resize
             bindResize(galleryId);
 
+            // Transition end
             bindTransitionEnd(galleryId);
         },
 
