@@ -80,10 +80,10 @@
      * @return {Array} Массив с названиями событий
      */
     function getSupportedEvents() {
-        var pointerEnabled = navigator.pointerEnabled;
+        var touchEnabled = !!('ontouchstart' in window);
 
-        if (pointerEnabled) {
-            return ['pointerdown', 'pointermove', 'pointerup', 'pointerleave'];
+        if (touchEnabled) {
+            return ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
         }
 
         return ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
@@ -152,163 +152,116 @@
      */
     function bindControl(galleryId) {
         var p = data[galleryId],
+            control = p.control,
+            thumbs = p.thumbs,
+            touch = {};
 
-            // Elements and properties
-            control = p.control[0],
-            thumbs = p.thumbs[0],
-            self,
-            selfWidth,
+        // Touch-события для области с фотографиями
+        addListener(control[0], evt[0], onStart, false);
+        addListener(control[0], evt[1], onMove, true);
+        addListener(control[0], evt[2], onEnd, false);
+        addListener(control[0], evt[3], onEnd, false);
 
-            // Scrolling
-            isScrolling,
-
-            // Multitouch
-            fingers = 0,
-            isMultitouch = false,
-
-            // Thumbs
-            thumbsStartIndent = 0,
-            thumbsStartTime,
-            thumbsEndTime,
-
-            // Coordinates
-            start = {},
-            delta = {};
-
-        p.dragging = false;
-        p.thumbsIndent = 0;
-
-        // Перетаскивание и клики по основной части галереи
-        addListener(control, evt[0], touchstart, false);
-        addListener(control, evt[1], throttle(touchmove, 13), true);
-        addListener(control, evt[2], touchend, false);
-        addListener(control, evt[3], touchend, false);
-
-        // Перетаскивание и клики по по миниатюрам
-        addListener(thumbs, evt[0], touchstart, false);
-        addListener(thumbs, evt[1], throttle(touchmove, 13), true);
-        addListener(thumbs, evt[2], touchend, false);
-        addListener(thumbs, evt[3], touchend, false);
+        // Touch-события для миниатюр
+        addListener(thumbs[0], evt[0], onStart, false);
+        addListener(thumbs[0], evt[1], onMove, true);
+        addListener(thumbs[0], evt[2], onEnd, false);
+        addListener(thumbs[0], evt[3], onEnd, false);
 
         // Не переходить по ссылке миниатюры
-        for (var i = 0, len = p.thumb.length; i < len; i++) {
-            addListener(p.thumbImg[i], 'click', function(e) {
-                e.preventDefault();
-            }, false);
-        }
+        p.thumb.on('click', function() {
+            e.preventDefault();
+        });
 
         // Отменить встроенный драг-н-дроп для картинок
-        for (i = 0, len = p.thumbImg.length; i < len; i++) {
-            addListener(p.thumbImg[i], 'dragstart', function(e) {
-                e.preventDefault();
-            }, false);
-        }
+        p.thumbImg.on('dragstart', function() {
+            e.preventDefault();
+        });
+
 
         /*
-         * Обработчик pointerdown
+         * Обработчик touch start
          *
          * @param {event} e Событие pointerdown
          */
-        function touchstart(e) {
-            fingers++;
+        function onStart(e) {
+            // запоминаем координаты и время
+            touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
+            touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
+            touch.t1 = new Date();
+            touch.isPressed = true;
 
-            if (!p.dragging) {
-                var x = e.pageX || e.touches[0].pageX,
-                    y = e.pageY || e.touches[0].pageY;
+            // Запоминаем элемент, на котором вызвано событие
+            touch.isThumbs = hasClass(this, params.thumbs);
+            touch.thumbsStartX = p.thumbsIndent;
 
-                start = {x: x, y: y};
-                delta = {x: 0, y: 0};
-
-                p.dragging = true;
-                p.root.addClass(params.mod.dragging);
-
-                self = this;
-                selfWidth = self.offsetWidth;
-
-                if (hasClass(self, params.thumbs) && p.thumbsDragging) {
-                    thumbsStartIndent = p.thumbsIndent;
-                    thumbsStartTime = new Date();
-
-                    p.thumbsLayer.css('transition-duration', '0s');
-                }
-            }
+            p.root.addClass(params.mod.dragging);
         }
 
         /*
-         * Обработчик pointermove
+         * Обработчик touch move
          *
          * @param {event} e Событие pointermove
          */
-        function touchmove(e) {
-            if (p.dragging) {
-                var x = e.pageX || touches[0].pageX,
-                    y = e.pageY || touches[0].pageY;
+        function onMove(e) {
+            if (touch.isPressed) {
+
+                // смещения
+                touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
+                touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
+
+                // абсолютные значения смещений
+                touch.shiftXAbs = Math.abs(touch.shiftX);
+                touch.shiftYAbs = Math.abs(touch.shiftY);
 
                 // Detect multitouch
-                isMultitouch = isMultitouch || fingers > 1;
+                touch.isMultitouch = touch.isMultitouch || (e.touches && e.touches.length) > 1;
 
-                // Detect scrolling (for windows and windows phone touch-action: pan-y)
-                if (typeof isScrolling == 'undefined') {
-                    isScrolling = !!(isScrolling || Math.abs(x - start.x) < Math.abs(y - start.y));
-                }
-
-                // Жест прерван / отменен (используем нативное поведение)
-                if (!p.dragging || isMultitouch || isScrolling) {
-                    p.dragging = false;
-
-                    // Завершаем взаимодействие с UI
-                    if (hasClass(self, params.control)) {
-                        slidesEnd();
-                    } else {
-                        if (p.thumbsDragging) {
-                            thumbsEnd();
-                        }
-                    }
+                if (touch.isMultitouch) {
+                    console.log('panic!');
+                    end();
 
                     return;
-                } else {
-                    e.preventDefault();
                 }
 
-                // Continue drag
-                delta = {x: x - start.x, y: y - start.y};
+                // если мы ещё не определились
+                if (!touch.isSlide && !touch.isScroll) {
+                    // если вертикальное смещение - скроллим пока не отпустили палец
+                    if (touch.shiftYAbs >= 5 && touch.shiftYAbs > touch.shiftXAbs) {
+                        touch.isScroll = true;
+                    }
 
-                if (hasClass(self, params.control)) {
-                    slidesMove();
-                } else {
-                    if (p.thumbsDragging) {
-                        thumbsMove();
+                    // если горизонтальное - слайдим
+                    if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
+                        touch.isSlide = true;
+                    }
+                }
+
+                // если слайдим
+                if (touch.isSlide) {
+                    // запрещаем скролл
+                    e.preventDefault();
+
+                    if (touch.isThumbs) {
+                        if (p.thumbsDragging) {
+                            thumbsMove();
+                        }
+                    } else {
+                        slidesMove();
                     }
                 }
             }
         }
 
         /*
-         * Обработчик pointerup
+         * Обработчик touch end
          *
          * @param {event} e Событие pointerup
          */
-        function touchend(e) {
-            if (fingers != 0) {
-                fingers--;
-            }
+        function onEnd(e) {
 
-            if (typeof self == 'undefined') {
-                return;
-            }
-
-            var isMoved = Math.abs(delta.x) > 20 || Math.abs(delta.y) > 20;
-
-            if (p.dragging && isMoved && hasClass(self, params.control)) {
-                slidesEnd();
-            }
-
-            if (p.thumbsDragging && isMoved && hasClass(self, params.thumbs)) {
-                thumbsEnd();
-            }
-
-            // Если указатель не двигался, значит обрабатываем клик
-            if (!isMoved && !isScrolling) {
+            // Ловим клик
+            if (!touch.isSlide && !touch.isScroll && touch.isPressed) {
 
                 // Назад
                 if (hasClass(e.target, params.prev)) {
@@ -322,50 +275,49 @@
 
                 // Клик по миниатюре
                 if (hasClass(e.target, params.thumbImg)) {
-                    var target = parseInt(e.target.getAttribute('data-rel'));
-
-                    methods.go(galleryId, target);
-                    e.stopPropagation();
+                    methods.go(galleryId, parseInt(e.target.getAttribute('data-rel')));
                 }
 
                 e.stopPropagation();
                 e.preventDefault(); // Нужно для отмены зума по doubletap
             }
 
-            // Reset scrolling detection
-            isScrolling = undefined;
+            end();
+        }
 
-            // Update multitouch info
-            isMultitouch = !!fingers;
+        /*
+         * Завершение перемещения
+         */
+        function end() {
+            if (touch.isSlide) {
+                if (touch.isThumbs) {
+                    thumbsEnd();
+                } else {
+                    slidesEnd();
+                }
+            }
 
-            // Stop dragging
-            p.dragging = false;
-            p.root.removeClass(params.mod.dragging);
-            self = undefined;
-            start = {};
+            touch = {};
         }
 
         /*
          * Движение слайдов во время перетаскивания
          */
         function slidesMove() {
-            var relativeDeltaX, indent;
+            if ((p.current == 0 && touch.shiftX > 0) || (p.current == p.count && touch.shiftX < 0)) {
+                touch.shiftX = touch.shiftX / 3;
+            }
 
-            relativeDeltaX = delta.x / selfWidth * 100;
-            indent = -p.current * 100 + relativeDeltaX;
-
-            p.layer.css(methods.setIndent(indent));
+            p.layer.css(methods.setIndent(100 * (touch.shiftX / p.controlWidth - p.current)));
         }
 
         /*
          * Завершение движения слайдов
          */
         function slidesEnd() {
-            var target = delta.x > 0 ? p.current + 1 : p.current - 1;
-
             // Transition executes if delta more then 5% of container width
-            if (Math.abs(delta.x) > selfWidth * 0.05) {
-                if (delta.x < 0) {
+            if (Math.abs(touch.shiftX) > p.controlWidth * 0.05) {
+                if (touch.shiftX < 0) {
                     methods.next(galleryId);
                 } else {
                     methods.prev(galleryId);
@@ -376,30 +328,21 @@
         }
 
         /*
-         * Движение слайдов прервано
-         */
-        function slidesCancel() {}
-
-        /*
          * Движение миниатюр при перетаскивании
          */
         function thumbsMove() {
-            var indent = delta.x + thumbsStartIndent;
-
-            // console.log(delta.x, thumbsStartIndent);
-
-            p.thumbsIndent = indent;
-            p.thumbsLayer.css(methods.setIndent(indent, 'px'));
+            p.thumbsIndent = touch.shiftX + touch.thumbsStartX;
+            p.thumbsLayer.css(methods.setIndent(p.thumbsIndent, 'px'));
         }
 
         /*
          * Завершение движения миниатюр
          */
         function thumbsEnd() {
-            if (p.thumbsDragging) {
-                var direction = delta.x < 0 ? -1 : 1;
+            if (p.thumbsDragging && touch.isSlide) {
+                var direction = touch.shiftX < 0 ? -1 : 1;
 
-                thumbsEndTime = new Date();
+                touch.t2 = new Date();
                 p.thumbsIndent = calcTailAnimation(p.thumbsIndent, direction);
 
                 p.thumbsLayer
@@ -416,7 +359,7 @@
          * @returns {number} Значение координаты слоя с миниатюрами в пикселях
          */
         function calcTailAnimation(currentIndent, direction) {
-            var speed = Math.abs(10 * delta.x / (thumbsEndTime - thumbsStartTime)),
+            var speed = Math.abs(10 * touch.shiftX / (touch.t2 - touch.t1)),
                 tail, limit;
 
             tail = direction * parseInt(Math.pow(speed, 2)) + currentIndent;
@@ -450,6 +393,10 @@
         function resize() {
             p.viewportWidth = p.viewport.outerWidth();
             p.viewportHeight = p.viewport.outerHeight();
+            p.controlWidth = p.control.outerWidth();
+            p.controlHeight = p.control.outerHeight();
+            p.thumbsWidth = p.thumbs.outerWidth();
+            p.thumbsHeight = p.thumbs.outerHeight();
 
             p.slide.each(function(i) {
                 methods.position(galleryId, i);
@@ -576,11 +523,15 @@
                 // Settings
                 p.current = params.current;
                 p.count = count - 1;
-                p.dragging = false;
                 p.thumbsDragging = false;
-                p.allowClick = true;
+                p.thumbsIndent = 0;
+
                 p.viewportWidth = p.viewport.outerWidth();
                 p.viewportHeight = p.viewport.outerHeight();
+                p.controlWidth = p.control.outerWidth();
+                p.controlHeight = p.control.outerHeight();
+                p.thumbsWidth = p.thumbs.outerWidth();
+                p.thumbsHeight = p.thumbs.outerHeight();
                 p.thumbSrc = thumbs;
 
                 data[galleryId] = p;
@@ -676,7 +627,7 @@
                 }
             }
 
-            console.log(p.gallery);
+            // console.log(p.gallery);
         },
 
         loadSlide: function(galleryId, target) {
