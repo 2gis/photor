@@ -55,6 +55,10 @@ body {
   -webkit-transition-property: left, -webkit-transform;
   transition-property: left, transform;
   transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
+  transition-duration: .24s;
+}
+._noeffects .photor__viewportLayer {
+  transition-duration: 0s;
 }
 .photor__viewportLayerSlide {
   width: 100%;
@@ -194,6 +198,10 @@ body {
   -webkit-transition-property: left, -webkit-transform;
   transition-property: left, transform;
   transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
+  transition-duration: .24s;
+}
+._noeffects .photor__thumbsWrap {
+  transition-duration: 0s;
 }
 .photor__thumbsWrapItem {
   display: inline-block;
@@ -239,4 +247,7 @@ body {
   cursor: -webkit-grabbing;
   cursor: -moz-grabbing;
   cursor: grabbing;
+}
+#out {
+  font: 14px/20px Monospace;
 }
