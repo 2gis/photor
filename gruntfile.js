@@ -21,7 +21,7 @@ module.exports = function(grunt) {
 
         concat: {
             js: {
-                src: ['partials/start.js', 'src/**/*.js', 'partials/end.js'],
+                src: ['src/**/*.js'],
                 dest: 'dist/photor.js'
             }
         },
@@ -30,15 +30,13 @@ module.exports = function(grunt) {
             options: {
                 jshintrc: '.jshintrc'
             },
-            files: ['src/**/*.js', 'gruntfile.js', 'libs/hand.js']
+            files: ['src/**/*.js', 'gruntfile.js']
         },
 
         uglify: {
             regular: {
                 files: {
-                    'dist/photor.min.js': ['<%= concat.js.dest %>'],
-                    'dist/hand.min.js': ['libs/hand.js'],
-                    'dist/fast-click.js': ['libs/fast-click.js']
+                    'dist/photor.min.js': ['<%= concat.js.dest %>']
                 }
             }
         },
@@ -62,7 +60,7 @@ module.exports = function(grunt) {
         connect: {
             server: {
                 options: {
-                    port: 3000,
+                    port: 4000,
                     base: ''
                 }
             }
