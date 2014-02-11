@@ -535,7 +535,20 @@
         init: function(options) {
             params = $.extend({
 
-                // Modifiers
+                control: 'photor__viewportControl',
+                next: 'photor__viewportControlNext',
+                prev: 'photor__viewportControlPrev',
+                thumbs: 'photor__thumbs',
+                thumbsLayer: 'photor__thumbsWrap',
+                thumb: 'photor__thumbsWrapItem',
+                thumbImg: 'photor__thumbsWrapItemImg',
+                thumbFrame: 'photor__thumbsWrapFrame',
+                viewport: 'photor__viewport',
+                layer: 'photor__viewportLayer',
+                slide: 'photor__viewportLayerSlide',
+                slideImg: 'photor__viewportLayerSlideImg',
+
+                // State modifiers
                 _loading: '_loading',       // Фотография не загружена
                 _current: '_current',       // Текущий слайд или миниатюра
                 _dragging: '_dragging',     // Перетаскивание

@@ -60,46 +60,7 @@
 <script>
 $(document).ready(function() {
 
-    $('.photor').photor({
-
-        control: 'photor__viewportControl',
-        next: 'photor__viewportControlNext',
-        prev: 'photor__viewportControlPrev',
-        thumbs: 'photor__thumbs',
-        thumbsLayer: 'photor__thumbsWrap',
-        thumb: 'photor__thumbsWrapItem',
-        thumbImg: 'photor__thumbsWrapItemImg',
-        thumbFrame: 'photor__thumbsWrapFrame',
-        viewport: 'photor__viewport',
-        layer: 'photor__viewportLayer',
-        slide: 'photor__viewportLayerSlide',
-        slideImg: 'photor__viewportLayerSlideImg',
-
-        // Settings
-        delay: 300,
-        keyboard: true,
-
-        mod: {
-            // States
-            loading: '_loading',
-            current: '_current',
-            dragging: '_dragging',
-            disabled: '_disabled',
-            alt: '_alt',
-
-            // Algorithm
-            auto: '_auto',
-            center: '_center',
-
-            // Orientation
-            portrait: '_portrait',
-            landscape: '_landscape',
-
-            // Thumbs
-            draggable: '_draggable'
-        }
-
-    });
+    $('.photor').photor();
 
     // $('.photor').photor('destroy');
 
