@@ -41,22 +41,10 @@
      * @param {function} handler Обработчик события
      * @param {bool} capture Capturing
      */
-    function eventManager(element, on, e, handler, capture) {
+    function eventManager(element, e, handler, capture, off) {
         capture = !!capture;
 
-        if (on) {
-
-            if (element.addEventListener) {
-                element.addEventListener(e, handler, capture);
-            } else {
-                if (element.attachEvent) {
-                    element.attachEvent('on' + e, handler);
-                } else {
-                    element[e] = handler;
-                }
-            }
-
-        } else {
+        if (off) {
 
             if (element.removeEventListener) {
                 element.removeEventListener(e, handler, capture);
@@ -65,6 +53,18 @@
                     element.detachEvent('on' + e, handler);
                 } else {
                     element[e] = undefined;
+                }
+            }
+
+        } else {
+
+            if (element.addEventListener) {
+                element.addEventListener(e, handler, capture);
+            } else {
+                if (element.attachEvent) {
+                    element.attachEvent('on' + e, handler);
+                } else {
+                    element[e] = handler;
                 }
             }
 
@@ -373,27 +373,64 @@
             return tail;
         }
 
-        // Touch-события для области с фотографиями
-        eventManager(control[0], true, evt[0], handlers.onStart, false);
-        eventManager(control[0], true, evt[1], handlers.onMove, true);
-        eventManager(control[0], true, evt[2], handlers.onEnd, false);
-        eventManager(control[0], true, evt[3], handlers.onEnd, false);
-
-        // Touch-события для миниатюр
-        eventManager(thumbs[0], true, evt[0], handlers.onStart, false);
-        eventManager(thumbs[0], true, evt[1], handlers.onMove, true);
-        eventManager(thumbs[0], true, evt[2], handlers.onEnd, false);
-        eventManager(thumbs[0], true, evt[3], handlers.onEnd, false);
-
-        // Не переходить по ссылке миниатюры
-        p.thumb.on('click', function() {
-            e.preventDefault();
+        // Touch-события
+        p.events.push({
+            element: control[0],
+            event: evt[0],
+            handler: handlers.onStart
+        }, {
+            element: control[0],
+            event: evt[1],
+            handler: handlers.onMove,
+            capture: true
+        }, {
+            element: control[0],
+            event: evt[2],
+            handler: handlers.onEnd
+        }, {
+            element: control[0],
+            event: evt[3],
+            handler: handlers.onEnd
+        }, {
+            element: thumbs[0],
+            event: evt[0],
+            handler: handlers.onStart
+        }, {
+            element: thumbs[0],
+            event: evt[1],
+            handler: handlers.onMove,
+            capture: true
+        }, {
+            element: thumbs[0],
+            event: evt[2],
+            handler: handlers.onEnd
+        }, {
+            element: thumbs[0],
+            event: evt[3],
+            handler: handlers.onEnd
         });
 
-        // Отменить встроенный драг-н-дроп для картинок
-        p.thumbImg.on('dragstart', function() {
-            e.preventDefault();
-        });
+        // Отмена перехода по ссылке миниатюры
+        for (var i = 0; i < p.thumb.length; i++) {
+            p.events.push({
+                element: p.thumb[i],
+                event: 'click',
+                handler: function() {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // Отмена встроенного перетаскивания для картинок
+        for (var j = 0; j < p.thumbImg.length; j++) {
+            p.events.push({
+                element: p.thumbImg[j],
+                event: 'dragstart',
+                handler: function() {
+                    e.preventDefault();
+                }
+            });
+        }
     }
 
     /*
@@ -404,9 +441,7 @@
     function bindResize(galleryId) {
         var p = data[galleryId];
 
-        handlers.resize = debounce(resize, 84);
-
-        eventManager(window, true, 'resize', handlers.resize);
+        // eventManager(window, true, 'resize', handlers.resize);
 
         /*
          * Resize handler
@@ -426,6 +461,13 @@
 
             methods.setCurrentThumb(galleryId, p.current, 1);
         }
+
+        handlers.resize = debounce(resize, 84);
+        p.events.push({
+            element: window,
+            event: 'resize',
+            handler: handlers.resize
+        });
     }
 
     /*
@@ -459,13 +501,16 @@
             }
         };
 
-        eventManager(window, true, 'keydown', handlers.keydown, false);
+        // eventManager(window, true, 'keydown', handlers.keydown, false);
+        p.events.push({
+            element: window,
+            event: 'keydown',
+            handler: handlers.keydown
+        });
     }
 
     function bindTransitionEnd(galleryId) {
         var p = data[galleryId];
-
-        eventManager(p.layer[0], 'transitionend', handler.transitionEnd, false);
 
         handlers.transitionEnd = function(e) {
             console.log('Transition end');
@@ -481,6 +526,13 @@
                 }
             }
         };
+
+        // eventManager(p.layer[0], 'transitionend', handlers.transitionEnd, false);
+        p.events.push({
+            element: window,
+            event: 'transitionEnd',
+            handler: handlers.transitionEnd
+        });
 
     }
 
@@ -552,6 +604,7 @@
                 p.count = count - 1;
                 p.thumbsDragging = false;
                 p.thumbsIndent = 0;
+                p.events = [];
 
                 p.viewportWidth = p.viewport.outerWidth();
                 p.viewportHeight = p.viewport.outerHeight();
@@ -574,71 +627,46 @@
         destroy: function(galleryId) {
 
             if (typeof galleryId != 'undefined') {
-                var p = data[galleryId];
-
+                // Удаляем один инстанс галереи
+                unbindInstance(galleryId);
             } else {
-
+                // Удаляем все инстансы
+                for (var key in data) {
+                    unbindInstance(key);
+                }
             }
 
-            function clearBinds(id) {
-                // Touch-события для области с фотографиями
-                //eventManager(data[id].control[0], false, evt[0], handlers.onStart);
-                //eventManager(data[id].control[0], false, evt[1], handlers.onMove);
-                //eventManager(data[id].control[0], false, evt[2], handlers.onEnd);
-                //eventManager(data[id].control[0], false, evt[3], handlers.onEnd);
+            /*
+             * Удалить обработчики для указанного инстанса галереи
+             *
+             * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+             */
+            function unbindInstance(id) {
+                var p = data[id];
 
-                // Touch-события для миниатюр
-                //eventManager(data[id].thumbs[0], false, evt[0], handlers.onStart);
-                //eventManager(data[id].thumbs[0], false, evt[1], handlers.onMove);
-                //eventManager(data[id].thumbs[0], false, evt[2], handlers.onEnd);
-                //eventManager(data[id].thumbs[0], false, evt[3], handlers.onEnd);
-
-                // Transition end
-                //eventManager(data[id].layer[0], false, 'transitionend', handlers.transitionEnd);
-
-                // Keydown
-                //eventManager(window, false, 'keydown', handlers.transitionEnd);
-
-                // Resize
-                //eventManager(window, false, 'resize', handlers.transitionEnd);
-
-                // Не переходить по ссылке миниатюры
-                //data[id].thumb.off();
-
-                // Отменить встроенный драг-н-дроп для картинок
-                //data[id].thumbImg.off();
+                for (var i = 0, len = p.events.length; i < len; i++) {
+                    eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture, 1);
+                }
             }
-
-            // $(window).unbind('.photor');
-
-            console.log('destroy');
-
-
-
-            // $(window).unbind('.photor'); // @TODO НУ ТЫ ПОНЕЛ
-
-            // @TODO Не убивай соседний инстанс, друг
-            // $('.' + params.next).off();
-            // $('.' + params.prev).off();
-            // $('.' + params.thumb).off();
         },
 
         handlers: function(galleryId) {
             var p = data[galleryId];
 
-            // Swipe slides
             bindControl(galleryId);
+            bindResize(galleryId);
+            bindTransitionEnd(galleryId);
 
-            // Keyboard
             if (params.keyboard) {
                 bindKeyboard(galleryId);
             }
 
-            // Resize
-            bindResize(galleryId);
+            console.log(p.events);
 
-            // Transition end
-            bindTransitionEnd(galleryId);
+            for (var i = 0, len = p.events.length; i < len; i++) {
+                eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture);
+            }
+
         },
 
         go: function(galleryId, target, delay) {

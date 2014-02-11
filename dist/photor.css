@@ -26,8 +26,8 @@ body {
 }
 .photor {
   position: relative;
-  width: 100%;
-  height: 100%;
+  width: 400px;
+  height: 300px;
   background: #090907;
   -webkit-user-select: none;
   -moz-user-select: none;
