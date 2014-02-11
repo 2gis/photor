@@ -192,6 +192,9 @@
             touch.thumbsStartX = p.thumbsIndent;
 
             p.root.addClass(params.mod.dragging);
+
+            control.css('transition-duration', '0s');
+            thumbs.css('transition-duration', '0s');
         };
 
         /*
