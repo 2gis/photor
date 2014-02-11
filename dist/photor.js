@@ -180,7 +180,6 @@
          * @param {event} e Событие pointerdown
          */
         handlers.onStart = function(e) {
-            console.log('Touch start');
             // запоминаем координаты и время
             touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
             touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
@@ -204,8 +203,6 @@
          */
         handlers.onMove = function(e) {
             if (touch.isPressed) {
-                console.log('Touch move');
-
                 // смещения
                 touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
                 touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
@@ -258,8 +255,6 @@
          * @param {event} e Событие pointerup
          */
         handlers.onEnd = function(e) {
-            console.log('Touch end');
-
             // Ловим клик
             if (!touch.isSlide && !touch.isScroll && touch.isPressed) {
 
@@ -450,7 +445,6 @@
          * Resize handler
          */
         function resize() {
-            console.log('Resize');
             p.viewportWidth = p.viewport.outerWidth();
             p.viewportHeight = p.viewport.outerHeight();
             p.controlWidth = p.control.outerWidth();
@@ -484,8 +478,6 @@
         handlers.keydown = function(e) {
             var key = e.which || e.keyCode;
 
-            console.log('Keydown ' + key);
-
             switch(key) {
                 // Space
                 case 32:
@@ -516,7 +508,6 @@
         var p = data[galleryId];
 
         handlers.transitionEnd = function(e) {
-            console.log('Transition end');
             p.layer.css('transition-duration', '0s');
 
             for (var i = 0; i < p.count; i++) {
