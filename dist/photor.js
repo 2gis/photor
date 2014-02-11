@@ -190,10 +190,10 @@
             touch.isThumbs = hasClass(this, params.thumbs);
             touch.thumbsStartX = p.thumbsIndent;
 
-            p.root.addClass(params.mod.dragging);
+            p.root.addClass(params._dragging);
 
-            control.css('transition-duration', '0s');
-            thumbs.css('transition-duration', '0s');
+            p.layer.css('transition-duration', '0s');
+            p.thumbsLayer.css('transition-duration', '0s');
         };
 
         /*
@@ -293,6 +293,7 @@
             }
 
             touch = {};
+            p.root.removeClass(params._dragging);
         }
 
         /*
@@ -534,10 +535,32 @@
         init: function(options) {
             params = $.extend({
 
-                current: 0,
-                count: 0,
-                loadingRange: 2,
-                slideIdPrefix: '_',
+                // Modifiers
+                _loading: '_loading',       // Фотография не загружена
+                _current: '_current',       // Текущий слайд или миниатюра
+                _dragging: '_dragging',     // Перетаскивание
+                _disabled: '_disabled',     // Элемент управления запрещен
+                _alt: '_alt',               // Есть подпись к фотографиям
+
+                // Algorithm
+                _auto: '_auto',             // Фотография больше вьюпорта
+                _center: '_center',         // Фотография меньше вьюпорта
+
+                // Orientation
+                _portrait: '_portrait',     // Соотношение ширины к высоте фотографии меньше вьюпорта
+                _landscape: '_landscape',   // Соотношение ширины к высоте фотографии больше вьюпорта
+
+                // Thumbs
+                _draggable: '_draggable',   // Разрешено перетаскивание на миниатюрах
+
+                // Settings
+                current: 0,                 // Текуший слайд
+                count: 0,                   // Количество фотографий
+                loadingRange: 1,            // Диапазон подгружаемых фотографий (отн. текущей)
+                slideIdPrefix: '_',         // Префикс для класса с номером слайда
+                delay: 300,                 // Время анимации для слайдов
+                keyboard: true,             // Управление с клавиатуры
+
                 transform: getSupportedTransform()
 
             }, options);
@@ -655,8 +678,6 @@
                 bindKeyboard(galleryId);
             }
 
-            console.log(p.events);
-
             for (var i = 0, len = p.events.length; i < len; i++) {
                 eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture);
             }
@@ -678,10 +699,10 @@
 
             // Mark slide as current
             methods.setCurrentThumb(galleryId, target);
-            p.slide.removeClass(params.mod.current);
+            p.slide.removeClass(params._current);
             p.slide
                 .filter('.' + params.slideIdPrefix + target)
-                .addClass(params.mod.current);
+                .addClass(params._current);
 
             // Load slide's range
             methods.loadSlides(galleryId, target);
@@ -719,8 +740,6 @@
                     methods.loadSlide(galleryId, i);
                 }
             }
-
-            // console.log(p.gallery);
         },
 
         loadSlide: function(galleryId, target) {
@@ -740,7 +759,7 @@
                         p.gallery[rel].width = this.width;
                         p.gallery[rel].height = this.height;
 
-                        slide.removeClass(params.mod.loading);
+                        slide.removeClass(params._loading);
 
                         methods.position(galleryId, rel);
                     })
@@ -754,7 +773,7 @@
 
                 if (alt) {
                     slideImg
-                        .addClass(params.mod.alt)
+                        .addClass(params._alt)
                         .attr('data-alt', alt);
                 }
 
@@ -871,23 +890,23 @@
             // Algorithm
             if (p.viewportWidth > img.width && p.viewportHeight > img.height) {
                 slide
-                    .removeClass(params.mod.auto)
-                    .addClass(params.mod.center);
+                    .removeClass(params._auto)
+                    .addClass(params._center);
             } else {
                 slide
-                    .removeClass(params.mod.center)
-                    .addClass(params.mod.auto);
+                    .removeClass(params._center)
+                    .addClass(params._auto);
             }
 
             // Orientation
             if (imgRatio >= viewportRatio) {
                 slide
-                    .removeClass(params.mod.portrait)
-                    .addClass(params.mod.landscape);
+                    .removeClass(params._portrait)
+                    .addClass(params._landscape);
             } else {
                 slide
-                    .removeClass(params.mod.landscape)
-                    .addClass(params.mod.portrait);
+                    .removeClass(params._landscape)
+                    .addClass(params._portrait);
             }
         },
 
@@ -895,14 +914,14 @@
             var p = data[galleryId];
 
             if (p.current == 0) {
-                p.prev.addClass(params.mod.disabled);
+                p.prev.addClass(params._disabled);
             } else {
-                p.prev.removeClass(params.mod.disabled);
+                p.prev.removeClass(params._disabled);
             }
             if (p.current == p.count) {
-                p.next.addClass(params.mod.disabled);
+                p.next.addClass(params._disabled);
             } else {
-                p.next.removeClass(params.mod.disabled);
+                p.next.removeClass(params._disabled);
             }
         },
 
@@ -921,7 +940,7 @@
         },
 
         getTemplate: function(id) {
-            return '<div class="' + params.slide + ' ' + params.slideIdPrefix + id + ' ' + params.mod.loading + '" data-id="' + id + '"><div class="' + params.slideImg + '"></div></div>';
+            return '<div class="' + params.slide + ' ' + params.slideIdPrefix + id + ' ' + params._loading + '" data-id="' + id + '"><div class="' + params.slideImg + '"></div></div>';
         }
     };
 
