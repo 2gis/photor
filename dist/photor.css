@@ -26,8 +26,8 @@ body {
 }
 .photor {
   position: relative;
-  width: 400px;
-  height: 300px;
+  width: 100%;
+  height: 100%;
   background: #090907;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -83,7 +83,7 @@ body {
 .photor__viewportLayerSlideImg._alt:before {
   display: block;
   content: attr(data-alt);
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
   color: #fff;
   text-align: center;
   position: absolute;
@@ -175,6 +175,26 @@ body {
 .photor__viewportControlNext {
   right: 0;
   left: 30%;
+}
+.photor__counter {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  text-align: center;
+}
+.photor__counterInner {
+  display: inline-block;
+  vertical-align: top;
+  height: 32px;
+  padding: 0 32px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font: 14px/32px Arial;
+}
+.photor__counterInnerCurrent,
+.photor__counterInnerCount {
+  font-weight: normal;
 }
 .photor__thumbs {
   position: absolute;

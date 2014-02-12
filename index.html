@@ -16,6 +16,14 @@
         <div class="photor__viewportControl">
             <div class="photor__viewportControlPrev"></div>
             <div class="photor__viewportControlNext"></div>
+
+            <div class="photor__counter">
+                <div class="photor__counterInner">
+                    <strong class="photor__counterInnerCurrent"></strong>
+                    из <strong class="photor__counterInnerCount"></strong>
+                </div>
+            </div>
+
         </div>
     </div>
     <div class="photor__thumbs">
@@ -58,7 +66,12 @@
 <script>
 $(document).ready(function() {
 
-    $('.photor').photor();
+    $('.photor').photor({
+        onShow: function(instance) {
+            $('.photor__counterInnerCurrent').html(instance.current + 1);
+            $('.photor__counterInnerCount').html(instance.count + 1);
+        }
+    });
 
     // $('.photor').photor('destroy');
 

@@ -28,10 +28,10 @@ body {
 
 .photor {
     position: relative;
-    // width: 100%;
-    // height: 100%;
-    width: 400px;
-    height: 300px;
+    width: 100%;
+    height: 100%;
+    // width: 400px;
+    // height: 300px;
     background: #090907;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -85,7 +85,7 @@ body {
                     &._alt:before {
                         display: block;
                         content: attr(data-alt);
-                        background: rgba(0, 0, 0, .4);
+                        background: rgba(0,0,0,.5);
                         color: #fff;
                         text-align: center;
                         position: absolute;
@@ -170,6 +170,7 @@ body {
             cursor: -webkit-grab;
             cursor: -moz-grab;
 
+            // Arrows
             &Prev,
             &Next {
                 position: absolute;
@@ -191,8 +192,33 @@ body {
                 right: 0;
                 left: 30%;
                 }
+
             }
         }
+
+        // Counter
+        &__counter {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            text-align: center;
+
+            &Inner {
+                display: inline-block;
+                vertical-align: top;
+                height: 32px;
+                padding: 0 32px;
+                background: rgba(0,0,0,.5);
+                color: #fff;
+                font: 14px/32px Arial;
+
+                &Current,
+                &Count {
+                    font-weight: normal;
+                    }
+                }
+            }
 
     &__thumbs {
         position: absolute;

@@ -142,8 +142,6 @@
 
         update: function() {
 
-            console.log('resize');
-
             for (var key in data) {
                 var p = data[key];
                 updateInstance(key);
@@ -203,7 +201,6 @@
             for (var i = 0, len = p.events.length; i < len; i++) {
                 eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture);
             }
-
         },
 
         go: function(galleryId, target, delay) {
@@ -229,6 +226,13 @@
             // Load slide's range
             methods.loadSlides(galleryId, target);
             methods.checkButtons(galleryId);
+
+            // Callback
+            if (params.onShow) {
+                setTimeout(function() {
+                    params.onShow(p);
+                }, delay);
+            }
         },
 
         next: function(galleryId) {
@@ -954,7 +958,8 @@
      * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
      */
     function bindTransitionEnd(galleryId) {
-        var p = data[galleryId];
+        var p = data[galleryId],
+            transitionEnd = ['transitionend', 'MSTransitionEnd', 'oTransitionEnd'];
 
         handlers.transitionEnd = function(e) {
             p.layer.css('transition-duration', '0s');
@@ -970,13 +975,13 @@
             }
         };
 
-        // eventManager(p.layer[0], 'transitionend', handlers.transitionEnd, false);
-        p.events.push({
-            element: window,
-            event: 'transitionEnd',
-            handler: handlers.transitionEnd
-        });
-
+        for (var i = 0; i < transitionEnd.length; i++) {
+            p.events.push({
+                element: p.layer[0],
+                event: transitionEnd[i],
+                handler: handlers.transitionEnd
+            });
+        }
     }
 
 })(jQuery);
