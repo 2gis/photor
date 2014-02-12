@@ -192,8 +192,8 @@
         handlers: function(galleryId) {
             var p = data[galleryId];
 
-            bindResize();
             bindControl(galleryId);
+            bindResize(galleryId);
             bindTransitionEnd(galleryId);
 
             if (params.keyboard) {
@@ -897,8 +897,10 @@
      *
      * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
      */
-    function bindResize() {
+    function bindResize(galleryId) {
         if (!handlers.resize) {
+            var p = data[galleryId];
+
             handlers.resize = debounce(methods.update, 84);
 
             p.events.push({
