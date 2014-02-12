@@ -140,13 +140,36 @@
             });
         },
 
+        update: function() {
+
+            console.log('resize');
+
+            for (var key in data) {
+                var p = data[key];
+                updateInstance(key);
+            }
+
+            function updateInstance(galleryId) {
+                p.viewportWidth = p.viewport.outerWidth();
+                p.viewportHeight = p.viewport.outerHeight();
+                p.controlWidth = p.control.outerWidth();
+                p.controlHeight = p.control.outerHeight();
+                p.thumbsWidth = p.thumbs.outerWidth();
+                p.thumbsHeight = p.thumbs.outerHeight();
+
+                p.slide.each(function(i) {
+                    methods.position(galleryId, i);
+                });
+
+                methods.setCurrentThumb(galleryId, p.current, 1);
+            }
+        },
+
         destroy: function(galleryId) {
 
             if (typeof galleryId != 'undefined') {
-                // Удаляем один инстанс галереи
                 unbindInstance(galleryId);
             } else {
-                // Удаляем все инстансы
                 for (var key in data) {
                     unbindInstance(key);
                 }
@@ -169,8 +192,8 @@
         handlers: function(galleryId) {
             var p = data[galleryId];
 
+            bindResize();
             bindControl(galleryId);
-            bindResize(galleryId);
             bindTransitionEnd(galleryId);
 
             if (params.keyboard) {
@@ -874,35 +897,16 @@
      *
      * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
      */
-    function bindResize(galleryId) {
-        var p = data[galleryId];
+    function bindResize() {
+        if (!handlers.resize) {
+            handlers.resize = debounce(methods.update, 84);
 
-        // eventManager(window, true, 'resize', handlers.resize);
-
-        /*
-         * Resize handler
-         */
-        function resize() {
-            p.viewportWidth = p.viewport.outerWidth();
-            p.viewportHeight = p.viewport.outerHeight();
-            p.controlWidth = p.control.outerWidth();
-            p.controlHeight = p.control.outerHeight();
-            p.thumbsWidth = p.thumbs.outerWidth();
-            p.thumbsHeight = p.thumbs.outerHeight();
-
-            p.slide.each(function(i) {
-                methods.position(galleryId, i);
+            p.events.push({
+                element: window,
+                event: 'resize',
+                handler: handlers.resize
             });
-
-            methods.setCurrentThumb(galleryId, p.current, 1);
         }
-
-        handlers.resize = debounce(resize, 84);
-        p.events.push({
-            element: window,
-            event: 'resize',
-            handler: handlers.resize
-        });
     }
 
     /*
