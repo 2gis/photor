@@ -154,6 +154,7 @@
                 p.controlHeight = p.control.outerHeight();
                 p.thumbsWidth = p.thumbs.outerWidth();
                 p.thumbsHeight = p.thumbs.outerHeight();
+                p.thumbsLayerWidth = p.thumbsLayer.outerWidth();
 
                 p.slide.each(function(i) {
                     methods.position(galleryId, i);
@@ -351,6 +352,8 @@
                 p.galleryThumbs[i].top = self.position().top + parseInt(self.css('margin-top'));
                 p.galleryThumbs[i].left = self.position().left + parseInt(self.css('margin-left'));
             });
+
+            p.thumbsLayerWidth = p.thumbsLayer.outerWidth();
 
             methods.setCurrentThumb(galleryId, p.current, 1);
         },
@@ -791,7 +794,18 @@
          * Движение миниатюр при перетаскивании
          */
         function thumbsMove() {
-            p.thumbsIndent = touch.shiftX + touch.thumbsStartX;
+            var indent = touch.shiftX + touch.thumbsStartX,
+                limit = -1 * (p.thumbsLayerWidth - p.thumbsWidth);
+
+            // Если выходим за край
+            if (indent > 0) {
+                indent = indent / 3;
+            }
+            if (indent < limit) {
+                indent = limit + ((indent - limit) / 3);
+            }
+
+            p.thumbsIndent = indent;
             p.thumbsLayer.css(methods.setIndent(p.thumbsIndent, 'px'));
         }
 
