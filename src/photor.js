@@ -17,520 +17,6 @@
         handlers = [],
         params;
 
-
-    /*
-     * Returns supported property for css-transform
-     *
-     * @return {String} string key
-     */
-    function getSupportedTransform() {
-        for (var key in prefixes) {
-            if (document.createElement('div').style[key] !== undefined) {
-                return key;
-            }
-        }
-
-        return false;
-    }
-
-    /*
-     * Кроссбраузерно добавляет обработчики событий
-     *
-     * @param {HTMLElement} element HTMLElement
-     * @param {event} e Событие
-     * @param {function} handler Обработчик события
-     * @param {bool} capture Capturing
-     */
-    function eventManager(element, e, handler, capture, off) {
-        capture = !!capture;
-
-        if (off) {
-
-            if (element.removeEventListener) {
-                element.removeEventListener(e, handler, capture);
-            } else {
-                if (element.detachEvent) {
-                    element.detachEvent('on' + e, handler);
-                } else {
-                    element[e] = undefined;
-                }
-            }
-
-        } else {
-
-            if (element.addEventListener) {
-                element.addEventListener(e, handler, capture);
-            } else {
-                if (element.attachEvent) {
-                    element.attachEvent('on' + e, handler);
-                } else {
-                    element[e] = handler;
-                }
-            }
-
-        }
-    }
-
-
-    /*
-     * Проверяет наличие класса у нативного HTML-элемент
-     *
-     * @param {HTMLElement} element HTMLElement
-     * @param {string} className Имя класса
-     */
-    function hasClass(element, className) {
-        var classNames = ' ' + element.className + ' ';
-
-        className = ' ' + className + ' ';
-
-        if (classNames.replace(/[\n\t]/g, ' ').indexOf(className) > -1) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /*
-     * Возвращает массив поддерживаемых событий
-     * Если браузер поддерживает pointer events или подключена handjs, вернет события указателя.
-     * Если нет, используем события мыши
-     *
-     * @return {Array} Массив с названиями событий
-     */
-    function getSupportedEvents() {
-        var touchEnabled = !!('ontouchstart' in window);
-
-        if (touchEnabled) {
-            return ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
-        }
-
-        return ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
-    }
-
-    function debounce(fn, timeout, invokeAsap, ctx) {
-        if (arguments.length == 3 && typeof invokeAsap != 'boolean') {
-            ctx = invokeAsap;
-            invokeAsap = false;
-        }
-
-        var timer;
-
-        return function() {
-            var args = arguments;
-
-            ctx = ctx || this;
-            if (invokeAsap && !timer) {
-                fn.apply(ctx, args);
-            }
-
-            clearTimeout(timer);
-
-            timer = setTimeout(function() {
-                if (!invokeAsap) {
-                    fn.apply(ctx, args);
-                }
-                timer = null;
-            }, timeout);
-        };
-    }
-
-    /*
-     * Throttle декоратор
-     *
-     * @param {function} fn Функция
-     * @param {number} timeout Таймаут в миллисекундах
-     * @param {object} ctx Контекст вызова
-     */
-    function throttle(fn, timeout, ctx) {
-        var timer, args, needInvoke;
-
-        return function() {
-            args = arguments;
-            needInvoke = true;
-            ctx = ctx || this;
-
-            if (!timer) {
-                (function() {
-                    if (needInvoke) {
-                        fn.apply(ctx, args);
-                        needInvoke = false;
-                        timer = setTimeout(arguments.callee, timeout);
-                    } else {
-                        timer = null;
-                    }
-                })();
-            }
-        };
-    }
-
-    /*
-     * Устанавливает обработчики управления указателем (touch, mouse, pen)
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindControl(galleryId) {
-        var p = data[galleryId],
-            control = p.control,
-            thumbs = p.thumbs,
-            touch = {};
-
-        /*
-         * Обработчик touch start
-         *
-         * @param {event} e Событие pointerdown
-         */
-        handlers.onStart = function(e) {
-            // запоминаем координаты и время
-            touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
-            touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
-            touch.t1 = new Date();
-            touch.isPressed = true;
-
-            // Запоминаем элемент, на котором вызвано событие
-            touch.isThumbs = hasClass(this, params.thumbs);
-            touch.thumbsStartX = p.thumbsIndent;
-
-            p.root.addClass(params._dragging);
-
-            p.layer.css('transition-duration', '0s');
-            p.thumbsLayer.css('transition-duration', '0s');
-        };
-
-        /*
-         * Обработчик touch move
-         *
-         * @param {event} e Событие pointermove
-         */
-        handlers.onMove = function(e) {
-            if (touch.isPressed) {
-                // смещения
-                touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
-                touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
-
-                // абсолютные значения смещений
-                touch.shiftXAbs = Math.abs(touch.shiftX);
-                touch.shiftYAbs = Math.abs(touch.shiftY);
-
-                // Detect multitouch
-                touch.isMultitouch = touch.isMultitouch || (e.touches && e.touches.length) > 1;
-
-                if (touch.isMultitouch) {
-                    end();
-
-                    return;
-                }
-
-                // если мы ещё не определились
-                if (!touch.isSlide && !touch.isScroll) {
-                    // если вертикальное смещение - скроллим пока не отпустили палец
-                    if (touch.shiftYAbs >= 5 && touch.shiftYAbs > touch.shiftXAbs) {
-                        touch.isScroll = true;
-                    }
-
-                    // если горизонтальное - слайдим
-                    if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
-                        touch.isSlide = true;
-                    }
-                }
-
-                // если слайдим
-                if (touch.isSlide) {
-                    // запрещаем скролл
-                    e.preventDefault();
-
-                    if (touch.isThumbs) {
-                        if (p.thumbsDragging) {
-                            thumbsMove();
-                        }
-                    } else {
-                        slidesMove();
-                    }
-                }
-            }
-        };
-
-        /*
-         * Обработчик touch end
-         *
-         * @param {event} e Событие pointerup
-         */
-        handlers.onEnd = function(e) {
-            // Ловим клик
-            if (!touch.isSlide && !touch.isScroll && touch.isPressed) {
-
-                // Назад
-                if (hasClass(e.target, params.prev)) {
-                    methods.prev(galleryId);
-                }
-
-                // Вперед
-                if (hasClass(e.target, params.next)) {
-                    methods.next(galleryId);
-                }
-
-                // Клик по миниатюре
-                if (hasClass(e.target, params.thumbImg)) {
-                    methods.go(galleryId, parseInt(e.target.getAttribute('data-rel')));
-                }
-
-                e.stopPropagation();
-                e.preventDefault(); // Нужно для отмены зума по doubletap
-            }
-
-            end();
-        };
-
-        /*
-         * Завершение перемещения
-         */
-        function end() {
-            if (touch.isSlide) {
-                if (touch.isThumbs) {
-                    thumbsEnd();
-                } else {
-                    slidesEnd();
-                }
-            }
-
-            touch = {};
-            p.root.removeClass(params._dragging);
-        }
-
-        /*
-         * Движение слайдов во время перетаскивания
-         */
-        function slidesMove() {
-            if ((p.current == 0 && touch.shiftX > 0) || (p.current == p.count && touch.shiftX < 0)) {
-                touch.shiftX = touch.shiftX / 3;
-            }
-
-            p.layer.css(methods.setIndent(100 * (touch.shiftX / p.controlWidth - p.current)));
-        }
-
-        /*
-         * Завершение движения слайдов
-         */
-        function slidesEnd() {
-            // Transition executes if delta more then 5% of container width
-            if (Math.abs(touch.shiftX) > p.controlWidth * 0.05) {
-                if (touch.shiftX < 0) {
-                    methods.next(galleryId);
-                } else {
-                    methods.prev(galleryId);
-                }
-            } else {
-                methods.go(galleryId, p.current);
-            }
-        }
-
-        /*
-         * Движение миниатюр при перетаскивании
-         */
-        function thumbsMove() {
-            p.thumbsIndent = touch.shiftX + touch.thumbsStartX;
-            p.thumbsLayer.css(methods.setIndent(p.thumbsIndent, 'px'));
-        }
-
-        /*
-         * Завершение движения миниатюр
-         */
-        function thumbsEnd() {
-            if (p.thumbsDragging && touch.isSlide) {
-                var direction = touch.shiftX < 0 ? -1 : 1;
-
-                touch.t2 = new Date();
-                p.thumbsIndent = calcTailAnimation(p.thumbsIndent, direction);
-
-                p.thumbsLayer
-                    .css('transition-duration', '.24s')
-                    .css(methods.setIndent(p.thumbsIndent, 'px'));
-            }
-        }
-
-        /*
-         * Вычисление конечной координаты слоя с миниатюрами с учетом движения по инерции
-         *
-         * @param {number} currentIndent Текущее положение слоя с миниатюрами в пикселях
-         * @param {number} direction Направление движения (-1|1)
-         * @returns {number} Значение координаты слоя с миниатюрами в пикселях
-         */
-        function calcTailAnimation(currentIndent, direction) {
-            var speed = Math.abs(10 * touch.shiftX / (touch.t2 - touch.t1)),
-                tail, limit;
-
-            tail = direction * parseInt(Math.pow(speed, 2)) + currentIndent;
-            limit = p.thumbs.outerWidth() - p.thumbsLayer.outerWidth();
-
-            if (tail > 0) {
-                return 0;
-            }
-
-            if (tail < limit) {
-                return limit;
-            }
-
-            return tail;
-        }
-
-        // Touch-события
-        p.events.push({
-            element: control[0],
-            event: evt[0],
-            handler: handlers.onStart
-        }, {
-            element: control[0],
-            event: evt[1],
-            handler: handlers.onMove,
-            capture: true
-        }, {
-            element: control[0],
-            event: evt[2],
-            handler: handlers.onEnd
-        }, {
-            element: control[0],
-            event: evt[3],
-            handler: handlers.onEnd
-        }, {
-            element: thumbs[0],
-            event: evt[0],
-            handler: handlers.onStart
-        }, {
-            element: thumbs[0],
-            event: evt[1],
-            handler: handlers.onMove,
-            capture: true
-        }, {
-            element: thumbs[0],
-            event: evt[2],
-            handler: handlers.onEnd
-        }, {
-            element: thumbs[0],
-            event: evt[3],
-            handler: handlers.onEnd
-        });
-
-        // Отмена перехода по ссылке миниатюры
-        for (var i = 0; i < p.thumb.length; i++) {
-            p.events.push({
-                element: p.thumb[i],
-                event: 'click',
-                handler: function() {
-                    e.preventDefault();
-                }
-            });
-        }
-
-        // Отмена встроенного перетаскивания для картинок
-        for (var j = 0; j < p.thumbImg.length; j++) {
-            p.events.push({
-                element: p.thumbImg[j],
-                event: 'dragstart',
-                handler: function() {
-                    e.preventDefault();
-                }
-            });
-        }
-    }
-
-    /*
-     * Устанавливает обработчик изменения размера окна
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindResize(galleryId) {
-        var p = data[galleryId];
-
-        // eventManager(window, true, 'resize', handlers.resize);
-
-        /*
-         * Resize handler
-         */
-        function resize() {
-            p.viewportWidth = p.viewport.outerWidth();
-            p.viewportHeight = p.viewport.outerHeight();
-            p.controlWidth = p.control.outerWidth();
-            p.controlHeight = p.control.outerHeight();
-            p.thumbsWidth = p.thumbs.outerWidth();
-            p.thumbsHeight = p.thumbs.outerHeight();
-
-            p.slide.each(function(i) {
-                methods.position(galleryId, i);
-            });
-
-            methods.setCurrentThumb(galleryId, p.current, 1);
-        }
-
-        handlers.resize = debounce(resize, 84);
-        p.events.push({
-            element: window,
-            event: 'resize',
-            handler: handlers.resize
-        });
-    }
-
-    /*
-     * Устанавливает обработчики управления с клавиатуры
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindKeyboard(galleryId) {
-        var p = data[galleryId];
-
-        handlers.keydown = function(e) {
-            var key = e.which || e.keyCode;
-
-            switch(key) {
-                // Space
-                case 32:
-                    methods.next(galleryId);
-                    break;
-
-                // Left
-                case 37:
-                    methods.prev(galleryId);
-                    break;
-
-                // Right
-                case 39:
-                    methods.next(galleryId);
-                    break;
-            }
-        };
-
-        // eventManager(window, true, 'keydown', handlers.keydown, false);
-        p.events.push({
-            element: window,
-            event: 'keydown',
-            handler: handlers.keydown
-        });
-    }
-
-    function bindTransitionEnd(galleryId) {
-        var p = data[galleryId];
-
-        handlers.transitionEnd = function(e) {
-            p.layer.css('transition-duration', '0s');
-
-            for (var i = 0; i < p.count; i++) {
-                var elem = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + i);
-
-                if (i < p.current - 1 || i > p.current + 1) {
-                    elem.addClass('_hidden');
-                } else {
-                    elem.removeClass('_hidden');
-                }
-            }
-        };
-
-        // eventManager(p.layer[0], 'transitionend', handlers.transitionEnd, false);
-        p.events.push({
-            element: window,
-            event: 'transitionEnd',
-            handler: handlers.transitionEnd
-        });
-
-    }
-
     var methods = {
         init: function(options) {
             params = $.extend({
@@ -969,11 +455,522 @@
 
     };
 
+    /*
+     * Returns supported property for css-transform
+     *
+     * @return {String} string key
+     */
+    function getSupportedTransform() {
+        for (var key in prefixes) {
+            if (document.createElement('div').style[key] !== undefined) {
+                return key;
+            }
+        }
+
+        return false;
+    }
+
+    /*
+     * Кроссбраузерно добавляет обработчики событий
+     *
+     * @param {HTMLElement} element HTMLElement
+     * @param {event} e Событие
+     * @param {function} handler Обработчик события
+     * @param {bool} capture Capturing
+     */
+    function eventManager(element, e, handler, capture, off) {
+        capture = !!capture;
+
+        if (off) {
+
+            if (element.removeEventListener) {
+                element.removeEventListener(e, handler, capture);
+            } else {
+                if (element.detachEvent) {
+                    element.detachEvent('on' + e, handler);
+                } else {
+                    element[e] = undefined;
+                }
+            }
+
+        } else {
+
+            if (element.addEventListener) {
+                element.addEventListener(e, handler, capture);
+            } else {
+                if (element.attachEvent) {
+                    element.attachEvent('on' + e, handler);
+                } else {
+                    element[e] = handler;
+                }
+            }
+
+        }
+    }
+
+
+    /*
+     * Проверяет наличие класса у нативного HTML-элемент
+     *
+     * @param {HTMLElement} element HTMLElement
+     * @param {string} className Имя класса
+     */
+    function hasClass(element, className) {
+        var classNames = ' ' + element.className + ' ';
+
+        className = ' ' + className + ' ';
+
+        if (classNames.replace(/[\n\t]/g, ' ').indexOf(className) > -1) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /*
+     * Возвращает массив поддерживаемых событий
+     * Если браузер поддерживает pointer events или подключена handjs, вернет события указателя.
+     * Если нет, используем события мыши
+     *
+     * @return {Array} Массив с названиями событий
+     */
+    function getSupportedEvents() {
+        var touchEnabled = !!('ontouchstart' in window);
+
+        if (touchEnabled) {
+            return ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
+        }
+
+        return ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
+    }
+
+    function debounce(fn, timeout, invokeAsap, ctx) {
+        if (arguments.length == 3 && typeof invokeAsap != 'boolean') {
+            ctx = invokeAsap;
+            invokeAsap = false;
+        }
+
+        var timer;
+
+        return function() {
+            var args = arguments;
+
+            ctx = ctx || this;
+            if (invokeAsap && !timer) {
+                fn.apply(ctx, args);
+            }
+
+            clearTimeout(timer);
+
+            timer = setTimeout(function() {
+                if (!invokeAsap) {
+                    fn.apply(ctx, args);
+                }
+                timer = null;
+            }, timeout);
+        };
+    }
+
+    /*
+     * Throttle декоратор
+     *
+     * @param {function} fn Функция
+     * @param {number} timeout Таймаут в миллисекундах
+     * @param {object} ctx Контекст вызова
+     */
+    function throttle(fn, timeout, ctx) {
+        var timer, args, needInvoke;
+
+        return function() {
+            args = arguments;
+            needInvoke = true;
+            ctx = ctx || this;
+
+            if (!timer) {
+                (function() {
+                    if (needInvoke) {
+                        fn.apply(ctx, args);
+                        needInvoke = false;
+                        timer = setTimeout(arguments.callee, timeout);
+                    } else {
+                        timer = null;
+                    }
+                })();
+            }
+        };
+    }
+
+    /*
+     * Устанавливает обработчики управления указателем (touch, mouse, pen)
+     *
+     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+     */
+    function bindControl(galleryId) {
+        var p = data[galleryId],
+            control = p.control,
+            thumbs = p.thumbs,
+            touch = {};
+
+        /*
+         * Обработчик touch start
+         *
+         * @param {event} e Событие pointerdown
+         */
+        handlers.onStart = function(e) {
+            // запоминаем координаты и время
+            touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
+            touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
+            touch.t1 = new Date();
+            touch.isPressed = true;
+
+            // Запоминаем элемент, на котором вызвано событие
+            touch.isThumbs = hasClass(this, params.thumbs);
+            touch.thumbsStartX = p.thumbsIndent;
+
+            p.root.addClass(params._dragging);
+
+            p.layer.css('transition-duration', '0s');
+            p.thumbsLayer.css('transition-duration', '0s');
+        };
+
+        /*
+         * Обработчик touch move
+         *
+         * @param {event} e Событие pointermove
+         */
+        handlers.onMove = function(e) {
+            if (touch.isPressed) {
+                // смещения
+                touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
+                touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
+
+                // абсолютные значения смещений
+                touch.shiftXAbs = Math.abs(touch.shiftX);
+                touch.shiftYAbs = Math.abs(touch.shiftY);
+
+                // Detect multitouch
+                touch.isMultitouch = touch.isMultitouch || (e.touches && e.touches.length) > 1;
+
+                if (touch.isMultitouch) {
+                    end();
+
+                    return;
+                }
+
+                // если мы ещё не определились
+                if (!touch.isSlide && !touch.isScroll) {
+                    // если вертикальное смещение - скроллим пока не отпустили палец
+                    if (touch.shiftYAbs >= 5 && touch.shiftYAbs > touch.shiftXAbs) {
+                        touch.isScroll = true;
+                    }
+
+                    // если горизонтальное - слайдим
+                    if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
+                        touch.isSlide = true;
+                    }
+                }
+
+                // если слайдим
+                if (touch.isSlide) {
+                    // запрещаем скролл
+                    e.preventDefault();
+
+                    if (touch.isThumbs) {
+                        if (p.thumbsDragging) {
+                            thumbsMove();
+                        }
+                    } else {
+                        slidesMove();
+                    }
+                }
+            }
+        };
+
+        /*
+         * Обработчик touch end
+         *
+         * @param {event} e Событие pointerup
+         */
+        handlers.onEnd = function(e) {
+            // Ловим клик
+            if (!touch.isSlide && !touch.isScroll && touch.isPressed) {
+
+                // Назад
+                if (hasClass(e.target, params.prev)) {
+                    methods.prev(galleryId);
+                }
+
+                // Вперед
+                if (hasClass(e.target, params.next)) {
+                    methods.next(galleryId);
+                }
+
+                // Клик по миниатюре
+                if (hasClass(e.target, params.thumbImg)) {
+                    methods.go(galleryId, parseInt(e.target.getAttribute('data-rel')));
+                }
+
+                e.stopPropagation();
+                e.preventDefault(); // Нужно для отмены зума по doubletap
+            }
+
+            end();
+        };
+
+        /*
+         * Завершение перемещения
+         */
+        function end() {
+            if (touch.isSlide) {
+                if (touch.isThumbs) {
+                    thumbsEnd();
+                } else {
+                    slidesEnd();
+                }
+            }
+
+            touch = {};
+            p.root.removeClass(params._dragging);
+        }
+
+        /*
+         * Движение слайдов во время перетаскивания
+         */
+        function slidesMove() {
+            if ((p.current == 0 && touch.shiftX > 0) || (p.current == p.count && touch.shiftX < 0)) {
+                touch.shiftX = touch.shiftX / 3;
+            }
+
+            p.layer.css(methods.setIndent(100 * (touch.shiftX / p.controlWidth - p.current)));
+        }
+
+        /*
+         * Завершение движения слайдов
+         */
+        function slidesEnd() {
+            // Transition executes if delta more then 5% of container width
+            if (Math.abs(touch.shiftX) > p.controlWidth * 0.05) {
+                if (touch.shiftX < 0) {
+                    methods.next(galleryId);
+                } else {
+                    methods.prev(galleryId);
+                }
+            } else {
+                methods.go(galleryId, p.current);
+            }
+        }
+
+        /*
+         * Движение миниатюр при перетаскивании
+         */
+        function thumbsMove() {
+            p.thumbsIndent = touch.shiftX + touch.thumbsStartX;
+            p.thumbsLayer.css(methods.setIndent(p.thumbsIndent, 'px'));
+        }
+
+        /*
+         * Завершение движения миниатюр
+         */
+        function thumbsEnd() {
+            if (p.thumbsDragging && touch.isSlide) {
+                var direction = touch.shiftX < 0 ? -1 : 1;
+
+                touch.t2 = new Date();
+                p.thumbsIndent = calcTailAnimation(p.thumbsIndent, direction);
+
+                p.thumbsLayer
+                    .css('transition-duration', '.24s')
+                    .css(methods.setIndent(p.thumbsIndent, 'px'));
+            }
+        }
+
+        /*
+         * Вычисление конечной координаты слоя с миниатюрами с учетом движения по инерции
+         *
+         * @param {number} currentIndent Текущее положение слоя с миниатюрами в пикселях
+         * @param {number} direction Направление движения (-1|1)
+         * @returns {number} Значение координаты слоя с миниатюрами в пикселях
+         */
+        function calcTailAnimation(currentIndent, direction) {
+            var speed = Math.abs(10 * touch.shiftX / (touch.t2 - touch.t1)),
+                tail, limit;
+
+            tail = direction * parseInt(Math.pow(speed, 2)) + currentIndent;
+            limit = p.thumbs.outerWidth() - p.thumbsLayer.outerWidth();
+
+            if (tail > 0) {
+                return 0;
+            }
+
+            if (tail < limit) {
+                return limit;
+            }
+
+            return tail;
+        }
+
+        // Touch-события
+        p.events.push({
+            element: control[0],
+            event: evt[0],
+            handler: handlers.onStart
+        }, {
+            element: control[0],
+            event: evt[1],
+            handler: handlers.onMove,
+            capture: true
+        }, {
+            element: control[0],
+            event: evt[2],
+            handler: handlers.onEnd
+        }, {
+            element: control[0],
+            event: evt[3],
+            handler: handlers.onEnd
+        }, {
+            element: thumbs[0],
+            event: evt[0],
+            handler: handlers.onStart
+        }, {
+            element: thumbs[0],
+            event: evt[1],
+            handler: handlers.onMove,
+            capture: true
+        }, {
+            element: thumbs[0],
+            event: evt[2],
+            handler: handlers.onEnd
+        }, {
+            element: thumbs[0],
+            event: evt[3],
+            handler: handlers.onEnd
+        });
+
+        // Отмена перехода по ссылке миниатюры
+        for (var i = 0; i < p.thumb.length; i++) {
+            p.events.push({
+                element: p.thumb[i],
+                event: 'click',
+                handler: function(e) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // Отмена встроенного перетаскивания для картинок
+        for (var j = 0; j < p.thumbImg.length; j++) {
+            p.events.push({
+                element: p.thumbImg[j],
+                event: 'dragstart',
+                handler: function(e) {
+                    e.preventDefault();
+                }
+            });
+        }
+    }
+
+    /*
+     * Устанавливает обработчик изменения размера окна
+     *
+     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+     */
+    function bindResize(galleryId) {
+        var p = data[galleryId];
+
+        // eventManager(window, true, 'resize', handlers.resize);
+
+        /*
+         * Resize handler
+         */
+        function resize() {
+            p.viewportWidth = p.viewport.outerWidth();
+            p.viewportHeight = p.viewport.outerHeight();
+            p.controlWidth = p.control.outerWidth();
+            p.controlHeight = p.control.outerHeight();
+            p.thumbsWidth = p.thumbs.outerWidth();
+            p.thumbsHeight = p.thumbs.outerHeight();
+
+            p.slide.each(function(i) {
+                methods.position(galleryId, i);
+            });
+
+            methods.setCurrentThumb(galleryId, p.current, 1);
+        }
+
+        handlers.resize = debounce(resize, 84);
+        p.events.push({
+            element: window,
+            event: 'resize',
+            handler: handlers.resize
+        });
+    }
+
+    /*
+     * Устанавливает обработчики управления с клавиатуры
+     *
+     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+     */
+    function bindKeyboard(galleryId) {
+        var p = data[galleryId];
+
+        handlers.keydown = function(e) {
+            var key = e.which || e.keyCode;
+
+            switch(key) {
+                // Space
+                case 32:
+                    methods.next(galleryId);
+                    break;
+
+                // Left
+                case 37:
+                    methods.prev(galleryId);
+                    break;
+
+                // Right
+                case 39:
+                    methods.next(galleryId);
+                    break;
+            }
+        };
+
+        // eventManager(window, true, 'keydown', handlers.keydown, false);
+        p.events.push({
+            element: window,
+            event: 'keydown',
+            handler: handlers.keydown
+        });
+    }
+
+    /*
+     * Устанавливает обработчики на окончание анимации
+     *
+     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+     */
+    function bindTransitionEnd(galleryId) {
+        var p = data[galleryId];
+
+        handlers.transitionEnd = function(e) {
+            p.layer.css('transition-duration', '0s');
+
+            for (var i = 0; i < p.count; i++) {
+                var elem = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + i);
+
+                if (i < p.current - 1 || i > p.current + 1) {
+                    elem.addClass('_hidden');
+                } else {
+                    elem.removeClass('_hidden');
+                }
+            }
+        };
+
+        // eventManager(p.layer[0], 'transitionend', handlers.transitionEnd, false);
+        p.events.push({
+            element: window,
+            event: 'transitionEnd',
+            handler: handlers.transitionEnd
+        });
+
+    }
+
 })(jQuery);
-
-
-// Клик по случайной миниатюре, проверить позицию рамочки
-// Клик по случайной миниатюре, проверить размер рамочки соответствует размеру изображения
-// Если миниатюры не помещаются в экран, проверить разрешен ли драг
-// Если миниатюры помещаются в экран, проверить запрещен ли драг
-// После инициализации без явно указанного параметра, выбрана первая миниатюра
