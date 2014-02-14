@@ -21,18 +21,31 @@
         init: function(options) {
             params = $.extend({
 
-                control: 'photor__viewportControl',
-                next: 'photor__viewportControlNext',
-                prev: 'photor__viewportControlPrev',
-                thumbs: 'photor__thumbs',
-                thumbsLayer: 'photor__thumbsWrap',
-                thumb: 'photor__thumbsWrapItem',
-                thumbImg: 'photor__thumbsWrapItemImg',
-                thumbFrame: 'photor__thumbsWrapFrame',
-                viewport: 'photor__viewport',
-                layer: 'photor__viewportLayer',
-                slide: 'photor__viewportLayerSlide',
-                slideImg: 'photor__viewportLayerSlideImg',
+                // control: 'photor__viewportControl',
+                // next: 'photor__viewportControlNext',
+                // prev: 'photor__viewportControlPrev',
+                // thumbs: 'photor__thumbs',
+                // thumbsLayer: 'photor__thumbsWrap',
+                // thumb: 'photor__thumbsWrapItem',
+                // thumbImg: 'photor__thumbsWrapItemImg',
+                // thumbFrame: 'photor__thumbsWrapFrame',
+                // viewport: 'photor__viewport',
+                // layer: 'photor__viewportLayer',
+                // slide: 'photor__viewportLayerSlide',
+                // slideImg: 'photor__viewportLayerSlideImg',
+
+                control: 'photos__control',
+                next: 'photos__controlNext',
+                prev: 'photos__controlPrev',
+                thumbs: 'photos__thumbs',
+                thumbsLayer: 'photos__thumbsWrap',
+                thumb: 'photos__thumbsWrapItem',
+                thumbImg: 'photos__thumbsWrapItemImg',
+                thumbFrame: 'photos__thumbsWrapFrame',
+                viewport: 'photos__viewport',
+                layer: 'photos__viewportLayer',
+                slide: 'photos__viewportLayerSlide',
+                slideImg: 'photos__viewportLayerSlideImg',
 
                 // State modifiers
                 _loading: '_loading',       // Фотография не загружена
@@ -40,6 +53,7 @@
                 _dragging: '_dragging',     // Перетаскивание
                 _disabled: '_disabled',     // Элемент управления запрещен
                 _alt: '_alt',               // Есть подпись к фотографиям
+                _single: '_single',         // Модификатор для галереи с одной фотографией
 
                 // Algorithm
                 _auto: '_auto',             // Фотография больше вьюпорта
@@ -53,6 +67,7 @@
                 _draggable: '_draggable',   // Разрешено перетаскивание на миниатюрах
 
                 // Settings
+                single: false,              // Инициализировать обработчики для одиночного изображения
                 current: 0,                 // Текуший слайд
                 count: 0,                   // Количество фотографий
                 loadingRange: 1,            // Диапазон подгружаемых фотографий (отн. текущей)
@@ -132,9 +147,14 @@
 
                 data[galleryId] = p;
                 root.attr('data-photor-id', galleryId);
+                if (count == 1) {
+                    root.addClass(params._single);
+                }
 
                 methods.loadThumbs(galleryId);
-                methods.handlers(galleryId);
+                if (count > 1 || params.single) {
+                    methods.handlers(galleryId);
+                }
                 methods.go(galleryId, p.current, 0);
 
             });
