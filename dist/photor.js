@@ -54,6 +54,7 @@
                 _disabled: '_disabled',     // Элемент управления запрещен
                 _alt: '_alt',               // Есть подпись к фотографиям
                 _single: '_single',         // Модификатор для галереи с одной фотографией
+                _animated: '_animated',     // На время анимации
 
                 // Algorithm
                 _auto: '_auto',             // Фотография больше вьюпорта
@@ -180,7 +181,7 @@
                     methods.position(galleryId, i);
                 });
 
-                methods.setCurrentThumb(galleryId, p.current, 1);
+                methods.getThumbsSize(galleryId);
             }
         },
 
@@ -230,6 +231,8 @@
             if (delay === undefined) {
                 delay = params.delay;
             }
+
+            p.root.addClass(params._animated);
 
             p.layer
                 .css('transition-duration', delay + 'ms')
@@ -331,7 +334,6 @@
             var p = data[galleryId],
                 count = p.count,
                 images = p.thumbSrc,
-                img = document.createElement('img'),
                 loaded = 0;
 
             p.galleryThumbs = [];
@@ -339,7 +341,8 @@
 
             for (var i = 0; i <= count; i++) {
                 (function(i) {
-                    var image = $(img);
+                    var img = document.createElement('img'),
+                        image = $(img);
 
                     image
                         .on('load', function() {
@@ -677,8 +680,6 @@
             touch.isThumbs = hasClass(this, params.thumbs);
             touch.thumbsStartX = p.thumbsIndent;
 
-            p.root.addClass(params._dragging);
-
             p.layer.css('transition-duration', '0s');
             p.thumbsLayer.css('transition-duration', '0s');
         };
@@ -716,6 +717,7 @@
 
                     // если горизонтальное - слайдим
                     if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
+                        p.root.addClass(params._dragging);
                         touch.isSlide = true;
                     }
                 }
@@ -996,6 +998,7 @@
             transitionEnd = ['transitionend', 'MSTransitionEnd', 'oTransitionEnd'];
 
         handlers.transitionEnd = function(e) {
+            p.root.removeClass(params._animated);
             p.layer.css('transition-duration', '0s');
 
             for (var i = 0; i < p.count; i++) {
