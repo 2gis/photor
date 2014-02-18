@@ -21,19 +21,6 @@
         init: function(options) {
             params = $.extend({
 
-                // control: 'photor__viewportControl',
-                // next: 'photor__viewportControlNext',
-                // prev: 'photor__viewportControlPrev',
-                // thumbs: 'photor__thumbs',
-                // thumbsLayer: 'photor__thumbsWrap',
-                // thumb: 'photor__thumbsWrapItem',
-                // thumbImg: 'photor__thumbsWrapItemImg',
-                // thumbFrame: 'photor__thumbsWrapFrame',
-                // viewport: 'photor__viewport',
-                // layer: 'photor__viewportLayer',
-                // slide: 'photor__viewportLayerSlide',
-                // slideImg: 'photor__viewportLayerSlideImg',
-
                 control: 'photos__control',
                 next: 'photos__controlNext',
                 prev: 'photos__controlPrev',
@@ -88,6 +75,11 @@
                     count = 0,
                     thumbs = [];
 
+                // Disable double init
+                if (root.attr('data-photor-id') == galleryId) {
+                    return;
+                }
+
                 // Get elements
                 p.root        = root;
                 p.control     = root.find('.' + params.control);
@@ -108,7 +100,7 @@
                         thumbImg = self.find('.' + params.thumbImg)[0];
 
                     p.gallery.push({
-                        url: this.href,
+                        url: self.attr('data-href'),
                         width: 0,
                         height: 0,
                         loaded: false,
@@ -164,11 +156,12 @@
         update: function() {
 
             for (var key in data) {
-                var p = data[key];
                 updateInstance(key);
             }
 
             function updateInstance(galleryId) {
+                var p = data[galleryId];
+
                 p.viewportWidth = p.viewport.outerWidth();
                 p.viewportHeight = p.viewport.outerHeight();
                 p.controlWidth = p.control.outerWidth();
@@ -202,6 +195,8 @@
              */
             function unbindInstance(id) {
                 var p = data[id];
+
+                p.root.removeAttr('data-photor-id');
 
                 for (var i = 0, len = p.events.length; i < len; i++) {
                     eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture, 1);
@@ -254,6 +249,7 @@
             // Callback
             if (params.onShow) {
                 setTimeout(function() {
+                    p.root.removeClass(params._animated);
                     params.onShow(p);
                 }, delay);
             }
@@ -690,7 +686,8 @@
          * @param {event} e Событие pointermove
          */
         handlers.onMove = function(e) {
-            if (touch.isPressed) {
+            if (touch.isPressed || true) {
+
                 // смещения
                 touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
                 touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
@@ -724,8 +721,6 @@
 
                 // если слайдим
                 if (touch.isSlide) {
-                    // запрещаем скролл
-                    e.preventDefault();
 
                     if (touch.isThumbs) {
                         if (p.thumbsDragging) {
@@ -734,6 +729,9 @@
                     } else {
                         slidesMove();
                     }
+
+                    // запрещаем скролл
+                    e.preventDefault();
                 }
             }
         };

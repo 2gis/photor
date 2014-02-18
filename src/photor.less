@@ -237,8 +237,8 @@ body {
             display: inline-block;
             text-align: left;
             height: 100%;
-            -webkit-transform: translate3d(0, 0, 0);
-            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0,0,0);
+            transform: translate3d(0,0,0);
             -webkit-transition-property: left, -webkit-transform;
             transition-property: left, transform;
             transition-timing-function: cubic-bezier(0.1,0,.25,1);
@@ -261,6 +261,8 @@ body {
                     height: 100%;
                     vertical-align: top;
                     border: 0;
+                    -webkit-transform: translate3d(0,0,0);
+                    transform: translate3d(0,0,0);
                     }
                 }
 
@@ -302,8 +304,4 @@ body {
             cursor: grabbing;
             }
         }
-    }
-
-#out {
-    font: 14px/20px Monospace;
     }

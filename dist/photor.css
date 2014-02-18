@@ -236,6 +236,8 @@ body {
   height: 100%;
   vertical-align: top;
   border: 0;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 .photor__thumbsWrapFrame {
   top: 0;
@@ -267,7 +269,4 @@ body {
   cursor: -webkit-grabbing;
   cursor: -moz-grabbing;
   cursor: grabbing;
-}
-#out {
-  font: 14px/20px Monospace;
 }
