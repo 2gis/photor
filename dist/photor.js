@@ -223,9 +223,7 @@
         go: function(galleryId, target, delay) {
             var p = data[galleryId];
 
-            if (delay === undefined) {
-                delay = params.delay;
-            }
+            delay = delay == null ? params.delay : delay;
 
             p.root.addClass(params._animated);
 
@@ -394,7 +392,13 @@
                 styles.height = current.height + 'px';
 
                 if (params.transform) {
-                    styles[prefixes[params.transform]] = 'translate3d(' + current.left + 'px, ' + current.top + 'px, 0)';
+                    var property = prefixes[params.transform.property];
+
+                    if (params.transform.has3d) {
+                        styles[property] = 'translate3d(' + current.left + 'px, ' + current.top + 'px, 0)';
+                    } else {
+                        styles[property] = 'translateX(' + current.left + 'px) translateY(' + current.top + 'px)';
+                    }
                 } else {
                     styles.top = current.top + 'px';
                     styles.left = current.left + 'px';
@@ -479,7 +483,13 @@
             meter = meter || '%';
 
             if (params.transform) {
-                result[prefixes[params.transform]] = 'translate3d(' + value + meter + ', 0, 0)';
+                var property = prefixes[params.transform.property];
+
+                if (params.transform.has3d) {
+                    result[property] = 'translate3d(' + value + meter + ', 0, 0)';
+                } else {
+                    result[property] = 'translateX(' + value + meter + ')';
+                }
             } else {
                 result.left = value + '%';
             }
@@ -504,22 +514,36 @@
 
     };
 
-    /*
+    /**
      * Returns supported property for css-transform
      *
      * @return {String} string key
      */
     function getSupportedTransform() {
+        var out = false,
+            el = document.createElement('div');
+
         for (var key in prefixes) {
-            if (document.createElement('div').style[key] !== undefined) {
-                return key;
+            if (el.style[key] !== undefined) {
+                out = {property: key};
+
+                break;
             }
         }
 
-        return false;
+        document.body.insertBefore(el, null);
+
+        if (out.property) {
+            el.style[out.property] = "translate3d(1px,1px,1px)";
+            out.has3d = window.getComputedStyle(el).getPropertyValue(prefixes[out.property]) != 'none';
+        }
+
+        document.body.removeChild(el);
+
+        return out;
     }
 
-    /*
+    /**
      * Кроссбраузерно добавляет обработчики событий
      *
      * @param {HTMLElement} element HTMLElement
@@ -558,8 +582,8 @@
     }
 
 
-    /*
-     * Проверяет наличие класса у нативного HTML-элемент
+    /**
+     * Проверяет наличие класса у нативного HTML-элемента
      *
      * @param {HTMLElement} element HTMLElement
      * @param {string} className Имя класса
@@ -576,7 +600,7 @@
         return false;
     }
 
-    /*
+    /**
      * Возвращает массив поддерживаемых событий
      * Если браузер поддерживает pointer events или подключена handjs, вернет события указателя.
      * Если нет, используем события мыши
@@ -584,7 +608,7 @@
      * @return {Array} Массив с названиями событий
      */
     function getSupportedEvents() {
-        var touchEnabled = !!('ontouchstart' in window);
+        var touchEnabled = 'ontouchstart' in window;
 
         if (touchEnabled) {
             return ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
@@ -593,6 +617,14 @@
         return ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
     }
 
+    /**
+     * Debounce декоратор
+     *
+     * @param {function} fn Функция
+     * @param {number} timeout Таймаут в миллисекундах
+     * @param {bool}
+     * @param {object} ctx Контекст вызова
+     */
     function debounce(fn, timeout, invokeAsap, ctx) {
         if (arguments.length == 3 && typeof invokeAsap != 'boolean') {
             ctx = invokeAsap;
@@ -620,7 +652,7 @@
         };
     }
 
-    /*
+    /**
      * Throttle декоратор
      *
      * @param {function} fn Функция
@@ -649,7 +681,7 @@
         };
     }
 
-    /*
+    /**
      * Устанавливает обработчики управления указателем (touch, mouse, pen)
      *
      * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
@@ -660,7 +692,7 @@
             thumbs = p.thumbs,
             touch = {};
 
-        /*
+        /**
          * Обработчик touch start
          *
          * @param {event} e Событие pointerdown
@@ -680,13 +712,13 @@
             p.thumbsLayer.css('transition-duration', '0s');
         };
 
-        /*
+        /**
          * Обработчик touch move
          *
          * @param {event} e Событие pointermove
          */
         handlers.onMove = function(e) {
-            if (touch.isPressed || true) {
+            if (touch.isPressed) {
 
                 // смещения
                 touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
@@ -722,6 +754,7 @@
                 // если слайдим
                 if (touch.isSlide) {
 
+
                     if (touch.isThumbs) {
                         if (p.thumbsDragging) {
                             thumbsMove();
@@ -736,7 +769,7 @@
             }
         };
 
-        /*
+        /**
          * Обработчик touch end
          *
          * @param {event} e Событие pointerup
@@ -767,7 +800,7 @@
             end();
         };
 
-        /*
+        /**
          * Завершение перемещения
          */
         function end() {
@@ -783,7 +816,7 @@
             p.root.removeClass(params._dragging);
         }
 
-        /*
+        /**
          * Движение слайдов во время перетаскивания
          */
         function slidesMove() {
@@ -794,7 +827,7 @@
             p.layer.css(methods.setIndent(100 * (touch.shiftX / p.controlWidth - p.current)));
         }
 
-        /*
+        /**
          * Завершение движения слайдов
          */
         function slidesEnd() {
@@ -810,7 +843,7 @@
             }
         }
 
-        /*
+        /**
          * Движение миниатюр при перетаскивании
          */
         function thumbsMove() {
@@ -845,7 +878,7 @@
             }
         }
 
-        /*
+        /**
          * Вычисление конечной координаты слоя с миниатюрами с учетом движения по инерции
          *
          * @param {number} currentIndent Текущее положение слоя с миниатюрами в пикселях
