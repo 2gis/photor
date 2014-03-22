@@ -21,18 +21,18 @@
         init: function(options) {
             params = $.extend({
 
-                control: 'photos__control',
-                next: 'photos__controlNext',
-                prev: 'photos__controlPrev',
-                thumbs: 'photos__thumbs',
-                thumbsLayer: 'photos__thumbsWrap',
-                thumb: 'photos__thumbsWrapItem',
-                thumbImg: 'photos__thumbsWrapItemImg',
-                thumbFrame: 'photos__thumbsWrapFrame',
-                viewport: 'photos__viewport',
-                layer: 'photos__viewportLayer',
-                slide: 'photos__viewportLayerSlide',
-                slideImg: 'photos__viewportLayerSlideImg',
+                control: 'photor__viewportControl',
+                next: 'photor__viewportControlNext',
+                prev: 'photor__viewportControlPrev',
+                thumbs: 'photor__thumbs',
+                thumbsLayer: 'photor__thumbsWrap',
+                thumb: 'photor__thumbsWrapItem',
+                thumbImg: 'photor__thumbsWrapItemImg',
+                thumbFrame: 'photor__thumbsWrapFrame',
+                viewport: 'photor__viewport',
+                layer: 'photor__viewportLayer',
+                slide: 'photor__viewportLayerSlide',
+                slideImg: 'photor__viewportLayerSlideImg',
 
                 // State modifiers
                 _loading: '_loading',       // Фотография не загружена
@@ -42,6 +42,7 @@
                 _alt: '_alt',               // Есть подпись к фотографиям
                 _single: '_single',         // Модификатор для галереи с одной фотографией
                 _animated: '_animated',     // На время анимации
+                _hidden: '_hidden',         // Спрятанный слайд
 
                 // Algorithm
                 _auto: '_auto',             // Фотография больше вьюпорта
@@ -58,12 +59,16 @@
                 single: false,              // Инициализировать обработчики для одиночного изображения
                 current: 0,                 // Текуший слайд
                 count: 0,                   // Количество фотографий
-                loadingRange: 1,            // Диапазон подгружаемых фотографий (отн. текущей)
                 slideIdPrefix: '_',         // Префикс для класса с номером слайда
                 delay: 300,                 // Время анимации для слайдов
                 keyboard: true,             // Управление с клавиатуры
+                ieClassPrefix: '_ie',       // Префикс для класса с версией IE
 
-                transform: getSupportedTransform()
+                // Supported features
+                transform: getSupportedTransform(),
+                transition: getPrefixed('transition'),
+
+                ie: ie()
 
             }, options);
 
@@ -140,6 +145,11 @@
 
                 data[galleryId] = p;
                 root.attr('data-photor-id', galleryId);
+
+                if (params.ie) {
+                    root.addClass(params.ieClassPrefix + params.ie);
+                }
+
                 if (count == 1) {
                     root.addClass(params._single);
                 }
@@ -148,8 +158,8 @@
                 if (count > 1 || params.single) {
                     methods.handlers(galleryId);
                 }
+                callback(galleryId, 1);
                 methods.go(galleryId, p.current, 0);
-
             });
         },
 
@@ -244,13 +254,10 @@
             methods.loadSlides(galleryId, target);
             methods.checkButtons(galleryId);
 
-            // Callback
-            if (params.onShow) {
-                setTimeout(function() {
-                    p.root.removeClass(params._animated);
-                    params.onShow(p);
-                }, delay);
+            if (!params.transition) {
+                callback(galleryId);
             }
+
         },
 
         next: function(galleryId) {
@@ -275,7 +282,6 @@
 
         loadSlides: function(galleryId, target) {
             var p = data[galleryId],
-                range = params.loadingRange,
                 from = target - 1 < 0 ? 0 : target - 1,
                 to = target + 1 > p.count ? p.count : target + 1;
 
@@ -294,8 +300,9 @@
                 url = p.gallery[target].url,
                 img = document.createElement('img');
 
-            (function(rel) {
-                var image = $(img);
+            (function(rel, slideImg) {
+                var image = $(img),
+                    styles = {};
 
                 image
                     .on('load', function() {
@@ -303,9 +310,15 @@
                         p.gallery[rel].width = this.width;
                         p.gallery[rel].height = this.height;
 
-                        slide.removeClass(params._loading);
-
                         methods.position(galleryId, rel);
+
+                        if (params.ie && params.ie < 9) {
+                            slideImg.attr('src', this.src);
+                        } else {
+                            slideImg.css('background-image', 'url(' + this.src + ')');
+                        }
+
+                        slide.removeClass(params._loading);
                     })
                     .on('error', function() {
                         $.error('Image wasn\'t loaded: ' + this.src);
@@ -313,15 +326,13 @@
 
                 img.src = url;
 
-                slideImg.css('background-image', 'url(' + img.src + ')');
-
                 if (alt) {
                     slideImg
                         .addClass(params._alt)
                         .attr('data-alt', alt);
                 }
 
-            })(target);
+            })(target, slideImg);
         },
 
         loadThumbs: function(galleryId) {
@@ -441,10 +452,12 @@
 
             // Algorithm
             if (p.viewportWidth > img.width && p.viewportHeight > img.height) {
+                p.gallery[target].algorithm = 'center';
                 slide
                     .removeClass(params._auto)
                     .addClass(params._center);
             } else {
+                p.gallery[target].algorithm = 'auto';
                 slide
                     .removeClass(params._center)
                     .addClass(params._auto);
@@ -452,10 +465,12 @@
 
             // Orientation
             if (imgRatio >= viewportRatio) {
+                p.gallery[target].orientation = 'landscape';
                 slide
                     .removeClass(params._portrait)
                     .addClass(params._landscape);
             } else {
+                p.gallery[target].orientation = 'portrait';
                 slide
                     .removeClass(params._landscape)
                     .addClass(params._portrait);
@@ -491,14 +506,22 @@
                     result[property] = 'translateX(' + value + meter + ')';
                 }
             } else {
-                result.left = value + '%';
+                result.left = value + meter;
             }
 
             return result;
         },
 
         getTemplate: function(id) {
-            return '<div class="' + params.slide + ' ' + params.slideIdPrefix + id + ' ' + params._loading + '" data-id="' + id + '"><div class="' + params.slideImg + '"></div></div>';
+            var out = '<div class="' + params.slide + ' ' + params.slideIdPrefix + id + ' ' + params._loading + '" data-id="' + id + '">';
+
+            if (params.ie && params.ie < 9) {
+                out += '<img src="" class="' + params.slideImg + '"></div>';
+            } else {
+                out += '<div class="' + params.slideImg + '"></div></div>';
+            }
+
+            return out;
         }
     };
 
@@ -515,13 +538,24 @@
     };
 
     /**
+     * Detect IE version
+     *
+     * @return {Int} major version
+     */
+    function ie() {
+        var ua = navigator.userAgent.toLowerCase();
+
+        return ua.indexOf('msie') != -1 ? parseInt(ua.split('msie')[1]) : false;
+    }
+
+    /**
      * Returns supported property for css-transform
      *
      * @return {String} string key
      */
     function getSupportedTransform() {
         var out = false,
-            el = document.createElement('div');
+            el = document.createElement('p');
 
         for (var key in prefixes) {
             if (el.style[key] !== undefined) {
@@ -544,6 +578,28 @@
     }
 
     /**
+     * Get prefixed css-property
+     *
+     * @return {String} string key
+     */
+    function getPrefixed(property) {
+        var style = document.createElement('p').style,
+            prefixes = ['ms', 'O', 'Moz', 'Webkit'];
+
+        if (style[property] == '') {
+            return property;
+        }
+
+        property = property.charAt(0).toUpperCase() + property.slice(1);
+
+        for (var i = 0; i < prefixes.length; i++) {
+            if (style[prefixes[i] + property] == '') {
+                return prefixes[i] + property;
+            }
+        }
+    }
+
+    /**
      * Кроссбраузерно добавляет обработчики событий
      *
      * @param {HTMLElement} element HTMLElement
@@ -554,16 +610,16 @@
     function eventManager(element, e, handler, capture, off) {
         capture = !!capture;
 
+        if (!element) {
+            return;
+        }
+
         if (off) {
 
             if (element.removeEventListener) {
                 element.removeEventListener(e, handler, capture);
             } else {
-                if (element.detachEvent) {
-                    element.detachEvent('on' + e, handler);
-                } else {
-                    element[e] = undefined;
-                }
+                $(element).off(e);
             }
 
         } else {
@@ -571,16 +627,11 @@
             if (element.addEventListener) {
                 element.addEventListener(e, handler, capture);
             } else {
-                if (element.attachEvent) {
-                    element.attachEvent('on' + e, handler);
-                } else {
-                    element[e] = handler;
-                }
+                $(element).on(e, handler);
             }
 
         }
     }
-
 
     /**
      * Проверяет наличие класса у нативного HTML-элемента
@@ -589,6 +640,10 @@
      * @param {string} className Имя класса
      */
     function hasClass(element, className) {
+        if (!element) {
+            return;
+        }
+
         var classNames = ' ' + element.className + ' ';
 
         className = ' ' + className + ' ';
@@ -719,7 +774,6 @@
          */
         handlers.onMove = function(e) {
             if (touch.isPressed) {
-
                 // смещения
                 touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
                 touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
@@ -754,17 +808,21 @@
                 // если слайдим
                 if (touch.isSlide) {
 
-
                     if (touch.isThumbs) {
                         if (p.thumbsDragging) {
                             thumbsMove();
                         }
                     } else {
-                        slidesMove();
+                        // слайды таскаем, только если поддерживаются transition
+                        if (params.transition) {
+                            slidesMove();
+                        }
                     }
 
                     // запрещаем скролл
-                    e.preventDefault();
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    }
                 }
             }
         };
@@ -793,8 +851,10 @@
                     methods.go(galleryId, parseInt(e.target.getAttribute('data-rel')));
                 }
 
-                e.stopPropagation();
-                e.preventDefault(); // Нужно для отмены зума по doubletap
+                if (e.stopPropagation && e.preventDefault) {
+                    e.stopPropagation();
+                    e.preventDefault(); // Нужно для отмены зума по doubletap
+                }
             }
 
             end();
@@ -808,7 +868,9 @@
                 if (touch.isThumbs) {
                     thumbsEnd();
                 } else {
-                    slidesEnd();
+                    if (params.transition) {
+                        slidesEnd();
+                    }
                 }
             }
 
@@ -946,7 +1008,11 @@
                 element: p.thumb[i],
                 event: 'click',
                 handler: function(e) {
-                    e.preventDefault();
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    }
+
+                    return false;
                 }
             });
         }
@@ -957,7 +1023,11 @@
                 element: p.thumbImg[j],
                 event: 'dragstart',
                 handler: function(e) {
-                    e.preventDefault();
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    }
+
+                    return false;
                 }
             });
         }
@@ -1026,21 +1096,16 @@
      */
     function bindTransitionEnd(galleryId) {
         var p = data[galleryId],
-            transitionEnd = ['transitionend', 'MSTransitionEnd', 'oTransitionEnd'];
+            transitionEnd = ['webkitTransitionEnd', 'MSTransitionEnd', 'oTransitionEnd', 'transitionend'];
 
         handlers.transitionEnd = function(e) {
-            p.root.removeClass(params._animated);
-            p.layer.css('transition-duration', '0s');
+            var prop = e.propertyName;
 
-            for (var i = 0; i < p.count; i++) {
-                var elem = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + i);
-
-                if (i < p.current - 1 || i > p.current + 1) {
-                    elem.addClass('_hidden');
-                } else {
-                    elem.removeClass('_hidden');
-                }
+            if (prop.lastIndexOf('transform') != prop.length - 'transform'.length && prop != 'left') {
+                return;
             }
+
+            callback(galleryId);
         };
 
         for (var i = 0; i < transitionEnd.length; i++) {
@@ -1049,6 +1114,27 @@
                 event: transitionEnd[i],
                 handler: handlers.transitionEnd
             });
+        }
+    }
+
+    function callback(galleryId, withoutCallback) {
+        var p = data[galleryId];
+
+        p.root.removeClass(params._animated);
+        p.layer.css('transition-duration', '0s');
+
+        if (params.onShow && !withoutCallback) {
+            params.onShow(p);
+        }
+
+        for (var i = 0; i < p.count; i++) {
+            var elem = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + i);
+
+            if (i < p.current - 1 || i > p.current + 1) {
+                elem.addClass(params._hidden);
+            } else {
+                elem.removeClass(params._hidden);
+            }
         }
     }
 

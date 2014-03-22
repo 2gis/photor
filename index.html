@@ -3,6 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Photor demo</title>
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        }
+    html,
+    body {
+        height: 100%;
+        }
+    </style>
     <link rel="stylesheet" href="dist/photor.min.css">
 
     <meta name="viewport" content="width=device-width">
@@ -14,17 +24,8 @@
     <div class="photor__viewport">
         <div class="photor__viewportLayer"></div>
         <div class="photor__viewportControl">
-
             <div class="photor__viewportControlPrev"></div>
             <div class="photor__viewportControlNext"></div>
-
-            <div class="photor__counter">
-                <div class="photor__counterInner">
-                    <strong class="photor__counterInnerCurrent"></strong>
-                    из <strong class="photor__counterInnerCount"></strong>
-                </div>
-            </div>
-
         </div>
     </div>
     <div class="photor__thumbs">
@@ -83,38 +84,17 @@
             <span data-href="demo/images/9.jpg" class="photor__thumbsWrapItem">
                 <img src="demo/thumbs/9.jpg" alt="" class="photor__thumbsWrapItemImg">
             </span>
-            <a href="#" class="photor__thumbsWrapFrame" style="display: block;"></a>
+            <div class="photor__thumbsWrapFrame"></div>
         </div>
-        <div class="photor__thumbsControl"></div>
     </div>
 </div>
 
-<script src="http://yandex.st/jquery/2.1.0/jquery.min.js"></script>
+<script src="http://yandex.st/jquery/1.11.0/jquery.min.js"></script>
 <script src="dist/photor.js"></script>
 <script>
 $(document).ready(function() {
 
-    $('.photor').photor({
-
-        control: 'photor__viewportControl',
-        next: 'photor__viewportControlNext',
-        prev: 'photor__viewportControlPrev',
-        thumbs: 'photor__thumbs',
-        thumbsLayer: 'photor__thumbsWrap',
-        thumb: 'photor__thumbsWrapItem',
-        thumbImg: 'photor__thumbsWrapItemImg',
-        thumbFrame: 'photor__thumbsWrapFrame',
-        viewport: 'photor__viewport',
-        layer: 'photor__viewportLayer',
-        slide: 'photor__viewportLayerSlide',
-        slideImg: 'photor__viewportLayerSlideImg',
-
-        onShow: function(instance) {
-            $('.photor__counterInnerCurrent').html(instance.current + 1);
-            $('.photor__counterInnerCount').html(instance.count + 1);
-        }
-
-    });
+    $('.photor').photor();
 
 });
 
