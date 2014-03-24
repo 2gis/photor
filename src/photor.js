@@ -185,6 +185,8 @@
                 });
 
                 methods.getThumbsSize(galleryId);
+
+                methods.go(galleryId, p.current, 0);
             }
         },
 
@@ -239,7 +241,7 @@
 
             p.layer
                 .css('transition-duration', delay + 'ms')
-                .css(methods.setIndent(-target * 100));
+                .css(methods.setIndent(-target * p.viewportWidth));
 
             p.current = target;
 
@@ -425,7 +427,7 @@
 
                 p.thumbsLayer
                     .css('transition-duration', delay)
-                    .css(methods.setIndent(validatedIndent, 'px'));
+                    .css(methods.setIndent(validatedIndent));
 
             }
 
@@ -495,7 +497,7 @@
         setIndent: function(value, meter) {
             var result = {};
 
-            meter = meter || '%';
+            meter = meter || 'px';
 
             if (params.transform) {
                 var property = prefixes[params.transform.property];
@@ -802,6 +804,7 @@
                     if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
                         p.root.addClass(params._dragging);
                         touch.isSlide = true;
+                        touch.startShift = getIndent(galleryId);
                     }
                 }
 
@@ -861,6 +864,24 @@
         };
 
         /**
+         * Возвращает текущее значение отступа layer
+         *
+         * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+         */
+        function getIndent(galleryId) {
+            var p = data[galleryId],
+                value;
+
+            if (params.transform) {
+                value = p.layer.css(prefixes[params.transform.property]).match(/(-?[0-9\.]+)/g)[4];
+            } else {
+                value = p.layer.css('left');
+            }
+
+            return parseInt(value);
+        }
+
+        /**
          * Завершение перемещения
          */
         function end() {
@@ -886,7 +907,7 @@
                 touch.shiftX = touch.shiftX / 3;
             }
 
-            p.layer.css(methods.setIndent(100 * (touch.shiftX / p.controlWidth - p.current)));
+            p.layer.css(methods.setIndent(touch.startShift + touch.shiftX));
         }
 
         /**
@@ -936,7 +957,7 @@
 
                 p.thumbsLayer
                     .css('transition-duration', '.24s')
-                    .css(methods.setIndent(p.thumbsIndent, 'px'));
+                    .css(methods.setIndent(p.thumbsIndent));
             }
         }
 
@@ -1081,7 +1102,6 @@
             }
         };
 
-        // eventManager(window, true, 'keydown', handlers.keydown, false);
         p.events.push({
             element: window,
             event: 'keydown',
@@ -1123,9 +1143,6 @@
         p.root.removeClass(params._animated);
         p.layer.css('transition-duration', '0s');
 
-        if (params.onShow && !withoutCallback) {
-            params.onShow(p);
-        }
 
         for (var i = 0; i < p.count; i++) {
             var elem = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + i);
@@ -1135,6 +1152,10 @@
             } else {
                 elem.removeClass(params._hidden);
             }
+        }
+
+        if (params.onShow && !withoutCallback) {
+            params.onShow(p);
         }
     }
 
