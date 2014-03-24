@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Photor demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            }
+        html,
+        body {
+            height: 100%;
+            }
+    </style>
+    <link rel="stylesheet" href="../dist/photor.min.css">
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="msapplication-tap-highlight" content="no">
+</head>
+<body>
+
+<div class="photor">
+
+    <div class="photor__viewport">
+
+        <div class="photor__viewportLayer"></div>
+
+        <div class="photor__viewportControl">
+            <div class="photor__viewportControlPrev"></div>
+            <div class="photor__viewportControlNext"></div>
+        </div>
+
+    </div>
+
+    <div class="photor__thumbs">
+        <div class="photor__thumbsWrap">
+
+            <span data-href="images/1.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/1.jpg" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/2.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/2.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/3.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/3.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/4.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/4.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/5.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/5.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/6.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/6.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/7.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/7.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/8.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/8.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/9.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/9.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/1.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/1.jpg" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/2.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/2.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/3.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/3.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/4.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/4.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/5.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/5.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/6.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/6.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/7.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/7.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/8.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/8.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+            <span data-href="images/9.jpg" class="photor__thumbsWrapItem">
+                <img src="thumbs/9.jpg" alt="" class="photor__thumbsWrapItemImg">
+            </span>
+
+            <div class="photor__thumbsWrapFrame"></div>
+
+        </div>
+    </div>
+
+</div>
+
+<script src="http://yandex.st/jquery/1.11.0/jquery.min.js"></script>
+<script src="/dist/photor.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.photor').photor();
+    });
+</script>
+
+</body>
+</html>
