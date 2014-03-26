@@ -1082,24 +1082,30 @@
         var p = data[galleryId];
 
         handlers.keydown = function(e) {
-            var key = e.which || e.keyCode;
+            var key = e.which || e.keyCode,
+                node = e.target.nodeName.toLowerCase(),
+                contenteditable = !!e.target.attributes.contenteditable;
 
-            switch(key) {
-                // Space
-                case 32:
-                    methods.next(galleryId);
-                    break;
+            if (node != 'input' && node != 'textarea' && node != 'select' && !contenteditable) {
+                switch(key) {
+                    // Space
+                    case 32:
+                        methods.next(galleryId);
+                        break;
 
-                // Left
-                case 37:
-                    methods.prev(galleryId);
-                    break;
+                    // Left
+                    case 37:
+                        methods.prev(galleryId);
+                        break;
 
-                // Right
-                case 39:
-                    methods.next(galleryId);
-                    break;
+                    // Right
+                    case 39:
+                        methods.next(galleryId);
+                        break;
+                }
             }
+
+
         };
 
         p.events.push({
