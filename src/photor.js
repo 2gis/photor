@@ -241,7 +241,8 @@
 
             p.layer
                 .css('transition-duration', delay + 'ms')
-                .css(methods.setIndent(-target * p.viewportWidth));
+                // .css(methods.setIndent(-target * p.viewportWidth));
+                .css(methods.setIndent(-target * 100));
 
             p.current = target;
 
@@ -427,7 +428,7 @@
 
                 p.thumbsLayer
                     .css('transition-duration', delay)
-                    .css(methods.setIndent(validatedIndent));
+                    .css(methods.setIndent(validatedIndent, 'px'));
 
             }
 
@@ -497,7 +498,7 @@
         setIndent: function(value, meter) {
             var result = {};
 
-            meter = meter || 'px';
+            meter = meter || '%';
 
             if (params.transform) {
                 var property = prefixes[params.transform.property];
@@ -903,11 +904,15 @@
          * Движение слайдов во время перетаскивания
          */
         function slidesMove() {
+            var resultIndent;
+
             if ((p.current == 0 && touch.shiftX > 0) || (p.current == p.count && touch.shiftX < 0)) {
                 touch.shiftX = touch.shiftX / 3;
             }
 
-            p.layer.css(methods.setIndent(touch.startShift + touch.shiftX));
+            resultIndent = (touch.shiftX + touch.startShift) / p.controlWidth * 100;
+
+            p.layer.css(methods.setIndent(Math.round(resultIndent * 100) / 100));
         }
 
         /**
@@ -957,7 +962,7 @@
 
                 p.thumbsLayer
                     .css('transition-duration', '.24s')
-                    .css(methods.setIndent(p.thumbsIndent));
+                    .css(methods.setIndent(p.thumbsIndent, 'px'));
             }
         }
 
@@ -988,20 +993,20 @@
 
         // Touch-события
         p.events.push({
-            element: control[0],
+            element: p.viewport[0],
             event: evt[0],
             handler: handlers.onStart
         }, {
-            element: control[0],
+            element: p.viewport[0],
             event: evt[1],
             handler: handlers.onMove,
             capture: true
         }, {
-            element: control[0],
+            element: p.viewport[0],
             event: evt[2],
             handler: handlers.onEnd
         }, {
-            element: control[0],
+            element: p.viewport[0],
             event: evt[3],
             handler: handlers.onEnd
         }, {
