@@ -93,7 +93,7 @@
                     hasHTML = false;
 
                 // Disable double init
-                if (root.attr('data-photor-id') == galleryId) {
+                if (root.attr('data-photor-id')) {
                     return;
                 }
 
@@ -135,7 +135,8 @@
                                 caption: this.alt,
                                 html: !isPhoto ? this.outerHTML : null,
                                 thumb: $(this).attr('data-thumb'),
-                                loaded: !isPhoto
+                                loaded: !isPhoto,
+                                classes: $(this).attr('class')
                             }));
                         });
                     }
@@ -574,7 +575,7 @@
 
                 // Thumbnails template
 
-                thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb + ' ' + params.modifierPrefix + i + '">';
+                thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb + ' ' + params.modifierPrefix + i + ' ' + data[i].classes + '">';
 
                 if (params.showThumbs == 'thumbs' && data[i].url) {
                     thumbsHTML += '<img src="' + data[i].thumb + '" class="' + params.thumbImg + '" data-rel="' + i + '">';
@@ -590,9 +591,9 @@
                     slidesHTML += data[i].html;
                 } else {
                     if (params.ie && params.ie < 9) {
-                        slidesHTML += '<img src="" class="' + params.slideImg + '">';
+                        slidesHTML += '<img src="" class="' + params.slideImg + ' ' + data[i].classes + '">';
                     } else {
-                        slidesHTML += '<div class="' + params.slideImg + '"></div>';
+                        slidesHTML += '<div class="' + params.slideImg + ' ' + data[i].classes + '"></div>';
                     }
                 }
 
@@ -930,7 +931,7 @@
                 }
 
                 // Клик по миниатюре
-                if (hasClass(e.target, p.params.thumbImg)) {
+                if (hasClass(e.target, p.params.thumbImg) || hasClass(e.target, p.params.thumb)) {
                     methods.go(galleryId, parseInt(e.target.getAttribute('data-rel')));
                 }
 
@@ -989,7 +990,7 @@
                 touch.shiftX = touch.shiftX / 3;
             }
 
-            resultIndent = (touch.shiftX + touch.startShift) / p.controlWidth * 100;
+            resultIndent = (touch.shiftX + touch.startShift) / p.viewportWidth * 100;
 
             p.layer.css(methods.setIndent(galleryId, Math.round(resultIndent * 100) / 100));
         }
