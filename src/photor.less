@@ -21,7 +21,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    background: #090907;
+    background: #fff;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -29,6 +29,10 @@
     -ms-touch-action: pan-y;
     touch-action: pan-y;
     -webkit-font-smoothing: antialiased;
+
+    &._thumbs {
+        background: #090907;
+        }
 
     &__viewport {
         position: absolute;
@@ -156,6 +160,11 @@
                 /* Алгоритм размещения фотографии по центру (для маленьких изображений) */
                 &._center {
                     background-size: auto;
+                    }
+
+                &._html:before,
+                &._html:after {
+                    display: none;
                     }
                 }
             }

@@ -43,6 +43,7 @@
                 _single: '_single',         // Модификатор для галереи с одной фотографией
                 _animated: '_animated',     // На время анимации
                 _hidden: '_hidden',         // Спрятанный слайд
+                _html: '_html',             // Слайд с html-содержимым
 
                 // Algorithm
                 _auto: '_auto',             // Фотография больше вьюпорта
@@ -59,10 +60,11 @@
                 single: false,              // Инициализировать обработчики для одиночного изображения
                 current: 0,                 // Текуший слайд
                 count: 0,                   // Количество фотографий
-                slideIdPrefix: '_',         // Префикс для класса с номером слайда
+                modifierPrefix: '_',        // Префикс для класса с номером слайда
                 delay: 300,                 // Время анимации для слайдов
                 keyboard: true,             // Управление с клавиатуры
                 ieClassPrefix: '_ie',       // Префикс для класса с версией IE
+                showThumbs: null,           // thumbs / dots / null
 
                 // Supported features
                 transform: getSupportedTransform(),
@@ -74,63 +76,98 @@
 
             return this.each(function(i) {
                 var root = $(this),
-                    galleryId = this.id || i,
+                    galleryId = this.id || data.length,
+                    j,
                     p = {}, // Current instance of gallery
-                    content = '',
+                    content = {},
                     count = 0,
-                    thumbs = [];
+                    thumbs = [],
+                    imageTemplate = {
+                        url: '',
+                        thumb: '',
+                        caption: '',
+                        width: 0,
+                        height: 0,
+                        loaded: false
+                    },
+                    hasHTML = false;
 
                 // Disable double init
-                if (root.attr('data-photor-id') == galleryId) {
+                if (root.attr('data-photor-id')) {
                     return;
                 }
 
+                p.params = $.extend({}, params);
+
                 // Get elements
                 p.root        = root;
-                p.control     = root.find('.' + params.control);
-                p.next        = root.find('.' + params.next);
-                p.prev        = root.find('.' + params.prev);
-                p.thumbs      = root.find('.' + params.thumbs);
-                p.thumbsLayer = root.find('.' + params.thumbsLayer);
-                p.thumb       = root.find('.' + params.thumb);
-                p.thumbImg    = root.find('.' + params.thumbImg);
-                p.thumbFrame  = root.find('.' + params.thumbFrame);
-                p.viewport    = root.find('.' + params.viewport);
-                p.layer       = root.find('.' + params.layer);
+                p.control     = root.find('.' + p.params.control);
+                p.next        = root.find('.' + p.params.next);
+                p.prev        = root.find('.' + p.params.prev);
+                p.thumbs      = root.find('.' + p.params.thumbs);
+                p.thumbsLayer = root.find('.' + p.params.thumbsLayer);
+                p.viewport    = root.find('.' + p.params.viewport);
+                p.layer       = root.find('.' + p.params.layer);
 
-                // Images info
+                // Data collection
                 p.gallery = [];
-                p.thumb.each(function(j) {
-                    var self = $(this),
-                        thumbImg = self.find('.' + params.thumbImg)[0];
 
-                    p.gallery.push({
-                        url: self.attr('data-href'),
-                        width: 0,
-                        height: 0,
-                        loaded: false,
-                        alt: thumbImg.alt
-                    });
-                    content += methods.getTemplate(j);
-                    count++;
+                // Initialization by object
+                if (p.params.data && p.params.data.length) {
 
-                    $(thumbImg)
-                        .attr('data-rel', j)
-                        .addClass(params.slideIdPrefix + j);
+                    for (j = 0; j < p.params.data.length; j++) {
+                        p.gallery.push($.extend({}, imageTemplate, p.params.data[j]));
+                    }
 
-                    // Thumbs init
-                    thumbs[j] = thumbImg.src;
-                });
-                p.layer.html(content);
+                } else {
 
-                p.slide = root.find('.' + params.slide);
+                    // Initialization by slides
+                    var slides = root.find('.' + p.params.layer + ' > *');
+
+                    if (slides.length) {
+                        slides.each(function(j) {
+                            var isPhoto = this.nodeName == 'IMG';
+
+                            hasHTML = !isPhoto;
+
+                            p.gallery.push($.extend({}, imageTemplate, {
+                                url: isPhoto ? this.src : null,
+                                caption: this.alt,
+                                html: !isPhoto ? this.outerHTML : null,
+                                thumb: $(this).attr('data-thumb'),
+                                loaded: !isPhoto,
+                                classes: $(this).attr('class')
+                            }));
+                        });
+                    }
+
+                }
+
+                if (hasHTML && p.params.showThumbs == 'thumbs') {
+                    p.params.showThumbs = 'dots';
+                }
+
+
+                // Build DOM
+                content = methods.getHTML(p.params, p.gallery);
+
+                p.layer.html(content.slides);
+                p.thumbsLayer.html(content.thumbs);
+
+                // Get builded elements
+                p.thumb       = root.find('.' + p.params.thumb);
+                p.thumbImg    = root.find('.' + p.params.thumbImg);
+                p.thumbFrame  = root.find('.' + p.params.thumbFrame);
+                p.slide       = root.find('.' + p.params.slide);
+                p.slideImg    = root.find('.' + p.params.slideImg);
+
                 p.slide.each(function(i) {
                     $(this).css('left', i * 100 + '%');
                 });
 
                 // Settings
-                p.current = params.current;
-                p.count = count - 1;
+                p.current = p.params.current;
+                p.count = p.gallery.length - 1;
                 p.thumbsDragging = false;
                 p.thumbsIndent = 0;
                 p.events = [];
@@ -141,23 +178,30 @@
                 p.controlHeight = p.control.outerHeight();
                 p.thumbsWidth = p.thumbs.outerWidth();
                 p.thumbsHeight = p.thumbs.outerHeight();
-                p.thumbSrc = thumbs;
 
                 data[galleryId] = p;
                 root.attr('data-photor-id', galleryId);
 
-                if (params.ie) {
-                    root.addClass(params.ieClassPrefix + params.ie);
+                if (p.params.showThumbs) {
+                    root.addClass(p.params.modifierPrefix + p.params.showThumbs);
                 }
 
-                if (count == 1) {
-                    root.addClass(params._single);
+                if (p.params.ie) {
+                    root.addClass(p.params.ieClassPrefix + p.params.ie);
                 }
 
-                methods.loadThumbs(galleryId);
-                if (count > 1 || params.single) {
+                if (p.gallery.length == 1) {
+                    root.addClass(p.params._single);
+                }
+
+                if (p.params.showThumbs == 'thumbs') {
+                    methods.loadThumbs(galleryId);
+                }
+
+                if (p.gallery.length > 1 || p.params.single) {
                     methods.handlers(galleryId);
                 }
+
                 callback(galleryId, 1);
                 methods.go(galleryId, p.current, 0);
             });
@@ -223,7 +267,7 @@
             bindResize(galleryId);
             bindTransitionEnd(galleryId);
 
-            if (params.keyboard) {
+            if (p.params.keyboard) {
                 bindKeyboard(galleryId);
             }
 
@@ -235,29 +279,36 @@
         go: function(galleryId, target, delay) {
             var p = data[galleryId];
 
-            delay = delay == null ? params.delay : delay;
+            delay = delay == null ? p.params.delay : delay;
 
-            p.root.addClass(params._animated);
+            p.root.addClass(p.params._animated);
 
             p.layer
                 .css('transition-duration', delay + 'ms')
-                // .css(methods.setIndent(-target * p.viewportWidth));
-                .css(methods.setIndent(-target * 100));
+                // .css(methods.setIndent(galleryId, -target * p.viewportWidth));
+                .css(methods.setIndent(galleryId, -target * 100));
 
             p.current = target;
 
-            // Mark slide as current
-            methods.setCurrentThumb(galleryId, target);
-            p.slide.removeClass(params._current);
+            // Mark slide and thumb as current
+            if (p.params.showThumbs == 'thumbs') {
+                methods.setCurrentThumb(galleryId, target);
+            }
+
+            p.thumb.removeClass(p.params._current);
+            p.slide.removeClass(p.params._current);
+            p.thumb
+                .filter('.' + p.params.modifierPrefix + target)
+                .addClass(p.params._current);
             p.slide
-                .filter('.' + params.slideIdPrefix + target)
-                .addClass(params._current);
+                .filter('.' + p.params.modifierPrefix + target)
+                .addClass(p.params._current);
 
             // Load slide's range
             methods.loadSlides(galleryId, target);
             methods.checkButtons(galleryId);
 
-            if (!params.transition) {
+            if (!p.params.transition) {
                 callback(galleryId);
             }
 
@@ -297,8 +348,8 @@
 
         loadSlide: function(galleryId, target) {
             var p = data[galleryId],
-                slide = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + target),
-                slideImg = slide.find('.' + params.slideImg),
+                slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
+                slideImg = slide.find('.' + p.params.slideImg),
                 alt = p.gallery[target].alt,
                 url = p.gallery[target].url,
                 img = document.createElement('img');
@@ -315,13 +366,13 @@
 
                         methods.position(galleryId, rel);
 
-                        if (params.ie && params.ie < 9) {
+                        if (p.params.ie && p.params.ie < 9) {
                             slideImg.attr('src', this.src);
                         } else {
                             slideImg.css('background-image', 'url(' + this.src + ')');
                         }
 
-                        slide.removeClass(params._loading);
+                        slide.removeClass(p.params._loading);
                     })
                     .on('error', function() {
                         $.error('Image wasn\'t loaded: ' + this.src);
@@ -331,7 +382,7 @@
 
                 if (alt) {
                     slideImg
-                        .addClass(params._alt)
+                        .addClass(p.params._alt)
                         .attr('data-alt', alt);
                 }
 
@@ -341,7 +392,7 @@
         loadThumbs: function(galleryId) {
             var p = data[galleryId],
                 count = p.count,
-                images = p.thumbSrc,
+                images = p.gallery,
                 loaded = 0;
 
             p.galleryThumbs = [];
@@ -365,7 +416,7 @@
                             $.error('Image wasn\'t loaded: ' + this.src);
                         });
 
-                    img.src = images[i];
+                    img.src = images[i].thumb;
                 })(i);
             }
         },
@@ -405,10 +456,10 @@
                 styles.width = current.width + 'px';
                 styles.height = current.height + 'px';
 
-                if (params.transform) {
-                    var property = prefixes[params.transform.property];
+                if (p.params.transform) {
+                    var property = prefixes[p.params.transform.property];
 
-                    if (params.transform.has3d) {
+                    if (p.params.transform.has3d) {
                         styles[property] = 'translate3d(' + current.left + 'px, ' + current.top + 'px, 0)';
                     } else {
                         styles[property] = 'translateX(' + current.left + 'px) translateY(' + current.top + 'px)';
@@ -428,7 +479,7 @@
 
                 p.thumbsLayer
                     .css('transition-duration', delay)
-                    .css(methods.setIndent(validatedIndent, 'px'));
+                    .css(methods.setIndent(galleryId, validatedIndent, 'px'));
 
             }
 
@@ -448,7 +499,7 @@
 
         position: function(galleryId, target) {
             var p = data[galleryId],
-                slide = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + target),
+                slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
                 img = p.gallery[target],
                 viewportRatio = p.viewportWidth / p.viewportHeight,
                 imgRatio = img.width / img.height;
@@ -457,26 +508,26 @@
             if (p.viewportWidth > img.width && p.viewportHeight > img.height) {
                 p.gallery[target].algorithm = 'center';
                 slide
-                    .removeClass(params._auto)
-                    .addClass(params._center);
+                    .removeClass(p.params._auto)
+                    .addClass(p.params._center);
             } else {
                 p.gallery[target].algorithm = 'auto';
                 slide
-                    .removeClass(params._center)
-                    .addClass(params._auto);
+                    .removeClass(p.params._center)
+                    .addClass(p.params._auto);
             }
 
             // Orientation
             if (imgRatio >= viewportRatio) {
                 p.gallery[target].orientation = 'landscape';
                 slide
-                    .removeClass(params._portrait)
-                    .addClass(params._landscape);
+                    .removeClass(p.params._portrait)
+                    .addClass(p.params._landscape);
             } else {
                 p.gallery[target].orientation = 'portrait';
                 slide
-                    .removeClass(params._landscape)
-                    .addClass(params._portrait);
+                    .removeClass(p.params._landscape)
+                    .addClass(p.params._portrait);
             }
         },
 
@@ -484,26 +535,27 @@
             var p = data[galleryId];
 
             if (p.current == 0) {
-                p.prev.addClass(params._disabled);
+                p.prev.addClass(p.params._disabled);
             } else {
-                p.prev.removeClass(params._disabled);
+                p.prev.removeClass(p.params._disabled);
             }
             if (p.current == p.count) {
-                p.next.addClass(params._disabled);
+                p.next.addClass(p.params._disabled);
             } else {
-                p.next.removeClass(params._disabled);
+                p.next.removeClass(p.params._disabled);
             }
         },
 
-        setIndent: function(value, meter) {
-            var result = {};
+        setIndent: function(galleryId, value, meter) {
+            var p = data[galleryId],
+                result = {};
 
             meter = meter || '%';
 
-            if (params.transform) {
-                var property = prefixes[params.transform.property];
+            if (p.params.transform) {
+                var property = prefixes[p.params.transform.property];
 
-                if (params.transform.has3d) {
+                if (p.params.transform.has3d) {
                     result[property] = 'translate3d(' + value + meter + ', 0, 0)';
                 } else {
                     result[property] = 'translateX(' + value + meter + ')';
@@ -515,16 +567,44 @@
             return result;
         },
 
-        getTemplate: function(id) {
-            var out = '<div class="' + params.slide + ' ' + params.slideIdPrefix + id + ' ' + params._loading + '" data-id="' + id + '">';
+        getHTML: function(params, data) {
+            var thumbsHTML = '',
+                slidesHTML = '';
 
-            if (params.ie && params.ie < 9) {
-                out += '<img src="" class="' + params.slideImg + '"></div>';
-            } else {
-                out += '<div class="' + params.slideImg + '"></div></div>';
+            for (var i = 0; i < data.length; i++) {
+
+                // Thumbnails template
+
+                thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb + ' ' + params.modifierPrefix + i + ' ' + data[i].classes + '">';
+
+                if (params.showThumbs == 'thumbs' && data[i].url) {
+                    thumbsHTML += '<img src="' + data[i].thumb + '" class="' + params.thumbImg + '" data-rel="' + i + '">';
+                }
+
+                thumbsHTML += '</span>';
+
+                // Slides template
+
+                slidesHTML += '<div class="' + params.slide + ' ' + params.modifierPrefix + i + ' ' + (data[i].html ? params._html : params._loading) + '" data-id="' + i + '">';
+
+                if (data[i].html) {
+                    slidesHTML += data[i].html;
+                } else {
+                    if (params.ie && params.ie < 9) {
+                        slidesHTML += '<img src="" class="' + params.slideImg + ' ' + data[i].classes + '">';
+                    } else {
+                        slidesHTML += '<div class="' + params.slideImg + ' ' + data[i].classes + '"></div>';
+                    }
+                }
+
+                slidesHTML += '</div>';
             }
 
-            return out;
+            if (params.showThumbs == 'thumbs') {
+                thumbsHTML += '<div class="' + params.thumbFrame + '"></div>';
+            }
+
+            return {thumbs: thumbsHTML, slides: slidesHTML};
         }
     };
 
@@ -763,7 +843,7 @@
             touch.isPressed = true;
 
             // Запоминаем элемент, на котором вызвано событие
-            touch.isThumbs = hasClass(this, params.thumbs);
+            touch.isThumbs = hasClass(this, p.params.thumbs);
             touch.thumbsStartX = p.thumbsIndent;
 
             p.layer.css('transition-duration', '0s');
@@ -803,7 +883,7 @@
 
                     // если горизонтальное - слайдим
                     if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
-                        p.root.addClass(params._dragging);
+                        p.root.addClass(p.params._dragging);
                         touch.isSlide = true;
                         touch.startShift = getIndent(galleryId);
                     }
@@ -818,7 +898,7 @@
                         }
                     } else {
                         // слайды таскаем, только если поддерживаются transition
-                        if (params.transition) {
+                        if (p.params.transition) {
                             slidesMove();
                         }
                     }
@@ -841,17 +921,17 @@
             if (!touch.isSlide && !touch.isScroll && touch.isPressed) {
 
                 // Назад
-                if (hasClass(e.target, params.prev)) {
+                if (hasClass(e.target, p.params.prev)) {
                     methods.prev(galleryId);
                 }
 
                 // Вперед
-                if (hasClass(e.target, params.next)) {
+                if (hasClass(e.target, p.params.next)) {
                     methods.next(galleryId);
                 }
 
                 // Клик по миниатюре
-                if (hasClass(e.target, params.thumbImg)) {
+                if (hasClass(e.target, p.params.thumbImg) || hasClass(e.target, p.params.thumb)) {
                     methods.go(galleryId, parseInt(e.target.getAttribute('data-rel')));
                 }
 
@@ -873,8 +953,8 @@
             var p = data[galleryId],
                 value;
 
-            if (params.transform) {
-                value = p.layer.css(prefixes[params.transform.property]).match(/(-?[0-9\.]+)/g)[4];
+            if (p.params.transform) {
+                value = p.layer.css(prefixes[p.params.transform.property]).match(/(-?[0-9\.]+)/g)[4];
             } else {
                 value = p.layer.css('left');
             }
@@ -890,14 +970,14 @@
                 if (touch.isThumbs) {
                     thumbsEnd();
                 } else {
-                    if (params.transition) {
+                    if (p.params.transition) {
                         slidesEnd();
                     }
                 }
             }
 
             touch = {};
-            p.root.removeClass(params._dragging);
+            p.root.removeClass(p.params._dragging);
         }
 
         /**
@@ -910,9 +990,9 @@
                 touch.shiftX = touch.shiftX / 3;
             }
 
-            resultIndent = (touch.shiftX + touch.startShift) / p.controlWidth * 100;
+            resultIndent = (touch.shiftX + touch.startShift) / p.viewportWidth * 100;
 
-            p.layer.css(methods.setIndent(Math.round(resultIndent * 100) / 100));
+            p.layer.css(methods.setIndent(galleryId, Math.round(resultIndent * 100) / 100));
         }
 
         /**
@@ -947,7 +1027,7 @@
             }
 
             p.thumbsIndent = indent;
-            p.thumbsLayer.css(methods.setIndent(p.thumbsIndent, 'px'));
+            p.thumbsLayer.css(methods.setIndent(galleryId, p.thumbsIndent, 'px'));
         }
 
         /**
@@ -962,7 +1042,7 @@
 
                 p.thumbsLayer
                     .css('transition-duration', '.24s')
-                    .css(methods.setIndent(p.thumbsIndent, 'px'));
+                    .css(methods.setIndent(galleryId, p.thumbsIndent, 'px'));
             }
         }
 
@@ -1151,22 +1231,22 @@
     function callback(galleryId, withoutCallback) {
         var p = data[galleryId];
 
-        p.root.removeClass(params._animated);
+        p.root.removeClass(p.params._animated);
         p.layer.css('transition-duration', '0s');
 
 
         for (var i = 0; i < p.count; i++) {
-            var elem = p.root.find('.' + params.slide + '.' + params.slideIdPrefix + i);
+            var elem = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + i);
 
             if (i < p.current - 1 || i > p.current + 1) {
-                elem.addClass(params._hidden);
+                elem.addClass(p.params._hidden);
             } else {
-                elem.removeClass(params._hidden);
+                elem.removeClass(p.params._hidden);
             }
         }
 
-        if (params.onShow && !withoutCallback) {
-            params.onShow(p);
+        if (p.params.onShow && !withoutCallback) {
+            p.params.onShow(p);
         }
     }
 
