@@ -88,7 +88,8 @@
                         caption: '',
                         width: 0,
                         height: 0,
-                        loaded: false
+                        loaded: false,
+                        classes: ''
                     },
                     hasHTML = false;
 
