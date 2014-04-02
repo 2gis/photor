@@ -137,7 +137,7 @@
                                 html: !isPhoto ? this.outerHTML : null,
                                 thumb: $(this).attr('data-thumb'),
                                 loaded: !isPhoto,
-                                classes: $(this).attr('class')
+                                classes: isPhoto ? $(this).attr('class') : ''
                             }));
                         });
                     }

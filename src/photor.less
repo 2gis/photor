@@ -251,7 +251,27 @@
                     -webkit-transform: translate3d(0,0,0);
                     transform: translate3d(0,0,0);
                     }
+
+                .photor._dots & {
+                    width: 4px;
+                    height: 4px;
+                    padding: 5px;
+
+                    &:before {
+                        display: block;
+                        width: 4px;
+                        height: 4px;
+                        border: 1px solid gray;
+                        border-radius: 3px;
+                        content: '';
+                        }
+
+                    &._current:before {
+                        background: gray;
+                        }
+                    }
                 }
+
 
             // Current thumbs frame
             &Frame {

@@ -231,6 +231,22 @@
   -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
 }
+.photor._dots .photor__thumbsWrapItem {
+  width: 4px;
+  height: 4px;
+  padding: 5px;
+}
+.photor._dots .photor__thumbsWrapItem:before {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border: 1px solid gray;
+  border-radius: 3px;
+  content: '';
+}
+.photor._dots .photor__thumbsWrapItem._current:before {
+  background: gray;
+}
 .photor__thumbsWrapFrame {
   top: 0;
   height: 100%;
