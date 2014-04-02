@@ -119,7 +119,10 @@
 <script>
     $(document).ready(function() {
         $('#one').photor({
-            showThumbs: 'thumbs'
+            showThumbs: 'thumbs',
+            onShow: function(instance) {
+                console.log(instance);
+            }
         });
         $('#two').photor({
             showThumbs: 'dots'

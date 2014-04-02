@@ -202,7 +202,7 @@
                     methods.handlers(galleryId);
                 }
 
-                callback(galleryId, 1);
+                callback(galleryId);
                 methods.go(galleryId, p.current, 0);
             });
         },
@@ -228,7 +228,9 @@
                     methods.position(galleryId, i);
                 });
 
-                methods.getThumbsSize(galleryId);
+                if (p.params.showThumbs == 'thumbs') {
+                    methods.getThumbsSize(galleryId);
+                }
 
                 methods.go(galleryId, p.current, 0);
             }
@@ -444,7 +446,7 @@
             var p = data[galleryId],
                 frame = p.thumbFrame,
                 styles = {},
-                current = p.galleryThumbs[target],
+                current = p.galleryThumbs && p.galleryThumbs[target],
                 thumbsW = p.thumbs.outerWidth(),
                 layerW = p.thumbsLayer.outerWidth(),
                 delay = noEffects ? '0s' : '.24s',
@@ -1228,7 +1230,7 @@
         }
     }
 
-    function callback(galleryId, withoutCallback) {
+    function callback(galleryId) {
         var p = data[galleryId];
 
         p.root.removeClass(p.params._animated);
@@ -1245,7 +1247,7 @@
             }
         }
 
-        if (p.params.onShow && !withoutCallback) {
+        if (p.params.onShow) {
             p.params.onShow(p);
         }
     }
