@@ -353,7 +353,7 @@
             var p = data[galleryId],
                 slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
                 slideImg = slide.find('.' + p.params.slideImg),
-                alt = p.gallery[target].alt,
+                alt = p.gallery[target].caption,
                 url = p.gallery[target].url,
                 img = document.createElement('img');
 
