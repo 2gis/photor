@@ -129,7 +129,7 @@
                         slides.each(function(j) {
                             var isPhoto = this.nodeName == 'IMG';
 
-                            hasHTML = !isPhoto;
+                            hasHTML = hasHTML || !isPhoto;
 
                             p.gallery.push($.extend({}, imageTemplate, {
                                 url: isPhoto ? this.src : null,

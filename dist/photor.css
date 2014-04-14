@@ -235,6 +235,7 @@
   width: 4px;
   height: 4px;
   padding: 5px;
+  margin: 0;
 }
 .photor._dots .photor__thumbsWrapItem:before {
   display: block;
