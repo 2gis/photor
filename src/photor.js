@@ -19,20 +19,22 @@
 
     var methods = {
         init: function(options) {
+            var blockPrefix = 'photor__';
+
             params = $.extend({
 
-                control: 'photor__viewportControl',
-                next: 'photor__viewportControlNext',
-                prev: 'photor__viewportControlPrev',
-                thumbs: 'photor__thumbs',
-                thumbsLayer: 'photor__thumbsWrap',
-                thumb: 'photor__thumbsWrapItem',
-                thumbImg: 'photor__thumbsWrapItemImg',
-                thumbFrame: 'photor__thumbsWrapFrame',
-                viewport: 'photor__viewport',
-                layer: 'photor__viewportLayer',
-                slide: 'photor__viewportLayerSlide',
-                slideImg: 'photor__viewportLayerSlideImg',
+                control:     blockPrefix + 'viewportControl',
+                next:        blockPrefix + 'viewportControlNext',
+                prev:        blockPrefix + 'viewportControlPrev',
+                thumbs:      blockPrefix + 'thumbs',
+                thumbsLayer: blockPrefix + 'thumbsWrap',
+                thumb:       blockPrefix + 'thumbsWrapItem',
+                thumbImg:    blockPrefix + 'thumbsWrapItemImg',
+                thumbFrame:  blockPrefix + 'thumbsWrapFrame',
+                viewport:    blockPrefix + 'viewport',
+                layer:       blockPrefix + 'viewportLayer',
+                slide:       blockPrefix + 'viewportLayerSlide',
+                slideImg:    blockPrefix + 'viewportLayerSlideImg',
 
                 // State modifiers
                 _loading: '_loading',       // Фотография не загружена
@@ -64,7 +66,7 @@
                 delay: 300,                 // Время анимации для слайдов
                 keyboard: true,             // Управление с клавиатуры
                 ieClassPrefix: '_ie',       // Префикс для класса с версией IE
-                showThumbs: null,           // thumbs / dots / null
+                showThumbs: 'thumbs',       // thumbs / dots / null
 
                 // Supported features
                 transform: getSupportedTransform(),
@@ -95,6 +97,7 @@
 
                 // Disable double init
                 if (root.attr('data-photor-id')) {
+                    // galleryId = this.dataset.photorId;
                     return;
                 }
 
@@ -131,14 +134,19 @@
 
                             hasHTML = hasHTML || !isPhoto;
 
-                            p.gallery.push($.extend({}, imageTemplate, {
-                                url: isPhoto ? this.src : null,
-                                caption: this.alt,
-                                html: !isPhoto ? this.outerHTML : null,
-                                thumb: $(this).attr('data-thumb'),
-                                loaded: !isPhoto,
-                                classes: isPhoto ? $(this).attr('class') : ''
-                            }));
+                            if (isPhoto) {
+                                p.gallery.push($.extend({}, imageTemplate, {
+                                    url: this.src,
+                                    caption: this.alt,
+                                    thumb: this.dataset.thumb,
+                                    classes: this.className
+                                }));
+                            } else {
+                                p.gallery.push($.extend({}, imageTemplate, {
+                                    html: this.outerHTML,
+                                    loaded: true
+                                }));
+                            }
                         });
                     }
 
@@ -147,7 +155,6 @@
                 if (hasHTML && p.params.showThumbs == 'thumbs') {
                     p.params.showThumbs = 'dots';
                 }
-
 
                 // Build DOM
                 content = methods.getHTML(p.params, p.gallery);
@@ -247,6 +254,7 @@
                 }
             }
 
+
             /*
              * Удалить обработчики для указанного инстанса галереи
              *
@@ -254,8 +262,6 @@
              */
             function unbindInstance(id) {
                 var p = data[id];
-
-                p.root.removeAttr('data-photor-id');
 
                 for (var i = 0, len = p.events.length; i < len; i++) {
                     eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture, 1);
@@ -1192,8 +1198,6 @@
                         break;
                 }
             }
-
-
         };
 
         p.events.push({
