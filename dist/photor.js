@@ -46,6 +46,7 @@
                 _animated: '_animated',     // На время анимации
                 _hidden: '_hidden',         // Спрятанный слайд
                 _html: '_html',             // Слайд с html-содержимым
+                _freeze: '_freeze',         // Галерея "заморожена"
 
                 // Algorithm
                 _auto: '_auto',             // Фотография больше вьюпорта
@@ -287,6 +288,10 @@
 
         go: function(galleryId, target, delay) {
             var p = data[galleryId];
+
+            if (p.freeze) {
+                return;
+            }
 
             delay = delay == null ? p.params.delay : delay;
 
@@ -576,6 +581,20 @@
             return result;
         },
 
+        freeze: function(galleryId) {
+            var p = data[galleryId];
+
+            p.freeze = true;
+            p.root.addClass(p.params._freeze);
+        },
+
+        unfreeze: function(galleryId) {
+            var p = data[galleryId];
+
+            p.freeze = false;
+            p.root.removeClass(p.params._freeze);
+        },
+
         getHTML: function(params, data) {
             var thumbsHTML = '',
                 slidesHTML = '';
@@ -845,6 +864,10 @@
          * @param {event} e Событие pointerdown
          */
         handlers.onStart = function(e) {
+            if (p.freeze) {
+                return;
+            }
+
             // запоминаем координаты и время
             touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
             touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
@@ -865,7 +888,7 @@
          * @param {event} e Событие pointermove
          */
         handlers.onMove = function(e) {
-            if (touch.isPressed) {
+            if (touch.isPressed && !p.freeze) {
                 // смещения
                 touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
                 touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
