@@ -210,8 +210,8 @@
                     methods.handlers(galleryId);
                 }
 
-                callback(galleryId);
                 methods.go(galleryId, p.current, 0);
+                callback(galleryId);
             });
         },
 
