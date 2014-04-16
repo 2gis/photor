@@ -138,7 +138,7 @@
                                 p.gallery.push($.extend({}, imageTemplate, {
                                     url: this.src,
                                     caption: this.alt,
-                                    thumb: this.dataset.thumb,
+                                    thumb: $(this).data('thumb'),
                                     classes: this.className
                                 }));
                             } else {
