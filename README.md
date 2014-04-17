@@ -28,7 +28,13 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
 
         <div class="photor__viewport">
 
-            <div class="photor__viewportLayer"></div>
+            <div class="photor__viewportLayer">
+
+                <!-- Add photos -->
+                <img src="images/1.jpg" data-thumb="thumbs/1.jpg">
+                <img src="images/2.jpg" data-thumb="thumbs/2.jpg">
+
+            </div>
 
             <div class="photor__viewportControl">
                 <div class="photor__viewportControlPrev"></div>
@@ -38,19 +44,7 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
         </div>
 
         <div class="photor__thumbs">
-            <div class="photor__thumbsWrap">
-
-                <!-- Add photos -->
-                <span data-href="1.jpg" class="photor__thumbsWrapItem">
-                    <img src="1-thumb.jpg" class="photor__thumbsWrapItemImg">
-                </span>
-                <span data-href="2.jpg" class="photor__thumbsWrapItem">
-                    <img src="2-thumb.jpg" class="photor__thumbsWrapItemImg">
-                </span>
-
-                <div class="photor__thumbsWrapFrame"></div>
-
-            </div>
+            <div class="photor__thumbsWrap"></div>
         </div>
 
     </div>
