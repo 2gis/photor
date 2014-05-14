@@ -305,15 +305,9 @@
             p.current = target;
 
             // Mark slide and thumb as current
-            if (p.params.showThumbs == 'thumbs') {
-                methods.setCurrentThumb(galleryId, target);
-            }
+            methods.setCurrentThumb(galleryId, target);
 
-            p.thumb.removeClass(p.params._current);
             p.slide.removeClass(p.params._current);
-            p.thumb
-                .filter('.' + p.params.modifierPrefix + target)
-                .addClass(p.params._current);
             p.slide
                 .filter('.' + p.params.modifierPrefix + target)
                 .addClass(p.params._current);
@@ -405,14 +399,14 @@
 
         loadThumbs: function(galleryId) {
             var p = data[galleryId],
-                count = p.count,
+                count = p.count + 1,
                 images = p.gallery,
                 loaded = 0;
 
             p.galleryThumbs = [];
             p.galleryThumbsLoaded = false;
 
-            for (var i = 0; i <= count; i++) {
+            for (var i = 0; i < count; i++) {
                 (function(i) {
                     var img = document.createElement('img'),
                         image = $(img);
@@ -455,47 +449,54 @@
         },
 
         setCurrentThumb: function(galleryId, target, noEffects) {
-            var p = data[galleryId],
-                frame = p.thumbFrame,
-                styles = {},
-                current = p.galleryThumbs && p.galleryThumbs[target],
-                thumbsW = p.thumbs.outerWidth(),
-                layerW = p.thumbsLayer.outerWidth(),
-                delay = noEffects ? '0s' : '.24s',
-                indent, validatedIndent;
+            var p = data[galleryId];
 
-            p.thumbsDragging = thumbsW < layerW;
+            if (p.params.showThumbs == 'thumbs') {
+                var frame = p.thumbFrame,
+                    styles = {},
+                    current = p.galleryThumbs && p.galleryThumbs[target],
+                    thumbsW = p.thumbs.outerWidth(),
+                    layerW = p.thumbsLayer.outerWidth(),
+                    delay = noEffects ? '0s' : '.24s',
+                    indent, validatedIndent;
 
-            if (p.galleryThumbsLoaded) {
-                styles.width = current.width + 'px';
-                styles.height = current.height + 'px';
+                p.thumbsDragging = thumbsW < layerW;
 
-                if (p.params.transform) {
-                    var property = prefixes[p.params.transform.property];
+                if (p.galleryThumbsLoaded) {
+                    styles.width = current.width + 'px';
+                    styles.height = current.height + 'px';
 
-                    if (p.params.transform.has3d) {
-                        styles[property] = 'translate3d(' + current.left + 'px, ' + current.top + 'px, 0)';
+                    if (p.params.transform) {
+                        var property = prefixes[p.params.transform.property];
+
+                        if (p.params.transform.has3d) {
+                            styles[property] = 'translate3d(' + current.left + 'px, ' + current.top + 'px, 0)';
+                        } else {
+                            styles[property] = 'translateX(' + current.left + 'px) translateY(' + current.top + 'px)';
+                        }
                     } else {
-                        styles[property] = 'translateX(' + current.left + 'px) translateY(' + current.top + 'px)';
+                        styles.top = current.top + 'px';
+                        styles.left = current.left + 'px';
                     }
-                } else {
-                    styles.top = current.top + 'px';
-                    styles.left = current.left + 'px';
+
+                    indent = -1 * (current.left - 0.5 * (thumbsW - current.width));
+                    validatedIndent = validateIndent(indent);
+                    p.thumbsIndent = validatedIndent;
+
+                    frame
+                        .css('transition-duration', delay)
+                        .css(styles);
+
+                    p.thumbsLayer
+                        .css('transition-duration', delay)
+                        .css(methods.setIndent(galleryId, validatedIndent, 'px'));
                 }
-
-                indent = -1 * (current.left - 0.5 * (thumbsW - current.width));
-                validatedIndent = validateIndent(indent);
-                p.thumbsIndent = validatedIndent;
-
-                frame
-                    .css('transition-duration', delay)
-                    .css(styles);
-
-                p.thumbsLayer
-                    .css('transition-duration', delay)
-                    .css(methods.setIndent(galleryId, validatedIndent, 'px'));
-
             }
+
+            p.thumb.removeClass(p.params._current);
+            p.thumb
+                .filter('.' + p.params.modifierPrefix + target)
+                .addClass(p.params._current);
 
             /*
              * Validates recommended indent (inscribes layer into the container correctly)
