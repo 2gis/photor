@@ -405,14 +405,14 @@
 
         loadThumbs: function(galleryId) {
             var p = data[galleryId],
-                count = p.count,
+                count = p.count + 1,
                 images = p.gallery,
                 loaded = 0;
 
             p.galleryThumbs = [];
             p.galleryThumbsLoaded = false;
 
-            for (var i = 0; i <= count; i++) {
+            for (var i = 0; i < count; i++) {
                 (function(i) {
                     var img = document.createElement('img'),
                         image = $(img);
