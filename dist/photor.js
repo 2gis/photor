@@ -68,6 +68,7 @@
                 keyboard: true,             // Управление с клавиатуры
                 ieClassPrefix: '_ie',       // Префикс для класса с версией IE
                 showThumbs: 'thumbs',       // thumbs / dots / null
+                loop: false,                // Зациклить галерею
 
                 // Supported features
                 transform: getSupportedTransform(),
@@ -328,7 +329,7 @@
             if (p.current < p.count) {
                 methods.go(galleryId, p.current + 1);
             } else {
-                methods.go(galleryId, p.current);
+                methods.go(galleryId, p.params.loop ? 0 : p.current);
             }
         },
 
@@ -338,7 +339,7 @@
             if (p.current > 0) {
                 methods.go(galleryId, p.current - 1);
             } else {
-                methods.go(galleryId, p.current);
+                methods.go(galleryId, p.params.loop ? p.count : 0);
             }
         },
 
