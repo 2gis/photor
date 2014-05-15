@@ -92,7 +92,8 @@ $('.photor').photor({
 
     // General options
     current: 0,           // {Number}  Index of start slide
-    delay: 300,           // {Number}  Transition duration  
+    delay: 300,           // {Number}  Transition duration
+    loop: false,          // {Boolean} Loop gallery
 
     // Handlers
     single: false,        // {Boolean} Initialize event handlers if gallery contains only one photo?
