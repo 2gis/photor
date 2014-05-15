@@ -181,7 +181,6 @@
                 p.thumbsDragging = false;
                 p.thumbsIndent = 0;
                 p.events = [];
-                p.loop = p.params.loop;
 
                 p.viewportWidth = p.viewport.outerWidth();
                 p.viewportHeight = p.viewport.outerHeight();
@@ -330,11 +329,7 @@
             if (p.current < p.count) {
                 methods.go(galleryId, p.current + 1);
             } else {
-                if (p.loop) {
-                    methods.go(galleryId, 0);
-                } else {
-                    methods.go(galleryId, p.current);
-                }
+                methods.go(galleryId, p.params.loop ? 0 : p.current);
             }
         },
 
@@ -344,11 +339,7 @@
             if (p.current > 0) {
                 methods.go(galleryId, p.current - 1);
             } else {
-                if (p.loop) {
-                    methods.go(galleryId, p.count);
-                } else {
-                    methods.go(galleryId, 0);
-                }
+                methods.go(galleryId, p.params.loop ? p.count : 0);
             }
         },
 
