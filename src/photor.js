@@ -294,6 +294,8 @@
                 return;
             }
 
+            toggleSlides(galleryId, target);
+
             delay = delay == null ? p.params.delay : delay;
 
             p.root.addClass(p.params._animated);
@@ -305,6 +307,10 @@
 
             p.current = target;
 
+            // Load slide's range
+            methods.loadSlides(galleryId, target);
+            methods.checkButtons(galleryId);
+
             // Mark slide and thumb as current
             methods.setCurrentThumb(galleryId, target);
 
@@ -312,10 +318,6 @@
             p.slide
                 .filter('.' + p.params.modifierPrefix + target)
                 .addClass(p.params._current);
-
-            // Load slide's range
-            methods.loadSlides(galleryId, target);
-            methods.checkButtons(galleryId);
 
             if (!p.params.transition) {
                 callback(galleryId);
@@ -1266,19 +1268,24 @@
         p.root.removeClass(p.params._animated);
         p.layer.css('transition-duration', '0s');
 
+        toggleSlides(galleryId, p.current);
+
+        if (p.params.onShow) {
+            p.params.onShow(p);
+        }
+    }
+
+    function toggleSlides(galleryId, target) {
+        var p = data[galleryId];
 
         for (var i = 0; i < p.count; i++) {
             var elem = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + i);
 
-            if (i < p.current - 1 || i > p.current + 1) {
-                elem.addClass(p.params._hidden);
-            } else {
+            if (i >= p.current - 1 && i <= p.current + 1 || i >= target - 1 && i <= target + 1) {
                 elem.removeClass(p.params._hidden);
+            } else {
+                elem.addClass(p.params._hidden);
             }
-        }
-
-        if (p.params.onShow) {
-            p.params.onShow(p);
         }
     }
 

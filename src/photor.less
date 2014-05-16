@@ -98,7 +98,7 @@
                     background-repeat: no-repeat;
                     background-position: center center;
                     opacity: 1;
-                    transition: opacity .3s ease;
+                    transition: opacity .2s ease;
                     visibility: visible;
                     display: inline-block;
                     vertical-align: middle;
@@ -132,15 +132,7 @@
 
                 /* Спрятанное изображение */
                 &._hidden {
-                    /* Прелоадер */
-                    &:after {
-                        visibility: visible;
-                        opacity: 1;
-                        }
-                    & .photor__viewportLayerSlideImg {
-                        visibility: hidden;
-                        opacity: 0;
-                        }
+                    display: none;
                     }
 
                 /* Алгоритм размещения фотографии по умолчанию */

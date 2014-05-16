@@ -98,7 +98,7 @@
   background-repeat: no-repeat;
   background-position: center center;
   opacity: 1;
-  transition: opacity .3s ease;
+  transition: opacity .2s ease;
   visibility: visible;
   display: inline-block;
   vertical-align: middle;
@@ -127,15 +127,7 @@
   opacity: 0;
 }
 .photor__viewportLayerSlide._hidden {
-  /* Прелоадер */
-}
-.photor__viewportLayerSlide._hidden:after {
-  visibility: visible;
-  opacity: 1;
-}
-.photor__viewportLayerSlide._hidden .photor__viewportLayerSlideImg {
-  visibility: hidden;
-  opacity: 0;
+  display: none;
 }
 .photor__viewportLayerSlide._auto .photor__viewportLayerSlideImg {
   -webkit-background-size: contain;
