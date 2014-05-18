@@ -990,7 +990,9 @@
                 value;
 
             if (p.params.transform) {
-                value = p.layer.css(prefixes[p.params.transform.property]).match(/(-?[0-9\.]+)/g)[4];
+                var matrix = p.layer.css(prefixes[p.params.transform.property]).match(/(-?[0-9\.]+)/g);
+
+                value = matrix.length > 6 ? matrix[13] : matrix[4];
             } else {
                 value = p.layer.css('left');
             }
