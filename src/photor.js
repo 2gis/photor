@@ -218,7 +218,6 @@
         },
 
         update: function() {
-
             for (var key in data) {
                 updateInstance(key);
             }
@@ -242,7 +241,6 @@
                     methods.getThumbsSize(galleryId);
                 }
 
-                // methods.go(galleryId, p.current, 1);
                 p.layer
                     .css('transition-duration', '0s')
                     .css(methods.setIndent(galleryId, -100 * p.current));
@@ -1189,12 +1187,10 @@
         if (!handlers.resize) {
             var p = data[galleryId];
 
-            handlers.resize = debounce(methods.update, 84);
-
             p.events.push({
                 element: window,
                 event: 'resize',
-                handler: handlers.resize
+                handler: methods.update
             });
         }
     }
