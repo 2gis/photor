@@ -460,7 +460,7 @@
                     current = p.galleryThumbs && p.galleryThumbs[target],
                     thumbsW = p.thumbs.outerWidth(),
                     layerW = p.thumbsLayer.outerWidth(),
-                    delay = noEffects ? '0s' : '.24s',
+                    delay = noEffects ? '0s' : (p.params.delay * 0.0008) + 's',
                     indent, validatedIndent;
 
                 p.thumbsDragging = thumbsW < layerW;
