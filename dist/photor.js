@@ -218,7 +218,6 @@
         },
 
         update: function() {
-
             for (var key in data) {
                 updateInstance(key);
             }
@@ -242,7 +241,9 @@
                     methods.getThumbsSize(galleryId);
                 }
 
-                methods.go(galleryId, p.current, 0);
+                p.layer
+                    .css('transition-duration', '0s')
+                    .css(methods.setIndent(galleryId, -100 * p.current));
             }
         },
 
@@ -303,7 +304,7 @@
             p.layer
                 .css('transition-duration', delay + 'ms')
                 // .css(methods.setIndent(galleryId, -target * p.viewportWidth));
-                .css(methods.setIndent(galleryId, -target * 100));
+                .css(methods.setIndent(galleryId, -target * p.viewportWidth, 'px'));
 
             p.current = target;
 
@@ -460,7 +461,7 @@
                     current = p.galleryThumbs && p.galleryThumbs[target],
                     thumbsW = p.thumbs.outerWidth(),
                     layerW = p.thumbsLayer.outerWidth(),
-                    delay = noEffects ? '0s' : '.24s',
+                    delay = noEffects ? '0s' : (p.params.delay * 0.8 / 1000) + 's',
                     indent, validatedIndent;
 
                 p.thumbsDragging = thumbsW < layerW;
@@ -1028,9 +1029,9 @@
                 touch.shiftX = touch.shiftX / 3;
             }
 
-            resultIndent = (touch.shiftX + touch.startShift) / p.viewportWidth * 100;
+            resultIndent = touch.shiftX + touch.startShift;
 
-            p.layer.css(methods.setIndent(galleryId, Math.round(resultIndent * 100) / 100));
+            p.layer.css(methods.setIndent(galleryId, Math.round(resultIndent), 'px'));
         }
 
         /**
@@ -1186,12 +1187,10 @@
         if (!handlers.resize) {
             var p = data[galleryId];
 
-            handlers.resize = debounce(methods.update, 84);
-
             p.events.push({
                 element: window,
                 event: 'resize',
-                handler: handlers.resize
+                handler: methods.update
             });
         }
     }
@@ -1267,8 +1266,9 @@
     function callback(galleryId) {
         var p = data[galleryId];
 
-        p.root.removeClass(p.params._animated);
-        p.layer.css('transition-duration', '0s');
+        p.root.addClass(p.params._animated);
+
+        p.layer[0].style.transitionDuration = 0;
 
         toggleSlides(galleryId, p.current);
 
