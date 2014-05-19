@@ -17,8 +17,8 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
     ```html
     <script src="//ajax.googleapis.colim/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 
-    <link  href="photor.min.css" rel="stylesheet"> <!-- 1.3 KB in gzip -->
-    <script src="photor.min.js"></script> <!-- 4.2 KB in gzip -->
+    <link  href="photor.min.css" rel="stylesheet"> <!-- 1.4 KB in gzip -->
+    <script src="photor.min.js"></script> <!-- 4.8 KB in gzip -->
     ```
 
 2. Add some HTML:
