@@ -653,6 +653,8 @@
 
     };
 
+    $.fn.photor.data = data;
+
     /**
      * Detect IE version
      *
