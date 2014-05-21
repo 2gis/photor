@@ -182,7 +182,11 @@
                 p.thumbsIndent = 0;
                 p.events = [];
 
-                p.viewportWidth = p.viewport.outerWidth();
+                if (window.getComputedStyle) {
+                    p.viewportWidth = parseFloat(window.getComputedStyle(p.viewport[0]).width);
+                } else {
+                    p.viewportWidth = p.viewport.outerWidth();
+                }
                 p.viewportHeight = p.viewport.outerHeight();
                 p.controlWidth = p.control.outerWidth();
                 p.controlHeight = p.control.outerHeight();
@@ -225,7 +229,11 @@
             function updateInstance(galleryId) {
                 var p = data[galleryId];
 
-                p.viewportWidth = p.viewport.outerWidth();
+                if (window.getComputedStyle) {
+                    p.viewportWidth = parseFloat(window.getComputedStyle(p.viewport[0]).width);
+                } else {
+                    p.viewportWidth = p.viewport.outerWidth();
+                }
                 p.viewportHeight = p.viewport.outerHeight();
                 p.controlWidth = p.control.outerWidth();
                 p.controlHeight = p.control.outerHeight();
