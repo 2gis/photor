@@ -1276,7 +1276,7 @@
     function callback(galleryId) {
         var p = data[galleryId];
 
-        p.root.addClass(p.params._animated);
+        p.root.removeClass(p.params._animated);
 
         p.layer[0].style.transitionDuration = 0;
 
