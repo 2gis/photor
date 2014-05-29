@@ -223,7 +223,9 @@
 
         update: function() {
             for (var key in data) {
-                updateInstance(key);
+                if (data.hasOwnProperty(key)) {
+                    updateInstance(key);
+                }
             }
 
             function updateInstance(galleryId) {
@@ -261,7 +263,9 @@
                 unbindInstance(galleryId);
             } else {
                 for (var key in data) {
-                    unbindInstance(key);
+                    if (data.hasOwnProperty(key)) {
+                        unbindInstance(key);
+                    }
                 }
             }
 
@@ -684,7 +688,7 @@
             el = document.createElement('p');
 
         for (var key in prefixes) {
-            if (el.style[key] !== undefined) {
+            if (prefixes.hasOwnProperty(key) && el.style[key] !== undefined) {
                 out = {property: key};
 
                 break;
