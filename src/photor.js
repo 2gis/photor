@@ -1,16 +1,16 @@
-(function() {
+;(function($) {
 
     // Server side
-    if (!window) {
+    if (typeof window == 'undefined') {
         return;
     }
 
     var prefixes = {
             'transform': 'transform',
-            'OTransform': '-o-transform',
-            'msTransform': '-ms-transform',
+            'WebkitTransform': '-webkit-transform',
             'MozTransform': '-moz-transform',
-            'WebkitTransform': '-webkit-transform'
+            'msTransform': '-ms-transform',
+            'OTransform': '-o-transform'
         },
         data = [],
         evt = getSupportedEvents(),
@@ -23,6 +23,7 @@
 
             params = $.extend({
 
+                // Elements
                 control:     blockPrefix + 'viewportControl',
                 next:        blockPrefix + 'viewportControlNext',
                 prev:        blockPrefix + 'viewportControlPrev',
@@ -53,8 +54,8 @@
                 _center: '_center',         // Фотография меньше вьюпорта
 
                 // Orientation
-                _portrait: '_portrait',     // Соотношение ширины к высоте фотографии меньше вьюпорта
-                _landscape: '_landscape',   // Соотношение ширины к высоте фотографии больше вьюпорта
+                _portrait: '_portrait',     // Соотношение ширины к высоте фотографии меньше чем у вьюпорта
+                _landscape: '_landscape',   // Соотношение ширины к высоте фотографии больше чем у вьюпорта
 
                 // Thumbs
                 _draggable: '_draggable',   // Разрешено перетаскивание на миниатюрах
@@ -63,12 +64,13 @@
                 single: false,              // Инициализировать обработчики для одиночного изображения
                 current: 0,                 // Текуший слайд
                 count: 0,                   // Количество фотографий
-                modifierPrefix: '_',        // Префикс для класса с номером слайда
+                last: -1,                   // Индекс последней фотографии
                 delay: 300,                 // Время анимации для слайдов
-                keyboard: true,             // Управление с клавиатуры
-                ieClassPrefix: '_ie',       // Префикс для класса с версией IE
-                showThumbs: 'thumbs',       // thumbs / dots / null
                 loop: false,                // Зациклить галерею
+                showThumbs: 'thumbs',       // thumbs / dots / null
+                keyboard: true,             // Управление с клавиатуры
+                modifierPrefix: '_',        // Префикс для класса с номером слайда
+                ieClassPrefix: '_ie',       // Префикс для класса с версией IE
 
                 // Supported features
                 transform: getSupportedTransform(),
@@ -78,13 +80,11 @@
 
             }, options);
 
-            return this.each(function(i) {
+            return this.each(function() {
                 var root = $(this),
                     galleryId = this.id || data.length,
-                    j,
                     p = {}, // Current instance of gallery
                     content = {},
-                    count = 0,
                     thumbs = [],
                     imageTemplate = {
                         url: '',
@@ -121,20 +121,18 @@
                 // Initialization by object
                 if (p.params.data && p.params.data.length) {
 
-                    for (j = 0; j < p.params.data.length; j++) {
-                        p.gallery.push($.extend({}, imageTemplate, p.params.data[j]));
+                    for (var i = 0, len = p.params.data.length; i < len; i++) {
+                        p.gallery.push($.extend({}, imageTemplate, p.params.data[i]));
                     }
 
+                // Initialization by slides
                 } else {
 
-                    // Initialization by slides
                     var slides = root.find('.' + p.params.layer + ' > *');
 
                     if (slides.length) {
-                        slides.each(function(j) {
+                        slides.each(function() {
                             var isPhoto = this.nodeName == 'IMG';
-
-                            hasHTML = hasHTML || !isPhoto;
 
                             if (isPhoto) {
                                 p.gallery.push($.extend({}, imageTemplate, {
@@ -144,6 +142,8 @@
                                     classes: this.className
                                 }));
                             } else {
+                                hasHTML = true;
+
                                 p.gallery.push($.extend({}, imageTemplate, {
                                     html: this.outerHTML,
                                     loaded: true
@@ -177,7 +177,8 @@
 
                 // Settings
                 p.current = p.params.current;
-                p.count = p.gallery.length - 1;
+                p.count = p.gallery.length;
+                p.last = p.count - 1;
                 p.thumbsDragging = false;
                 p.thumbsIndent = 0;
                 p.events = [];
@@ -341,7 +342,7 @@
         next: function(galleryId) {
             var p = data[galleryId];
 
-            if (p.current < p.count) {
+            if (p.current < p.last) {
                 methods.go(galleryId, p.current + 1);
             } else {
                 methods.go(galleryId, p.params.loop ? 0 : p.current);
@@ -354,14 +355,14 @@
             if (p.current > 0) {
                 methods.go(galleryId, p.current - 1);
             } else {
-                methods.go(galleryId, p.params.loop ? p.count : 0);
+                methods.go(galleryId, p.params.loop ? p.last : 0);
             }
         },
 
         loadSlides: function(galleryId, target) {
             var p = data[galleryId],
                 from = target - 1 < 0 ? 0 : target - 1,
-                to = target + 1 > p.count ? p.count : target + 1;
+                to = target + 1 > p.last ? p.last : target + 1;
 
             for (var i = from; i <= to; i++) {
                 if (!p.gallery[i].loaded) {
@@ -415,7 +416,7 @@
 
         loadThumbs: function(galleryId) {
             var p = data[galleryId],
-                count = p.count + 1,
+                count = p.count,
                 images = p.gallery,
                 loaded = 0;
 
@@ -474,7 +475,8 @@
                     thumbsW = p.thumbs.outerWidth(),
                     layerW = p.thumbsLayer.outerWidth(),
                     delay = noEffects ? '0s' : (p.params.delay * 0.8 / 1000) + 's',
-                    indent, validatedIndent;
+                    indent,
+                    validatedIndent;
 
                 p.thumbsDragging = thumbsW < layerW;
 
@@ -495,7 +497,7 @@
                         styles.left = current.left + 'px';
                     }
 
-                    indent = -1 * (current.left - 0.5 * (thumbsW - current.width));
+                    indent = (thumbsW - current.width) * 0.5 - current.left;
                     validatedIndent = validateIndent(indent);
                     p.thumbsIndent = validatedIndent;
 
@@ -518,12 +520,16 @@
              * Validates recommended indent (inscribes layer into the container correctly)
              *
              * @param {number} indent of layer in the container
-             * @returns {number} correct indent
+             * @returns {number} Correct indent
              */
             function validateIndent(indent) {
+                if (indent > 0 || !p.thumbsDragging) {
+                    return 0;
+                }
+
                 var limit = thumbsW - layerW;
 
-                return indent > 0 || !p.thumbsDragging ? 0 : indent < limit ? limit : indent;
+                return indent < limit ? limit : indent;
             }
 
         },
@@ -570,29 +576,29 @@
             } else {
                 p.prev.removeClass(p.params._disabled);
             }
-            if (p.current == p.count) {
+            if (p.current == p.last) {
                 p.next.addClass(p.params._disabled);
             } else {
                 p.next.removeClass(p.params._disabled);
             }
         },
 
-        setIndent: function(galleryId, value, meter) {
+        setIndent: function(galleryId, value, unit) {
             var p = data[galleryId],
                 result = {};
 
-            meter = meter || '%';
+            unit = unit || '%';
 
             if (p.params.transform) {
                 var property = prefixes[p.params.transform.property];
 
                 if (p.params.transform.has3d) {
-                    result[property] = 'translate3d(' + value + meter + ', 0, 0)';
+                    result[property] = 'translate3d(' + value + unit + ', 0, 0)';
                 } else {
-                    result[property] = 'translateX(' + value + meter + ')';
+                    result[property] = 'translateX(' + value + unit + ')';
                 }
             } else {
-                result.left = value + meter;
+                result.left = value + unit;
             }
 
             return result;
@@ -616,27 +622,33 @@
             var thumbsHTML = '',
                 slidesHTML = '';
 
-            for (var i = 0; i < data.length; i++) {
+            for (var i = 0, len = data.length; i < len; i++) {
 
                 // Thumbnails template
 
-                thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb + ' ' + params.modifierPrefix + i + ' ' + data[i].classes + '">';
+                thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb +
+                    ' ' + params.modifierPrefix + i +
+                    ' ' + data[i].classes + '">';
 
                 if (params.showThumbs == 'thumbs' && data[i].url) {
-                    thumbsHTML += '<img src="' + data[i].thumb + '" class="' + params.thumbImg + '" data-rel="' + i + '">';
+                    thumbsHTML += '<img src="' + data[i].thumb +
+                        '" class="' + params.thumbImg + '" data-rel="' + i + '">';
                 }
 
                 thumbsHTML += '</span>';
 
                 // Slides template
 
-                slidesHTML += '<div class="' + params.slide + ' ' + params.modifierPrefix + i + ' ' + (data[i].html ? params._html : params._loading) + '" data-id="' + i + '">';
+                slidesHTML += '<div class="' + params.slide +
+                    ' ' + params.modifierPrefix + i +
+                    ' ' + (data[i].html ? params._html : params._loading) +
+                    '" data-id="' + i + '">';
 
                 if (data[i].html) {
                     slidesHTML += data[i].html;
                 } else {
                     if (params.ie && params.ie < 9) {
-                        slidesHTML += '<img src="" class="' + params.slideImg + ' ' + data[i].classes + '">';
+                        slidesHTML += '<img src="" class="' + params.slideImg + ' ' + data[i].classes + '" />';
                     } else {
                         slidesHTML += '<div class="' + params.slideImg + ' ' + data[i].classes + '"></div>';
                     }
@@ -649,15 +661,15 @@
                 thumbsHTML += '<div class="' + params.thumbFrame + '"></div>';
             }
 
-            return {thumbs: thumbsHTML, slides: slidesHTML};
+            return { thumbs: thumbsHTML, slides: slidesHTML };
         }
     };
 
     $.fn.photor = function(method) {
 
-        if ( methods[method] ) {
+        if (methods[method]) {
             return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
-        } else if (typeof method === 'object' || ! method) {
+        } else if (typeof method == 'object' || !method) {
             return methods.init.apply(this, arguments);
         } else {
             $.error('Unknown method: ' +  method);
@@ -670,18 +682,18 @@
     /**
      * Detect IE version
      *
-     * @return {Int} major version
+     * @returns {int} Major version
      */
     function ie() {
         var ua = navigator.userAgent.toLowerCase();
 
-        return ua.indexOf('msie') != -1 ? parseInt(ua.split('msie')[1]) : false;
+        return ua.indexOf('msie') > -1 ? parseInt(ua.split('msie')[1]) : false;
     }
 
     /**
      * Returns supported property for css-transform
      *
-     * @return {String} string key
+     * @returns {string} String key
      */
     function getSupportedTransform() {
         var out = false,
@@ -689,13 +701,13 @@
 
         for (var key in prefixes) {
             if (prefixes.hasOwnProperty(key) && el.style[key] !== undefined) {
-                out = {property: key};
+                out = { property: key };
 
                 break;
             }
         }
 
-        document.body.insertBefore(el, null);
+        document.body.appendChild(el);
 
         if (out.property) {
             el.style[out.property] = "translate3d(1px,1px,1px)";
@@ -710,7 +722,7 @@
     /**
      * Get prefixed css-property
      *
-     * @return {String} string key
+     * @returns {string} String key
      */
     function getPrefixed(property) {
         var style = document.createElement('p').style,
@@ -722,7 +734,7 @@
 
         property = property.charAt(0).toUpperCase() + property.slice(1);
 
-        for (var i = 0; i < prefixes.length; i++) {
+        for (var i = 0, len = prefixes.length; i < len; i++) {
             if (style[prefixes[i] + property] == '') {
                 return prefixes[i] + property;
             }
@@ -733,8 +745,8 @@
      * Кроссбраузерно добавляет обработчики событий
      *
      * @param {HTMLElement} element HTMLElement
-     * @param {event} e Событие
-     * @param {function} handler Обработчик события
+     * @param {Event} e Событие
+     * @param {Function} handler Обработчик события
      * @param {bool} capture Capturing
      */
     function eventManager(element, e, handler, capture, off) {
@@ -764,21 +776,18 @@
     }
 
     /**
-     * Проверяет наличие класса у нативного HTML-элемента
+     * Проверяет наличие класса у HTML-элемента
      *
      * @param {HTMLElement} element HTMLElement
      * @param {string} className Имя класса
+     * @returns {bool}
      */
     function hasClass(element, className) {
-        if (!element) {
-            return;
-        }
-
         var classNames = ' ' + element.className + ' ';
 
         className = ' ' + className + ' ';
 
-        if (classNames.replace(/[\n\t]/g, ' ').indexOf(className) > -1) {
+        if (classNames.replace(/[\r\n\t\f]+/g, ' ').indexOf(className) > -1) {
             return true;
         }
 
@@ -790,7 +799,7 @@
      * Если браузер поддерживает pointer events или подключена handjs, вернет события указателя.
      * Если нет, используем события мыши
      *
-     * @return {Array} Массив с названиями событий
+     * @returns {Array} Массив с названиями событий
      */
     function getSupportedEvents() {
         var touchEnabled = 'ontouchstart' in window;
@@ -800,70 +809,6 @@
         }
 
         return ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
-    }
-
-    /**
-     * Debounce декоратор
-     *
-     * @param {function} fn Функция
-     * @param {number} timeout Таймаут в миллисекундах
-     * @param {bool}
-     * @param {object} ctx Контекст вызова
-     */
-    function debounce(fn, timeout, invokeAsap, ctx) {
-        if (arguments.length == 3 && typeof invokeAsap != 'boolean') {
-            ctx = invokeAsap;
-            invokeAsap = false;
-        }
-
-        var timer;
-
-        return function() {
-            var args = arguments;
-
-            ctx = ctx || this;
-            if (invokeAsap && !timer) {
-                fn.apply(ctx, args);
-            }
-
-            clearTimeout(timer);
-
-            timer = setTimeout(function() {
-                if (!invokeAsap) {
-                    fn.apply(ctx, args);
-                }
-                timer = null;
-            }, timeout);
-        };
-    }
-
-    /**
-     * Throttle декоратор
-     *
-     * @param {function} fn Функция
-     * @param {number} timeout Таймаут в миллисекундах
-     * @param {object} ctx Контекст вызова
-     */
-    function throttle(fn, timeout, ctx) {
-        var timer, args, needInvoke;
-
-        return function() {
-            args = arguments;
-            needInvoke = true;
-            ctx = ctx || this;
-
-            if (!timer) {
-                (function() {
-                    if (needInvoke) {
-                        fn.apply(ctx, args);
-                        needInvoke = false;
-                        timer = setTimeout(arguments.callee, timeout);
-                    } else {
-                        timer = null;
-                    }
-                })();
-            }
-        };
     }
 
     /**
@@ -878,16 +823,16 @@
             touch = {};
 
         /**
-         * Обработчик touch start
+         * Обработчик touchstart
          *
-         * @param {event} e Событие pointerdown
+         * @param {Event} e Событие pointerdown
          */
         handlers.onStart = function(e) {
             if (p.freeze) {
                 return;
             }
 
-            // запоминаем координаты и время
+            // Запоминаем координаты и время
             touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
             touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
             touch.t1 = new Date();
@@ -904,7 +849,7 @@
         /**
          * Обработчик touch move
          *
-         * @param {event} e Событие pointermove
+         * @param {Event} e Событие pointermove
          */
         handlers.onMove = function(e) {
             if (touch.isPressed && !p.freeze) {
@@ -917,7 +862,7 @@
                 touch.shiftYAbs = Math.abs(touch.shiftY);
 
                 // Detect multitouch
-                touch.isMultitouch = touch.isMultitouch || (e.touches && e.touches.length) > 1;
+                touch.isMultitouch = touch.isMultitouch || !!e.touches && e.touches.length > 1;
 
                 if (touch.isMultitouch) {
                     end();
@@ -965,7 +910,7 @@
         /**
          * Обработчик touch end
          *
-         * @param {event} e Событие pointerup
+         * @param {Event} e Событие pointerup
          */
         handlers.onEnd = function(e) {
             // Ловим клик
@@ -1039,7 +984,7 @@
         function slidesMove() {
             var resultIndent;
 
-            if ((p.current == 0 && touch.shiftX > 0) || (p.current == p.count && touch.shiftX < 0)) {
+            if ((p.current == 0 && touch.shiftX > 0) || (p.current == p.last && touch.shiftX < 0)) {
                 touch.shiftX = touch.shiftX / 3;
             }
 
@@ -1162,7 +1107,7 @@
         });
 
         // Отмена перехода по ссылке миниатюры
-        for (var i = 0; i < p.thumb.length; i++) {
+        for (var i = 0, len = p.thumb.length; i < len; i++) {
             p.events.push({
                 element: p.thumb[i],
                 event: 'click',
@@ -1177,7 +1122,7 @@
         }
 
         // Отмена встроенного перетаскивания для картинок
-        for (var j = 0; j < p.thumbImg.length; j++) {
+        for (var j = 0, m = p.thumbImg.length; j < m; j++) {
             p.events.push({
                 element: p.thumbImg[j],
                 event: 'dragstart',
@@ -1268,7 +1213,7 @@
             callback(galleryId);
         };
 
-        for (var i = 0; i < transitionEnd.length; i++) {
+        for (var i = 0, len = transitionEnd.length; i < len; i++) {
             p.events.push({
                 element: p.layer[0],
                 event: transitionEnd[i],
@@ -1294,7 +1239,7 @@
     function toggleSlides(galleryId, target) {
         var p = data[galleryId];
 
-        for (var i = 0; i < p.count; i++) {
+        for (var i = 0, len = p.count; i < len; i++) {
             var elem = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + i);
 
             if (i >= p.current - 1 && i <= p.current + 1 || i >= target - 1 && i <= target + 1) {
