@@ -375,43 +375,33 @@
             var p = data[galleryId],
                 slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
                 slideImg = slide.find('.' + p.params.slideImg),
-                alt = p.gallery[target].caption,
-                url = p.gallery[target].url,
-                img = document.createElement('img');
+                alt = p.gallery[target].caption;
 
-            (function(rel, slideImg) {
-                var image = $(img),
-                    styles = {};
+            loadImage(p.gallery[target].url, function(success, url) {
+                if (success) {
+                    p.gallery[target].loaded = true;
+                    p.gallery[target].width = this.width;
+                    p.gallery[target].height = this.height;
 
-                image
-                    .on('load', function() {
-                        p.gallery[rel].loaded = true;
-                        p.gallery[rel].width = this.width;
-                        p.gallery[rel].height = this.height;
+                    methods.position(galleryId, target);
 
-                        methods.position(galleryId, rel);
+                    if (p.params.ie && p.params.ie < 9) {
+                        slideImg.attr('src', url);
+                    } else {
+                        slideImg.css('background-image', 'url(' + url + ')');
+                    }
 
-                        if (p.params.ie && p.params.ie < 9) {
-                            slideImg.attr('src', this.src);
-                        } else {
-                            slideImg.css('background-image', 'url(' + this.src + ')');
-                        }
-
-                        slide.removeClass(p.params._loading);
-                    })
-                    .on('error', function() {
-                        $.error('Image wasn\'t loaded: ' + this.src);
-                    });
-
-                img.src = url;
-
-                if (alt) {
-                    slideImg
-                        .addClass(p.params._alt)
-                        .attr('data-alt', alt);
+                    slide.removeClass(p.params._loading);
+                } else {
+                    $.error('Image wasn\'t loaded: ' + url);
                 }
+            });
 
-            })(target, slideImg);
+            if (alt) {
+                slideImg
+                    .addClass(p.params._alt)
+                    .attr('data-alt', alt);
+            }
         },
 
         loadThumbs: function(galleryId) {
@@ -424,25 +414,18 @@
             p.galleryThumbsLoaded = false;
 
             for (var i = 0; i < count; i++) {
-                (function(i) {
-                    var img = document.createElement('img'),
-                        image = $(img);
+                loadImage(images[i].thumb, function(success, url) {
+                    if (success) {
+                        loaded++;
 
-                    image
-                        .on('load', function() {
-                            loaded++;
-
-                            if (loaded == count) {
-                                p.galleryThumbsLoaded = true;
-                                methods.getThumbsSize(galleryId);
-                            }
-                        })
-                        .on('error', function() {
-                            $.error('Image wasn\'t loaded: ' + this.src);
-                        });
-
-                    img.src = images[i].thumb;
-                })(i);
+                        if (loaded == count) {
+                            p.galleryThumbsLoaded = true;
+                            methods.getThumbsSize(galleryId);
+                        }
+                    } else {
+                        $.error('Image wasn\'t loaded: ' + url);
+                    }
+                });
             }
         },
 
@@ -1248,6 +1231,21 @@
                 elem.addClass(p.params._hidden);
             }
         }
+    }
+
+    /**
+     * @param {string} url
+     * @param {Function} callback
+     */
+    function loadImage(url, callback) {
+        var img = new Image();
+
+        img.onload = img.onerror = function(evt) {
+            img.onload = img.onerror = null;
+            callback(evt.type == 'load', url);
+        };
+
+        img.src = url;
     }
 
 })(jQuery);
