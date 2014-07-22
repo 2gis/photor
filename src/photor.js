@@ -71,6 +71,7 @@
                 keyboard: true,             // Управление с клавиатуры
                 modifierPrefix: '_',        // Префикс для класса с номером слайда
                 ieClassPrefix: '_ie',       // Префикс для класса с версией IE
+                slidesOnScreen: 1,          // Количество видимых слайдов во вьюпорте
 
                 // Supported features
                 transform: getSupportedTransform(),
@@ -156,6 +157,10 @@
 
                 if (hasHTML && p.params.showThumbs == 'thumbs') {
                     p.params.showThumbs = 'dots';
+                }
+
+                if (p.params.slidesOnScreen != 1) {
+                    p.params.showThumbs = null;
                 }
 
                 // Build DOM
@@ -317,7 +322,7 @@
             p.layer
                 .css('transition-duration', delay + 'ms')
                 // .css(methods.setIndent(galleryId, -target * p.viewportWidth));
-                .css(methods.setIndent(galleryId, -target * p.viewportWidth, 'px'));
+                .css(methods.setIndent(galleryId, -target * (p.viewportWidth / p.params.slidesOnScreen), 'px'));
 
             p.current = target;
 
@@ -342,7 +347,7 @@
         next: function(galleryId) {
             var p = data[galleryId];
 
-            if (p.current < p.last) {
+            if (p.current + p.params.slidesOnScreen - 1 < p.last) {
                 methods.go(galleryId, p.current + 1);
             } else {
                 methods.go(galleryId, p.params.loop ? 0 : p.current);
@@ -361,11 +366,12 @@
 
         loadSlides: function(galleryId, target) {
             var p = data[galleryId],
-                from = target - 1 < 0 ? 0 : target - 1,
-                to = target + 1 > p.last ? p.last : target + 1;
+                onScreen = p.params.slidesOnScreen,
+                from = target - onScreen < 0 ? 0 : target - onScreen,
+                to = target + (onScreen * 2) - 1 > p.last ? p.last : target + (onScreen * 2) - 1;
 
             for (var i = from; i <= to; i++) {
-                if (!p.gallery[i].loaded) {
+                if (p.gallery[i] && !p.gallery[i].loaded) {
                     methods.loadSlide(galleryId, i);
                 }
             }
@@ -559,7 +565,7 @@
             } else {
                 p.prev.removeClass(p.params._disabled);
             }
-            if (p.current == p.last) {
+            if (p.current + p.params.slidesOnScreen - 1 == p.last) {
                 p.next.addClass(p.params._disabled);
             } else {
                 p.next.removeClass(p.params._disabled);
@@ -911,7 +917,12 @@
 
                 // Клик по миниатюре
                 if (hasClass(e.target, p.params.thumbImg) || hasClass(e.target, p.params.thumb)) {
-                    methods.go(galleryId, parseInt(e.target.getAttribute('data-rel')));
+                    var target = parseInt(e.target.getAttribute('data-rel'));
+
+                    if (target + p.params.slidesOnScreen - 1 > p.last) {
+                        target = p.last - p.params.slidesOnScreen + 1;
+                    }
+                    methods.go(galleryId, target);
                 }
 
                 if (e.stopPropagation && e.preventDefault) {
@@ -965,9 +976,10 @@
          * Движение слайдов во время перетаскивания
          */
         function slidesMove() {
-            var resultIndent;
+            var resultIndent,
+                onScreen = p.params.slidesOnScreen;
 
-            if ((p.current == 0 && touch.shiftX > 0) || (p.current == p.last && touch.shiftX < 0)) {
+            if ((p.current == 0 && touch.shiftX > 0) || (p.current + onScreen - 1 == p.last && touch.shiftX < 0)) {
                 touch.shiftX = touch.shiftX / 3;
             }
 
@@ -982,11 +994,25 @@
         function slidesEnd() {
             // Transition executes if delta more then 5% of container width
             if (Math.abs(touch.shiftX) > p.controlWidth * 0.05) {
+                var shiftSlides = touch.shiftX / p.controlWidth * p.params.slidesOnScreen,
+                    target;
+
                 if (touch.shiftX < 0) {
-                    methods.next(galleryId);
+                    target = p.current - Math.floor(shiftSlides);
                 } else {
-                    methods.prev(galleryId);
+                    target = p.current - Math.ceil(shiftSlides);
                 }
+
+                // Проверяем, существует ли целевой слайд
+                if (target < 0) {
+                    target = 0;
+                }
+                if (target + p.params.slidesOnScreen - 1 > p.last) {
+                    target = p.last - p.params.slidesOnScreen + 1;
+                }
+
+                methods.go(galleryId, target);
+
             } else {
                 methods.go(galleryId, p.current);
             }
@@ -1223,9 +1249,10 @@
         var p = data[galleryId];
 
         for (var i = 0, len = p.count; i < len; i++) {
-            var elem = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + i);
+            var elem = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + i),
+                onScreen = p.params.slidesOnScreen;
 
-            if (i >= p.current - 1 && i <= p.current + 1 || i >= target - 1 && i <= target + 1) {
+            if (i >= p.current - onScreen && i <= p.current + (onScreen * 2) - 1 || i >= target - onScreen && i <= target + (onScreen * 2) - 1) {
                 elem.removeClass(p.params._hidden);
             } else {
                 elem.addClass(p.params._hidden);
