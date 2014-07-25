@@ -38,7 +38,8 @@
                 slideImg:    blockPrefix + 'viewportLayerSlideImg',
 
                 // State modifiers
-                _loading: '_loading',       // Фотография не загружена
+                _loading: '_loading',       // Фотография загружается
+                _error: '_error',           // Не удалось загрузить фотографию
                 _current: '_current',       // Текущий слайд или миниатюра
                 _dragging: '_dragging',     // Перетаскивание
                 _disabled: '_disabled',     // Элемент управления запрещен
@@ -391,14 +392,17 @@
 
                     methods.position(galleryId, target);
 
+                    slide.removeClass(p.params._loading);
+
                     if (p.params.ie && p.params.ie < 9) {
                         slideImg.attr('src', url);
                     } else {
                         slideImg.css('background-image', 'url(' + url + ')');
                     }
-
-                    slide.removeClass(p.params._loading);
                 } else {
+                    slide.removeClass(p.params._loading);
+                    slide.addClass(p.params._error);
+
                     $.error('Image wasn\'t loaded: ' + url);
                 }
             });
