@@ -1029,8 +1029,8 @@
          */
         function slidesEnd() {
             // Transition executes if delta more then 5% of container width
-            if (Math.abs(touch.shiftX) > p.controlWidth * 0.05) {
-                var shiftSlides = touch.shiftX / p.controlWidth * p.params.slidesOnScreen,
+            if (Math.abs(touch.shiftX) > p.viewportWidth * 0.05) {
+                var shiftSlides = touch.shiftX / p.viewportWidth * p.params.slidesOnScreen,
                     target;
 
                 if (touch.shiftX < 0) {
