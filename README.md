@@ -91,18 +91,20 @@ You can specify parameters on initialization.
 $('.photor').photor({
 
     // General options
-    current: 0,           // {Number}  Index of start slide
-    delay: 300,           // {Number}  Transition duration
-    loop: false,          // {Boolean} Loop gallery
-    slidesOnScreen: 1,    // {Number}  Number of visible slides in viewport
+    current: 0,                 // {Number}  Index of start slide
+    delay: 300,                 // {Number}  Transition duration
+    loop: false,                // {Boolean} Loop gallery
+    slidesOnScreen: 1,          // {Number}  Number of visible slides in viewport
+    autoplay: false,            // {Number}  Autoplay delay
+    stopAutoplayOnHover: false, // {Boolean} Stop auto playing when cursor above the gallery
 
     // Handlers
-    single: false,        // {Boolean} Initialize event handlers if gallery contains only one photo?
-    keyboard: true,       // {Boolean} Initialize keyboard event handlers?
+    single: false,              // {Boolean} Initialize event handlers if gallery contains only one photo?
+    keyboard: true,             // {Boolean} Initialize keyboard event handlers?
 
     // Prefixes
-    slideIdPrefix: '_',   // {String}  Prefix for class with slide index (e.g. "_12")
-    ieClassPrefix: '_ie', // {String}  Prefix for class with IE version (e.g. "_ie8")
+    slideIdPrefix: '_',         // {String}  Prefix for class with slide index (e.g. "_12")
+    ieClassPrefix: '_ie',       // {String}  Prefix for class with IE version (e.g. "_ie8")
 
     // Classnames
     control: 'photor__viewportControl',
@@ -139,8 +141,9 @@ $('.photor').photor({
     // Thumbs
     _draggable: '_draggable',   // Dragging is allowed for thumbnails
 
-    // Transition callback
-    onShow: function(instance) {}
+    // Transition callbacks
+    onTransitionStart: function(instance) {}
+    onTransitionEnd: function(instance) {}
 
 });
 ```
