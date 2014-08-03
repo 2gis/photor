@@ -320,8 +320,6 @@
                 methods.autoplay(galleryId);
             }
 
-            callbackStart(galleryId);
-
             toggleSlides(galleryId, target);
 
             delay = delay == null ? p.params.delay : delay;
@@ -346,6 +344,8 @@
                 .filter('.' + p.params.modifierPrefix + target)
                 .addClass(p.params._current);
 
+            // Callbacks
+            callbackStart(galleryId);
             if (!p.params.transition) {
                 callbackEnd(galleryId);
             }
