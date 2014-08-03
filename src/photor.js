@@ -73,6 +73,8 @@
                 modifierPrefix: '_',        // Префикс для класса с номером слайда
                 ieClassPrefix: '_ie',       // Префикс для класса с версией IE
                 slidesOnScreen: 1,          // Количество видимых слайдов во вьюпорте
+                autoplay: false,            // Автоплей (время между переходами)
+                stopAutoplayOnHover: false, // Останавливать автоплей при ховере
 
                 // Supported features
                 transform: getSupportedTransform(),
@@ -224,7 +226,7 @@
                 }
 
                 methods.go(galleryId, p.current, 0);
-                callback(galleryId);
+                callbackEnd(galleryId);
             });
         },
 
@@ -314,6 +316,12 @@
                 return;
             }
 
+            if (p.params.autoplay && !p.timerDisabled) {
+                methods.autoplay(galleryId);
+            }
+
+            callbackStart(galleryId);
+
             toggleSlides(galleryId, target);
 
             delay = delay == null ? p.params.delay : delay;
@@ -322,7 +330,6 @@
 
             p.layer
                 .css('transition-duration', delay + 'ms')
-                // .css(methods.setIndent(galleryId, -target * p.viewportWidth));
                 .css(methods.setIndent(galleryId, -target * (p.viewportWidth / p.params.slidesOnScreen), 'px'));
 
             p.current = target;
@@ -340,7 +347,7 @@
                 .addClass(p.params._current);
 
             if (!p.params.transition) {
-                callback(galleryId);
+                callbackEnd(galleryId);
             }
 
         },
@@ -655,6 +662,24 @@
             }
 
             return { thumbs: thumbsHTML, slides: slidesHTML };
+        },
+
+        autoplay: function(galleryId) {
+            var p = data[galleryId],
+                duration = p.params.autoplay;
+
+            if (p.timerPause) {
+                duration = p.params.autoplay + p.timerStart - p.timerPause;
+            }
+
+            clearTimeout(p.timer);
+
+            p.timer = setTimeout(function() {
+                methods.next(galleryId);
+            }, duration);
+
+            p.timerStart = Math.round((new Date()).getTime());
+            p.timerPause = undefined;
         }
     };
 
@@ -872,6 +897,9 @@
 
                     // если горизонтальное - слайдим
                     if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
+                        if (p.params.autoplay && p.timer) {
+                            onEnter();
+                        }
                         p.root.addClass(p.params._dragging);
                         touch.isSlide = true;
                         touch.startShift = getIndent(galleryId);
@@ -962,6 +990,10 @@
          * Завершение перемещения
          */
         function end() {
+            if (p.params.autoplay) {
+                onLeave();
+            }
+
             if (touch.isSlide) {
                 if (touch.isThumbs) {
                     thumbsEnd();
@@ -1082,6 +1114,24 @@
             return tail;
         }
 
+        /**
+         * Остановить автоплей, когда курсор находится над галереей
+         */
+        function onEnter() {
+            if (!p.timerPause || p.timerPause < p.timerStart) {
+                p.timerPause = Math.round((new Date()).getTime());
+                p.timerDisabled = true;
+                clearTimeout(p.timer);
+            }
+        }
+
+        /**
+         * Возобновить автоплей с того момента, на котором остановились
+         */
+        function onLeave() {
+            p.timerDisabled = false;
+        }
+
         // Touch-события
         p.events.push({
             element: p.viewport[0],
@@ -1118,6 +1168,18 @@
             event: evt[3],
             handler: handlers.onEnd
         });
+
+        if (p.params.autoplay && p.params.stopAutoplayOnHover) {
+            p.events.push({
+                element: p.viewport[0],
+                event: 'mouseenter',
+                handler: onEnter
+            }, {
+                element: p.viewport[0],
+                event: 'mouseleave',
+                handler: onLeave
+            });
+        }
 
         // Отмена перехода по ссылке миниатюры
         for (var i = 0, len = p.thumb.length; i < len; i++) {
@@ -1223,7 +1285,7 @@
                 return;
             }
 
-            callback(galleryId);
+            callbackEnd(galleryId);
         };
 
         for (var i = 0, len = transitionEnd.length; i < len; i++) {
@@ -1235,7 +1297,15 @@
         }
     }
 
-    function callback(galleryId) {
+    function callbackStart(galleryId) {
+        var p = data[galleryId];
+
+        if (p.params.onTransitionStart) {
+            p.params.onTransitionStart(p);
+        }
+    }
+
+    function callbackEnd(galleryId) {
         var p = data[galleryId];
 
         p.root.removeClass(p.params._animated);
@@ -1244,8 +1314,8 @@
 
         toggleSlides(galleryId, p.current);
 
-        if (p.params.onShow) {
-            p.params.onShow(p);
+        if (p.params.onTransitionEnd) {
+            p.params.onTransitionEnd(p);
         }
     }
 
