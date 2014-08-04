@@ -61,7 +61,7 @@
     </div>
 
     <div class="photor__thumbs">
-        <div class="photor__thumbsWrap"></div>
+        <div class="photor__thumbsLayer"></div>
     </div>
 
 </div>
@@ -70,7 +70,7 @@
 <script src="../dist/photor.js"></script>
 <script>
     $(document).ready(function() {
-        $('#one').photor();
+        $('#one').photor({ current: 4, loop: true });
     });
 </script>
 

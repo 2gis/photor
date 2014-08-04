@@ -21,14 +21,14 @@
   width: 100%;
   height: 100%;
   margin: auto;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
   -ms-touch-action: pan-y;
   touch-action: pan-y;
-  -webkit-font-smoothing: antialiased;
-  overflow: hidden;
 }
 .photor__viewport {
   position: absolute;
@@ -40,35 +40,35 @@
 }
 .photor__viewportLayer {
   position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
   -webkit-transition-property: left, -webkit-transform;
   transition-property: left, transform;
-  transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
   transition-duration: .24s;
-  z-index: 0;
+  transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
 }
 .photor__viewportLayerSlide {
-  width: 100%;
-  height: 100%;
   position: absolute;
   top: 0;
-  text-align: center;
+  width: 100%;
+  height: 100%;
   white-space: nowrap;
+  text-align: center;
   /* Изображение не загружено */
   /* Спрятанное изображение */
   /* Алгоритм размещения фотографии по умолчанию */
   /* Алгоритм размещения фотографии по центру (для маленьких изображений) */
 }
 .photor__viewportLayerSlide:before {
-  content: '';
+  width: 0;
+  height: 100%;
   display: inline-block;
   vertical-align: middle;
-  height: 100%;
-  width: 0;
   font-size: 0;
+  content: '';
 }
 .photor__viewportLayerSlide:after {
   position: absolute;
@@ -77,15 +77,15 @@
   width: 14px;
   height: 14px;
   margin: -9px 0 0 -9px;
-  visibility: hidden;
-  content: '';
-  border-radius: 50%;
   border: 2px solid #fff;
   border-right: 2px solid transparent;
-  -webkit-animation: photor__preloader .8s linear infinite;
-  animation: photor__preloader .8s linear infinite;
+  border-radius: 50%;
+  visibility: hidden;
   opacity: 0;
   transition: all .3s ease;
+  -webkit-animation: photor__preloader .8s linear infinite;
+  animation: photor__preloader .8s linear infinite;
+  content: '';
 }
 .photor__viewportLayerSlideImg {
   position: absolute;
@@ -93,26 +93,26 @@
   right: 1px;
   bottom: 0;
   left: 1px;
-  background-repeat: no-repeat;
-  background-position: center center;
-  opacity: 1;
-  transition: opacity .2s ease;
-  visibility: visible;
   display: inline-block;
+  visibility: visible;
+  opacity: 1;
+  background-position: center center;
+  background-repeat: no-repeat;
   vertical-align: middle;
+  transition: opacity .2s ease;
 }
 .photor__viewportLayerSlideImg._alt:before {
-  display: block;
-  content: attr(data-alt);
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  text-align: center;
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
   padding: 4px 0;
+  display: block;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  text-align: center;
   font: 14px/20px Arial;
+  content: attr(data-alt);
 }
 .photor__viewportLayerSlide._loading {
   /* Прелоадер */
@@ -178,80 +178,80 @@
 }
 .photor__thumbs {
   position: absolute;
-  height: 56px;
   right: 0;
   bottom: 0;
   left: 0;
+  height: 56px;
   padding: 2px 0;
-  text-align: center;
-  white-space: nowrap;
   overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
   font-size: 0;
 }
-.photor__thumbsWrap {
+.photor__thumbsLayer {
   position: relative;
+  height: 100%;
+  margin: 0 -1px;
   display: inline-block;
   text-align: left;
-  height: 100%;
   -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
   -webkit-transition-property: left, -webkit-transform;
   transition-property: left, transform;
-  transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
   transition-duration: .24s;
-  margin: 0 -1px;
+  transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
 }
-._noeffects .photor__thumbsWrap {
+._noeffects .photor__thumbsLayer {
   transition-duration: 0s;
 }
-.photor__thumbsWrapItem {
-  display: inline-block;
-  vertical-align: top;
+.photor__thumbsLayerItem {
   height: 100%;
   margin: 0 1px;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  display: inline-block;
   outline: none;
+  vertical-align: top;
   cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
-.photor__thumbsWrapItemImg {
+.photor__thumbsLayerItemImg {
   width: auto;
   height: 100%;
-  vertical-align: top;
   border: 0;
+  vertical-align: top;
   -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
 }
-.photor._dots .photor__thumbsWrapItem {
+.photor._dots .photor__thumbsLayerItem {
   width: 4px;
   height: 4px;
-  padding: 5px;
   margin: 0;
+  padding: 5px;
 }
-.photor._dots .photor__thumbsWrapItem:before {
-  display: block;
+.photor._dots .photor__thumbsLayerItem:before {
   width: 4px;
   height: 4px;
   border: 1px solid gray;
   border-radius: 3px;
+  display: block;
   content: '';
 }
-.photor._dots .photor__thumbsWrapItem._current:before {
+.photor._dots .photor__thumbsLayerItem._current:before {
   background: gray;
 }
-.photor__thumbsWrapFrame {
+.photor__thumbsLayerFrame {
+  position: absolute;
   top: 0;
   height: 100%;
-  position: absolute;
+  border: 2px solid #00afea;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  background: rgba(171, 171, 171, 0.15);
   transition-property: all;
   transition-duration: 5s;
   transition-timing-function: cubic-bezier(0.1, 0, 0.25, 1);
-  -moz-box-sizing: border-box;
-  box-sizing: border-box;
-  border: 2px solid #00afea;
-  background: rgba(171, 171, 171, 0.15);
 }
 @media (max-device-width: 1280px) {
-  .photor__thumbsWrapFrame {
+  .photor__thumbsLayerFrame {
     -webkit-transition-property: top, left, -webkit-transform;
     transition-property: top, left, transform;
   }
@@ -270,18 +270,18 @@
   cursor: -moz-grabbing;
   cursor: grabbing;
 }
-/* Internet Explorer 8 */
+/* IE8 */
 .photor._ie8 .photor__viewportLayerSlide._auto._portrait .photor__viewportLayerSlideImg {
-  height: 100%;
   width: auto;
+  height: 100%;
 }
 .photor._ie8 .photor__viewportLayerSlide._auto._landscape .photor__viewportLayerSlideImg {
-  height: auto;
   width: 100%;
+  height: auto;
 }
 .photor._ie8 .photor__viewportLayerSlide._center .photor__viewportLayerSlideImg {
-  height: auto;
   width: auto;
+  height: auto;
 }
 .photor._ie8 .photor__viewportControl {
   background: url('about:blank');
