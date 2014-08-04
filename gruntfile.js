@@ -49,8 +49,8 @@ module.exports = function(grunt) {
         connect: {
             server: {
                 options: {
-                    port: 3000,
-                    base: ''
+                    //hostname: '10.54.4.250',
+                    port: 3000
                 }
             }
         },
