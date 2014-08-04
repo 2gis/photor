@@ -373,17 +373,19 @@
                 var item = items[i];
                 var itemEl = item.element;
 
-                var slideHTML = '<div data-index="' + i + '" class="' + params.slide +
-                    ' ' + params.itemPrefix + i +
-                    ' ' + (item.html ? params._html : params._loading) + '">';
+                var slideHTML = format(
+                    '<div data-index="%1" class="%2 %3 %4">',
+                    i,
+                    params.slide,
+                    params.itemPrefix + i,
+                    item.html ? params._html : params._loading
+                );
 
                 if (!itemEl) {
                     if (params.ie && params.ie < 9) {
-                        slideHTML += '<img src="" class="' + params.slideImg +
-                            ' ' + item.classes + '" />';
+                        slideHTML += format('<img src="" class="%1 %2" />', params.slideImg, item.classes);
                     } else {
-                        slideHTML += '<div class="' + params.slideImg +
-                            ' ' + item.classes + '"></div>';
+                        slideHTML += format('<div class="%1 %2"></div>', params.slideImg, item.classes);
                     }
                 }
 
@@ -400,13 +402,16 @@
                 slides.push(slide);
                 dfSlides.appendChild(slide);
 
-                var thumbHTML = '<span data-rel="' + i + '" class="' + params.thumb +
-                    ' ' + params.itemPrefix + i +
-                    ' ' + item.classes + '">';
+                var thumbHTML = format(
+                    '<span data-rel="%1" class="%2 %3 %4">',
+                    i,
+                    params.thumb,
+                    params.itemPrefix + i,
+                    item.classes
+                );
 
                 if (params.showThumbs == 'thumbs' && item.thumb) {
-                    thumbHTML += '<img src="' + item.thumb +
-                        '" data-rel="' + i + '" class="' + params.thumbImg + '" />';
+                    thumbHTML += format('<img src="%1" data-rel="%2" class="%3" />', item.thumb, i, params.thumbImg);
                 }
 
                 thumbHTML += '</span>';
@@ -1195,6 +1200,19 @@
      */
     function getUID(obj) {
         return obj._uid || (obj._uid = ++uidCounter);
+    }
+
+    /**
+     * @param {string} str
+     * @param {*} ...values
+     * @returns {string}
+     */
+    function format(str) {
+        var values = Array.prototype.slice.call(arguments, 1);
+
+        return str.replace(/%(\d+)/g, function(match, num) {
+            return values[Number(num) - 1];
+        });
     }
 
     var _createObject = Object.create || function(proto) {
