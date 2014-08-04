@@ -1,56 +1,156 @@
-;(function($) {
+;(function(undefined) {
 
     // Server side
     if (typeof window == 'undefined') {
         return;
     }
 
-    var prefixes = {
-            'transform': 'transform',
-            'WebkitTransform': '-webkit-transform',
-            'MozTransform': '-moz-transform',
-            'msTransform': '-ms-transform',
-            'OTransform': '-o-transform'
-        },
-        data = [],
-        evt = getSupportedEvents(),
-        handlers = [],
-        params;
+    var dummyElement = document.createElement('div');
+    var dummyStyle = dummyElement.style;
 
-    var methods = {
-        init: function(options) {
-            var blockPrefix = 'photor__';
+    var prefixed = {};
 
-            params = $.extend({
+    (function() {
+        var unprefixed = [
+            'transform',
+            'transition',
+            'transitionDuration',
+            'perspective'
+        ];
+
+        var vendors = ['webkit', 'Moz', 'ms', 'O'];
+        var vendorCount = vendors.length;
+
+        for (var i = 0, l = unprefixed.length; i < l; i++) {
+            var name = unprefixed[i];
+
+            if (name in dummyStyle) {
+                prefixed[name] = name;
+                continue;
+            }
+
+            prefixed[name] = false;
+
+            var upperFirst = name.charAt(0).toUpperCase() + name.slice(1);
+
+            for (var j = 0; j < vendorCount; j++) {
+                var prefixedName = vendors[i] + upperFirst;
+
+                if (prefixedName in dummyStyle) {
+                    prefixed[name] = prefixedName;
+                    break;
+                }
+            }
+        }
+    })();
+
+    var prefixedTransform = prefixed['transform'];
+    var prefixedTransition = prefixed['transition'];
+    var prefixedTransitionDuration = prefixed['transitionDuration'];
+
+    var hasCSS3DTransforms = !!prefixed['perspective'];
+
+    var prefixedValTransform = prefixedTransform && {
+        'transform': 'transform',
+        'webkitTransform': '-webkit-transform',
+        'MozTransform': '-moz-transform',
+        'msTransform': '-ms-transform',
+        'OTransform': '-o-transform'
+    }[prefixedTransform];
+
+    var ie = (function(ua) {
+        return ua.indexOf('msie') != -1 ? parseInt(ua.split('msie')[1]) : false;
+    })(navigator.userAgent.toLowerCase());
+
+    var photorPrefix = 'photor__';
+
+    function Photor(el, options) {
+        var instance = this instanceof Photor ? this : createObject(Photor.prototype);
+
+        instance._init(el, options);
+        return instance;
+    }
+
+    Photor.prototype = {
+        constructor: Photor,
+
+        _events: null,
+
+        _params: null,
+
+        _items: null,
+        current: undefined,
+
+        frozen: false,
+
+        _touch: null,
+        _drag: null,
+
+        // Dimensions
+        _bControlWidth: undefined,
+        _bControlHeight: undefined,
+        _bViewportWidth: undefined,
+        _bViewportHeight: undefined,
+        _bThumbsWidth: undefined,
+        _bThumbsHeight: undefined,
+        _bThumbsLayerWidth: undefined,
+
+        _thumbsDraggable: undefined,
+        _thumbsOffset: undefined,
+
+        element: null,
+        bControl: null,
+        btnPrev: null,
+        btnNext: null,
+        bThumbs: null,
+        bViewport: null,
+        bViewportLayer: null,
+        bThumbsLayer: null,
+        bThumbFrame: null,
+        _slides: null,
+        _thumbs: null,
+
+        _init: function(el, options) {
+            if (el._photor) {
+                throw new TypeError('Photor is already initialized for this element');
+            }
+
+            el._photor = this;
+
+            this._events = {};
+
+            var params = this._params = extendObject({
 
                 // Elements
-                control:     blockPrefix + 'viewportControl',
-                next:        blockPrefix + 'viewportControlNext',
-                prev:        blockPrefix + 'viewportControlPrev',
-                thumbs:      blockPrefix + 'thumbs',
-                thumbsLayer: blockPrefix + 'thumbsWrap',
-                thumb:       blockPrefix + 'thumbsWrapItem',
-                thumbImg:    blockPrefix + 'thumbsWrapItemImg',
-                thumbFrame:  blockPrefix + 'thumbsWrapFrame',
-                viewport:    blockPrefix + 'viewport',
-                layer:       blockPrefix + 'viewportLayer',
-                slide:       blockPrefix + 'viewportLayerSlide',
-                slideImg:    blockPrefix + 'viewportLayerSlideImg',
+                viewport:    photorPrefix + 'viewport',
+                layer:       photorPrefix + 'viewportLayer',
+                slide:       photorPrefix + 'viewportLayerSlide',
+                slideImg:    photorPrefix + 'viewportLayerSlideImg',
+                control:     photorPrefix + 'viewportControl',
+                next:        photorPrefix + 'viewportControlNext',
+                prev:        photorPrefix + 'viewportControlPrev',
+                thumbs:      photorPrefix + 'thumbs',
+                thumbsLayer: photorPrefix + 'thumbsLayer',
+                thumb:       photorPrefix + 'thumbsLayerItem',
+                thumbImg:    photorPrefix + 'thumbsLayerItemImg',
+                thumbFrame:  photorPrefix + 'thumbsLayerFrame',
 
                 // State modifiers
+                _single: '_single',         // Модификатор для галереи с одной фотографией
+                _dragging: '_dragging',     // Перетаскивание
+                _animated: '_animated',     // На время анимации
+                _freeze: '_freeze',         // Галерея "заморожена"
+                _disabled: '_disabled',     // Элемент управления запрещен
+
+                // Slide state modifiers
+                _current: '_current',       // Текущий слайд или миниатюра
                 _loading: '_loading',       // Фотография загружается
                 _error: '_error',           // Не удалось загрузить фотографию
-                _current: '_current',       // Текущий слайд или миниатюра
-                _dragging: '_dragging',     // Перетаскивание
-                _disabled: '_disabled',     // Элемент управления запрещен
-                _alt: '_alt',               // Есть подпись к фотографиям
-                _single: '_single',         // Модификатор для галереи с одной фотографией
-                _animated: '_animated',     // На время анимации
-                _hidden: '_hidden',         // Спрятанный слайд
                 _html: '_html',             // Слайд с html-содержимым
-                _freeze: '_freeze',         // Галерея "заморожена"
+                _caption: '_caption',       // Есть подпись к фотографии
+                _hidden: '_hidden',         // Спрятанный слайд
 
-                // Algorithm
+                // Algorithms
                 _auto: '_auto',             // Фотография больше вьюпорта
                 _center: '_center',         // Фотография меньше вьюпорта
 
@@ -61,1222 +161,1363 @@
                 // Thumbs
                 _draggable: '_draggable',   // Разрешено перетаскивание на миниатюрах
 
+                modifierPrefix: '_',        // Префикс модификатора
+                itemPrefix: '_item',        // Префикс элемента списка
+                ieClassPrefix: '_ie',       // Префикс модификатора для IE
+
                 // Settings
-                single: false,              // Инициализировать обработчики для одиночного изображения
                 current: 0,                 // Текуший слайд
-                count: 0,                   // Количество фотографий
-                last: -1,                   // Индекс последней фотографии
-                delay: 300,                 // Время анимации для слайдов
+                autoplay: false,            // Задержка между сменой слайдов
                 loop: false,                // Зациклить галерею
-                showThumbs: 'thumbs',       // thumbs / dots / null
-                keyboard: true,             // Управление с клавиатуры
-                modifierPrefix: '_',        // Префикс для класса с номером слайда
-                ieClassPrefix: '_ie',       // Префикс для класса с версией IE
-                slidesOnScreen: 1,          // Количество видимых слайдов во вьюпорте
-
-                // Supported features
-                transform: getSupportedTransform(),
-                transition: getPrefixed('transition'),
-
-                ie: ie()
+                duration: 300,              // Время анимации для слайдов
+                showThumbs: 'thumbs',       // thumbs / dots / false
+                keyboard: true              // Управление с клавиатуры
 
             }, options);
 
-            return this.each(function() {
-                var root = $(this),
-                    galleryId = this.id || data.length,
-                    p = {}, // Current instance of gallery
-                    content = {},
-                    thumbs = [],
-                    imageTemplate = {
-                        url: '',
-                        thumb: '',
-                        caption: '',
-                        width: 0,
-                        height: 0,
-                        loaded: false,
-                        classes: ''
-                    },
-                    hasHTML = false;
+            this.element = el;
 
-                // Disable double init
-                if (root.attr('data-photor-id')) {
-                    // galleryId = this.dataset.photorId;
-                    return;
-                }
+            if (ie) {
+                addClass(el, params.ieClassPrefix + ie);
+            }
 
-                p.params = $.extend({}, params);
+            this.bControl = el.querySelector('.' + params.control);
+            this.btnPrev = el.querySelector('.' + params.prev);
+            this.btnNext = el.querySelector('.' + params.next);
+            this.bThumbs = el.querySelector('.' + params.thumbs);
+            this.bViewport = el.querySelector('.' + params.viewport);
+            this.bViewportLayer = el.querySelector('.' + params.layer);
+            this.bThumbsLayer = el.querySelector('.' + params.thumbsLayer);
 
-                // Get elements
-                p.root        = root;
-                p.control     = root.find('.' + p.params.control);
-                p.next        = root.find('.' + p.params.next);
-                p.prev        = root.find('.' + p.params.prev);
-                p.thumbs      = root.find('.' + p.params.thumbs);
-                p.thumbsLayer = root.find('.' + p.params.thumbsLayer);
-                p.viewport    = root.find('.' + p.params.viewport);
-                p.layer       = root.find('.' + p.params.layer);
+            this.bThumbFrame = document.createElement('div');
+            addClass(this.bThumbFrame, params.thumbFrame);
 
-                // Data collection
-                p.gallery = [];
+            this._updateDims();
 
-                // Initialization by object
-                if (p.params.data && p.params.data.length) {
+            var data = params.data;
 
-                    for (var i = 0, len = p.params.data.length; i < len; i++) {
-                        p.gallery.push($.extend({}, imageTemplate, p.params.data[i]));
-                    }
+            if (data && data.length) {
+                this._setItems(data);
+            } else {
+                this._setItems(this.bViewportLayer);
+            }
 
-                // Initialization by slides
+            this._bindListeners();
+            this._bindEvents();
+        },
+
+        _updateDims: function() {
+            this._bControlWidth = this.bControl.offsetWidth;
+            this._bControlHeight = this.bControl.offsetHeight;
+
+            this._bViewportWidth = window.getComputedStyle ?
+                parseFloat(window.getComputedStyle(this.bViewport).width, 10) :
+                this.bViewport.offsetWidth;
+
+            this._bViewportHeight = this.bViewport.offsetHeight;
+
+            this._bThumbsWidth = this.bThumbs.offsetWidth;
+            this._bThumbsHeight = this.bThumbs.offsetHeight;
+        },
+
+        /**
+         * @param {Array<Object>|HTMLElement|DocumentFragment} items
+         */
+        _setItems: function(newItems) {
+            var params = this._params;
+            var el = this.element;
+
+            this._cancelCurrentItems();
+
+            this._renewItems(newItems);
+
+            var itemCount = this._items.length;
+
+            this.current = params.current < itemCount ? Math.max(0, params.current) : 0;
+
+            if (itemCount == 1) {
+                addClass(el, params._single);
+            } else {
+                removeClass(el, params._single);
+            }
+
+            if (params.showThumbs) {
+                addClass(el, params.modifierPrefix + params.showThumbs);
+            } else {
+                removeClass(el, params.modifierPrefix + params.showThumbs);
+            }
+
+            this._updateDOM();
+
+            this._loadActualSlides(function() {
+
+                if (params.showThumbs == 'thumbs') {
+                    this._loadThumbs(function() {
+                        this._updateThumbsDims();
+                        this._moveToCurrent(true);
+                    });
                 } else {
-
-                    var slides = root.find('.' + p.params.layer + ' > *');
-
-                    if (slides.length) {
-                        slides.each(function() {
-                            var isPhoto = this.nodeName == 'IMG';
-
-                            if (isPhoto) {
-                                p.gallery.push($.extend({}, imageTemplate, {
-                                    url: this.src,
-                                    caption: this.alt,
-                                    thumb: $(this).data('thumb'),
-                                    classes: this.className
-                                }));
-                            } else {
-                                hasHTML = true;
-
-                                p.gallery.push($.extend({}, imageTemplate, {
-                                    html: this.outerHTML,
-                                    loaded: true
-                                }));
-                            }
-                        });
-                    }
-
+                    this._moveToCurrent(true);
                 }
 
-                if (hasHTML && p.params.showThumbs == 'thumbs') {
-                    p.params.showThumbs = 'dots';
-                }
-
-                if (p.params.slidesOnScreen != 1) {
-                    p.params.showThumbs = null;
-                }
-
-                // Build DOM
-                content = methods.getHTML(p.params, p.gallery);
-
-                p.layer.html(content.slides);
-                p.thumbsLayer.html(content.thumbs);
-
-                // Get builded elements
-                p.thumb       = root.find('.' + p.params.thumb);
-                p.thumbImg    = root.find('.' + p.params.thumbImg);
-                p.thumbFrame  = root.find('.' + p.params.thumbFrame);
-                p.slide       = root.find('.' + p.params.slide);
-                p.slideImg    = root.find('.' + p.params.slideImg);
-
-                p.slide.each(function(i) {
-                    $(this).css('left', i * 100 + '%');
-                });
-
-                // Settings
-                p.current = p.params.current;
-                p.count = p.gallery.length;
-                p.last = p.count - 1;
-                p.thumbsDragging = false;
-                p.thumbsIndent = 0;
-                p.events = [];
-
-                if (window.getComputedStyle) {
-                    p.viewportWidth = parseFloat(window.getComputedStyle(p.viewport[0]).width);
-                } else {
-                    p.viewportWidth = p.viewport.outerWidth();
-                }
-                p.viewportHeight = p.viewport.outerHeight();
-                p.controlWidth = p.control.outerWidth();
-                p.controlHeight = p.control.outerHeight();
-                p.thumbsWidth = p.thumbs.outerWidth();
-                p.thumbsHeight = p.thumbs.outerHeight();
-
-                data[galleryId] = p;
-                root.attr('data-photor-id', galleryId);
-
-                if (p.params.showThumbs) {
-                    root.addClass(p.params.modifierPrefix + p.params.showThumbs);
-                }
-
-                if (p.params.ie) {
-                    root.addClass(p.params.ieClassPrefix + p.params.ie);
-                }
-
-                if (p.gallery.length == 1) {
-                    root.addClass(p.params._single);
-                }
-
-                if (p.params.showThumbs == 'thumbs') {
-                    methods.loadThumbs(galleryId);
-                }
-
-                if (p.gallery.length > 1 || p.params.single) {
-                    methods.handlers(galleryId);
-                }
-
-                methods.go(galleryId, p.current, 0);
-                callback(galleryId);
             });
         },
 
-        update: function() {
-            for (var key in data) {
-                if (data.hasOwnProperty(key)) {
-                    updateInstance(key);
-                }
-            }
+        _cancelCurrentItems: function() {
+            var current = this.current;
 
-            function updateInstance(galleryId) {
-                var p = data[galleryId];
+            if (current !== undefined) {
+                var modCurrent = this._params._current;
 
-                if (window.getComputedStyle) {
-                    p.viewportWidth = parseFloat(window.getComputedStyle(p.viewport[0]).width);
-                } else {
-                    p.viewportWidth = p.viewport.outerWidth();
-                }
-                p.viewportHeight = p.viewport.outerHeight();
-                p.controlWidth = p.control.outerWidth();
-                p.controlHeight = p.control.outerHeight();
-                p.thumbsWidth = p.thumbs.outerWidth();
-                p.thumbsHeight = p.thumbs.outerHeight();
-                p.thumbsLayerWidth = p.thumbsLayer.outerWidth();
-
-                p.slide.each(function(i) {
-                    methods.position(galleryId, i);
-                });
-
-                if (p.params.showThumbs == 'thumbs') {
-                    methods.getThumbsSize(galleryId);
-                }
-
-                p.layer
-                    .css('transition-duration', '0s')
-                    .css(methods.setIndent(galleryId, -100 * p.current));
+                removeClass(this._slides[current], modCurrent);
+                removeClass(this._thumbs[current], modCurrent);
             }
         },
 
-        destroy: function(galleryId) {
+        _renewItems: function(newItems) {
+            var params = this._params;
 
-            if (typeof galleryId != 'undefined') {
-                unbindInstance(galleryId);
+            var items = this._items = [];
+
+            var itemProto = {
+                url: undefined,
+                thumb: undefined,
+
+                html: undefined,
+                element: null,
+
+                caption: '',
+
+                width: undefined,
+                height: undefined,
+
+                thumbDims: null,
+
+                loaded: undefined,
+
+                classes: ''
+            };
+
+            var i = 0;
+            var l;
+
+            if (isArray(newItems)) {
+
+                for (l = newItems.length; i < l; i++) {
+                    var item = createObject(itemProto, { loaded: false }, newItems[i]);
+
+                    if (item.html && !item.element) {
+                        item.element = createElementFromHTML(item.html);
+                    }
+                    items.push(item);
+                }
+
             } else {
-                for (var key in data) {
-                    if (data.hasOwnProperty(key)) {
-                        unbindInstance(key);
+
+                var hasHTML = false;
+
+                var childNodes = newItems.childNodes;
+
+                for (l = childNodes.length; i < l; i++) {
+                    var el = childNodes[i];
+
+                    if (el.nodeType == 1) {
+                        if (el.nodeName == 'IMG') {
+                            items.push(createObject(itemProto, {
+                                url: el.src,
+                                thumb: el.getAttribute('data-thumb'),
+                                caption: el.alt,
+                                loaded: false,
+                                classes: el.className
+                            }));
+                        } else {
+                            hasHTML = true;
+
+                            items.push(createObject(itemProto, {
+                                element: el,
+                                loaded: true
+                            }));
+                        }
                     }
                 }
+
+                if (hasHTML && params.showThumbs == 'thumbs') {
+                    params.showThumbs = 'dots';
+                }
+
             }
 
+            if (!items.length) {
+                throw new RangeError('Requires more items');
+            }
+        },
 
-            /*
-             * Удалить обработчики для указанного инстанса галереи
-             *
-             * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-             */
-            function unbindInstance(id) {
-                var p = data[id];
+        _updateDOM: function() {
+            var params = this._params;
 
-                for (var i = 0, len = p.events.length; i < len; i++) {
-                    eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture, 1);
+            var items = this._items;
+
+            var bViewportLayer = this.bViewportLayer;
+            var bThumbsLayer = this.bThumbsLayer;
+
+            var slides = this._slides = [];
+            var thumbs = this._thumbs = [];
+
+            clearNode(bViewportLayer);
+            clearNode(bThumbsLayer);
+
+            var dfSlides = document.createDocumentFragment();
+            var dfThumbs = document.createDocumentFragment();
+
+            for (var i = 0, l = items.length; i < l; i++) {
+                var item = items[i];
+                var itemEl = item.element;
+
+                var slideHTML = format(
+                    '<div data-index="%1" class="%2 %3 %4">',
+                    i,
+                    params.slide,
+                    params.itemPrefix + i,
+                    item.html ? params._html : params._loading
+                );
+
+                if (!itemEl) {
+                    if (params.ie && params.ie < 9) {
+                        slideHTML += format('<img src="" class="%1 %2" />', params.slideImg, item.classes);
+                    } else {
+                        slideHTML += format('<div class="%1 %2"></div>', params.slideImg, item.classes);
+                    }
+                }
+
+                slideHTML += '</div>';
+
+                var slide = createElementFromHTML(slideHTML);
+
+                if (itemEl) {
+                    slide.appendChild(itemEl);
+                }
+
+                slide.style.left = (i * 100) + '%';
+
+                slides.push(slide);
+                dfSlides.appendChild(slide);
+
+                var thumbHTML = format(
+                    '<span data-rel="%1" class="%2 %3 %4">',
+                    i,
+                    params.thumb,
+                    params.itemPrefix + i,
+                    item.classes
+                );
+
+                if (params.showThumbs == 'thumbs' && item.thumb) {
+                    thumbHTML += format('<img src="%1" data-rel="%2" class="%3" />', item.thumb, i, params.thumbImg);
+                }
+
+                thumbHTML += '</span>';
+
+                var thumb = createElementFromHTML(thumbHTML);
+
+                thumbs.push(thumb);
+                dfThumbs.appendChild(thumb);
+            }
+
+            bViewportLayer.appendChild(dfSlides);
+            bThumbsLayer.appendChild(dfThumbs);
+
+            if (params.showThumbs == 'thumbs') {
+                bThumbsLayer.appendChild(this.bThumbFrame);
+            }
+        },
+
+        /**
+         * @param {Function} [callback]
+         */
+        _loadActualSlides: function(callback) {
+            var items = this._items;
+
+            var startIndex = Math.max(0, this.current - 1);
+            var endIndex = Math.min(items.length - 1, this.current + 1);
+
+            var loadingCount = 0;
+
+            for (var i = startIndex; i <= endIndex; i++) {
+                var item = items[i];
+
+                if (!item.loaded) {
+                    (function(index, item, url) {
+                        loadingCount++;
+
+                        loadImage(url, function(success, img) {
+                            loadingCount--;
+
+                            if (success) {
+                                var params = this._params;
+
+                                var slide = this._slides[index];
+                                var slideImg = slide.firstChild;
+
+                                item.width = img.width;
+                                item.height = img.height;
+                                item.loaded = true;
+
+                                removeClass(slide, params._loading);
+
+                                this._alignSlideImg(index);
+                                this._orientSlideImg(index);
+
+                                if (params.ie && params.ie < 9) {
+                                    slideImg.src = url;
+                                } else {
+                                    slideImg.style.backgroundImage = "url('" + url + "')";
+                                }
+                            } else {
+                                logError("Image wasn't loaded: " + url);
+                            }
+
+                            if (!loadingCount && callback) {
+                                callback.call(this);
+                            }
+                        }, this);
+                    }).call(this, i, item, item.url);
                 }
             }
         },
 
-        handlers: function(galleryId) {
-            var p = data[galleryId];
+        /**
+         * @param {Function} [callback]
+         */
+        _loadThumbs: function(callback) {
+            var items = this._items;
 
-            bindControl(galleryId);
-            bindResize(galleryId);
-            bindTransitionEnd(galleryId);
+            var loadingCount = 0;
 
-            if (p.params.keyboard) {
-                bindKeyboard(galleryId);
-            }
+            for (var i = 0, l = items.length; i < l; i++) {
+                var item = items[i];
+                var url = item.thumb || item.url;
 
-            for (var i = 0, len = p.events.length; i < len; i++) {
-                eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture);
+                if (url) {
+                   loadingCount++;
+
+                   loadImage(url, function(success) {
+                        loadingCount--;
+
+                        if (!success) {
+                            logError("Image wasn't loaded: " + url);
+                        }
+
+                        if (!loadingCount && callback) {
+                            callback.call(this);
+                        }
+                    }, this);
+                }
             }
         },
 
-        go: function(galleryId, target, delay) {
-            var p = data[galleryId];
+        _alignSlideImg: function(index) {
+            var params = this._params;
 
-            if (p.freeze) {
+            var item = this._items[index];
+            var slide = this._slides[index];
+
+            if (this._bViewportWidth > item.width && this._bViewportHeight > item.height) {
+                item.algorithm = 'center';
+
+                removeClass(slide, params._auto);
+                addClass(slide, params._center);
+            } else {
+                item.algorithm = 'auto';
+
+                removeClass(slide, params._center);
+                addClass(slide, params._auto);
+            }
+        },
+
+        _orientSlideImg: function(index) {
+            var params = this._params;
+
+            var item = this._items[index];
+            var slide = this._slides[index];
+
+            var bViewportRatio = this._bViewportWidth / this._bViewportHeight;
+            var itemRatio = item.width / item.height;
+
+            if (itemRatio >= bViewportRatio) {
+                item.orientation = 'landscape';
+
+                removeClass(slide, params._portrait);
+                addClass(slide, params._landscape);
+            } else {
+                item.orientation = 'portrait';
+
+                removeClass(slide, params._landscape);
+                addClass(slide, params._portrait);
+            }
+        },
+
+        _updateThumbsDims: function() {
+            if (this._params.showThumbs != 'thumbs') {
                 return;
             }
 
-            toggleSlides(galleryId, target);
+            this._bThumbsLayerWidth = this.bThumbsLayer.offsetWidth;
 
-            delay = delay == null ? p.params.delay : delay;
+            var items = this._items;
 
-            p.root.addClass(p.params._animated);
+            var thumbs = this._thumbs;
+            var i = thumbs.length;
 
-            p.layer
-                .css('transition-duration', delay + 'ms')
-                // .css(methods.setIndent(galleryId, -target * p.viewportWidth));
-                .css(methods.setIndent(galleryId, -target * (p.viewportWidth / p.params.slidesOnScreen), 'px'));
+            while (i) {
+                var thumb = thumbs[--i];
 
-            p.current = target;
-
-            // Load slide's range
-            methods.loadSlides(galleryId, target);
-            methods.checkButtons(galleryId);
-
-            // Mark slide and thumb as current
-            methods.setCurrentThumb(galleryId, target);
-
-            p.slide.removeClass(p.params._current);
-            p.slide
-                .filter('.' + p.params.modifierPrefix + target)
-                .addClass(p.params._current);
-
-            if (!p.params.transition) {
-                callback(galleryId);
+                items[i].thumbDims = {
+                    top: thumb.offsetTop,
+                    left: thumb.offsetLeft,
+                    width: thumb.offsetWidth,
+                    height: thumb.offsetHeight
+                };
             }
 
+            this._thumbsDraggable = this._bThumbsWidth < this._bThumbsLayerWidth;
         },
 
-        next: function(galleryId) {
-            var p = data[galleryId];
+        /**
+         * @param {boolean} [noEffects=false]
+         */
+        _moveToCurrent: function(noEffects) {
+            this._moveToCurrentSlide(noEffects);
+            this._moveToCurrentThumb(noEffects);
+        },
 
-            if (p.current + p.params.slidesOnScreen - 1 < p.last) {
-                methods.go(galleryId, p.current + 1);
+        /**
+         * @param {boolean} [noEffects=false]
+         */
+        _moveToCurrentSlide: function(noEffects) {
+            var params = this._params;
+
+            var current = this.current;
+
+            var bViewportLayer = this.bViewportLayer;
+
+            if (prefixedTransitionDuration) {
+                bViewportLayer.style[prefixedTransitionDuration] = noEffects ? '0ms' : params.duration + 'ms';
+            }
+
+            setOffsetX(bViewportLayer, -(this._bViewportWidth * current));
+
+            addClass(this._slides[current], params._current);
+        },
+
+        /**
+         * @param {boolean} [noEffects=false]
+         */
+        _moveToCurrentThumb: function(noEffects) {
+            var params = this._params;
+
+            if (params.showThumbs != 'thumbs') {
+                return;
+            }
+
+            this._computeThumbsOffset();
+
+            var current = this.current;
+
+            var bThumbsLayer = this.bThumbsLayer;
+            var bThumbsLayerStyle = bThumbsLayer.style;
+
+            var bThumbFrame = this.bThumbFrame;
+            var bThumbFrameStyle = bThumbFrame.style;
+
+            var currentThumbDims = this._items[current].thumbDims;
+
+            if (prefixedTransitionDuration) {
+                var duration = noEffects ? '0ms' : params.duration + 'ms';
+
+                bThumbsLayerStyle[prefixedTransitionDuration] = duration;
+                bThumbFrameStyle[prefixedTransitionDuration] = duration;
+            }
+
+            setOffsetX(bThumbsLayer, this._thumbsOffset);
+
+            setOffsets(bThumbFrame, currentThumbDims.left, currentThumbDims.top);
+
+            bThumbFrameStyle.width = currentThumbDims.width + 'px';
+            bThumbFrameStyle.height = currentThumbDims.height + 'px';
+
+            addClass(this._thumbs[current], params._current);
+        },
+
+        _computeThumbsOffset: function() {
+            var currentThumbDims = this._items[this.current].thumbDims;
+
+            var offset;
+
+            if (!this._thumbsDraggable) {
+                offset = 0;
             } else {
-                methods.go(galleryId, p.params.loop ? 0 : p.current);
-            }
-        },
+                offset = (this._bThumbsWidth - currentThumbDims.width) / 2 - currentThumbDims.left;
 
-        prev: function(galleryId) {
-            var p = data[galleryId];
+                if (offset > 0) {
+                    offset = 0;
+                } else {
+                    var limit = this._bThumbsWidth - this._bThumbsLayerWidth;
 
-            if (p.current > 0) {
-                methods.go(galleryId, p.current - 1);
-            } else {
-                methods.go(galleryId, p.params.loop ? p.last : 0);
-            }
-        },
-
-        loadSlides: function(galleryId, target) {
-            var p = data[galleryId],
-                onScreen = p.params.slidesOnScreen,
-                from = target - onScreen < 0 ? 0 : target - onScreen,
-                to = target + (onScreen * 2) - 1 > p.last ? p.last : target + (onScreen * 2) - 1;
-
-            for (var i = from; i <= to; i++) {
-                if (p.gallery[i] && !p.gallery[i].loaded) {
-                    methods.loadSlide(galleryId, i);
+                    if (offset < limit) {
+                        offset = limit;
+                    }
                 }
             }
+
+            this._thumbsOffset = offset;
         },
 
-        loadSlide: function(galleryId, target) {
-            var p = data[galleryId],
-                slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
-                slideImg = slide.find('.' + p.params.slideImg),
-                alt = p.gallery[target].caption;
+        _bindListeners: function() {
+            bindMethods(this, [
+                '_onBControlTouchStart',
+                '_onBControlMouseDown',
 
-            loadImage(p.gallery[target].url, function(success, url) {
-                if (success) {
-                    p.gallery[target].loaded = true;
-                    p.gallery[target].width = this.width;
-                    p.gallery[target].height = this.height;
+                '_onBThumbsTouchStart',
+                '_onBThumbsMouseDown',
 
-                    methods.position(galleryId, target);
+                '_onDocumentTouchMove',
+                '_onDocumentTouchEnd',
+                '_onDocumentTouchCancel',
 
-                    slide.removeClass(p.params._loading);
+                '_onDocumentMouseMove',
+                '_onDocumentMouseUp',
 
-                    if (p.params.ie && p.params.ie < 9) {
-                        slideImg.attr('src', url);
+                '_onWindowResize',
+
+                '_onDocumentKeydown'
+            ]);
+        },
+
+        _bindEvents: function() {
+            var bControl = this.bControl;
+            var btnPrev = this.btnPrev;
+            var btnNext = this.btnNext;
+            var bThumbs = this.bThumbs;
+
+            this._bindEvent(bControl, 'touchstart', this._onBControlTouchStart);
+            this._bindEvent(bControl, 'mousedown', this._onBControlMouseDown);
+
+            this._bindEvent(bThumbs, 'touchstart', this._onBThumbsTouchStart);
+            this._bindEvent(bThumbs, 'mousedown', this._onBThumbsMouseDown);
+
+            this._bindEvent(window, 'resize', this._onWindowResize);
+
+            this._bindEvent(document, 'keydown', this._onDocumentKeydown);
+        },
+
+        _onBControlTouchStart: function(evt) {
+            this._handleTouchStart(evt, this.bControl, true);
+        },
+
+        _onBControlMouseDown: function(evt) {
+            if (evt.which == 1) {
+                this._handleTouchStart(evt, this.bControl, false);
+            }
+        },
+
+        _onBThumbsTouchStart: function(evt) {
+            this._handleTouchStart(evt, this.bThumbs, true);
+        },
+
+        _onBThumbsMouseDown: function(evt) {
+            this._handleTouchStart(evt, this.bThumbs, false);
+        },
+
+        _handleTouchStart: function(evt, el, isTouch) {
+            if (this.frozen || this.touch) {
+                return;
+            }
+
+            var positionSource = isTouch ? evt.touches[0] : evt;
+
+            this._touch = {
+                id: isTouch ? evt.touches[0].identifier : undefined,
+
+                start: {
+                    clientX: positionSource.clientX,
+                    clientY: positionSource.clientY,
+                    time: evt.timeStamp,
+                    element: el
+                }
+            };
+
+            this._observeTouch();
+        },
+
+        _observeTouch: function(isTouch) {
+            if (isTouch) {
+                this._bindEvent(document, 'touchmove', this._onDocumentTouchMove);
+                this._bindEvent(document, 'touchend', this._onDocumentTouchEnd);
+                this._bindEvent(document, 'touchcancel', this._onDocumentTouchCancel);
+            } else {
+                this._bindEvent(document, 'mousemove', this._onDocumentMouseMove);
+                this._bindEvent(document, 'mouseup', this._onDocumentMouseUp);
+            }
+        },
+
+        _stopTouchObserving: function(isTouch) {
+            if (isTouch) {
+                this._unbindEvent(document, 'touchmove', this._onDocumentTouchMove);
+                this._unbindEvent(document, 'touchend', this._onDocumentTouchEnd);
+                this._unbindEvent(document, 'touchcancel', this._onDocumentTouchCancel);
+            } else {
+                this._unbindEvent(document, 'mousemove', this._onDocumentMouseMove);
+                this._unbindEvent(document, 'mouseup', this._onDocumentMouseUp);
+            }
+        },
+
+        _onDocumentTouchMove: function(evt) {
+            this._handleTouchMove(evt, true);
+        },
+
+        _onDocumentTouchEnd: function(evt) {
+            this._handleTouchEnd(evt, true);
+        },
+
+        _onDocumentTouchCancel: function(evt) {
+            this._completeTouch(evt, true, 'touchCancel');
+        },
+
+        _onDocumentMouseMove: function(evt) {
+            this._handleTouchMove(evt, false);
+        },
+
+        _onDocumentMouseUp: function(evt) {
+            this._handleTouchEnd(evt, false);
+        },
+
+        _onWindowResize: function() {
+            this.update();
+        },
+
+        _onDocumentKeydown: function() {
+            if (document.activeElement == document.body) {
+                //
+            }
+        },
+
+        _handleTouchMove: function(evt, isTouch) {
+            var touch = this._touch;
+
+            if (!touch) {
+                return;
+            }
+
+            var touchStart = touch.start;
+
+            var prevSource = touch.clientX === undefined ? touchStart : touch;
+
+            touch.prev = {
+                clientX: prevSource.clientX,
+                clientY: prevSource.clientY,
+                time: prevSource.time
+            };
+
+            var positionSource = isTouch ? evt.touches.identifiedTouch(touch.id) : evt;
+
+            touch.clientX = positionSource.clientX;
+            touch.clientY = positionSource.clientY;
+
+            touch.shiftX = touch.clientX - touchStart.clientX;
+            touch.shiftY = touch.clientY - touchStart.clientY;
+
+            touch.time = evt.timeStamp;
+
+            if (isTouch && evt.touches.length > 1) {
+                this._completeTouch(evt, true, 'multitouch');
+                return;
+            }
+
+            var params = this._params;
+
+            var drag = this._drag;
+
+            var el = this.element;
+            var bControl = this.bControl;
+            var bViewportLayer = this.bViewportLayer;
+            var bThumbsLayer = this.bThumbsLayer;
+
+            var targetLayer;
+
+            if (!drag) {
+                if (isTouch && Math.abs(touch.shiftX) < Math.abs(touch.shiftY)) {
+                    this._completeTouch(evt, true, 'scroll');
+                    return;
+                }
+
+                targetLayer = touchStart.element == bControl ? bViewportLayer : bThumbsLayer;
+
+                drag = this._drag = {
+                    start: {
+                        targetLayerOffset: getOffsetX(targetLayer)
+                    },
+
+                    targetLayer: targetLayer
+                };
+            } else {
+                targetLayer = drag.targetLayer;
+            }
+
+            evt.preventDefault();
+
+            var dragging = false;
+
+            if (targetLayer == bViewportLayer) {
+                if (prefixedTransform) {
+                    addClass(el, params._dragging);
+                    dragging = true;
+                }
+            } else {
+                if (this._thumbsDraggable) {
+                    dragging = true;
+                }
+            }
+
+            if (dragging) {
+                var value = drag.start.targetLayerOffset + touch.shiftX;
+
+                if (value > 0) {
+                    value /= 3;
+                } else if (value < 0) {
+                    var limit = targetLayer == bViewportLayer ?
+                        -(this._bViewportWidth * (this._items.length - 1)) :
+                        this._bThumbsWidth - this._bThumbsLayerWidth;
+
+                    if (value < limit) {
+                        value = limit + ((value - limit) / 3);
+                    }
+                }
+
+                if (prefixedTransitionDuration) {
+                    targetLayer.style[prefixedTransitionDuration] = '0s';
+                }
+
+                if (targetLayer == bThumbsLayer) {
+                    this._thumbsOffset = value;
+                }
+                setOffsetX(targetLayer, value);
+            }
+        },
+
+        _handleTouchEnd: function(evt, isTouch) {
+            this._completeTouch(evt, isTouch, 'touchEnd');
+        },
+
+        _completeTouch: function(evt, isTouch, cause) {
+            this._stopTouchObserving();
+
+            var touch = this._touch;
+            var touchStart = touch.start;
+
+            var drag = this._drag;
+
+            var bControl = this.bControl;
+            var btnPrev = this.btnPrev;
+            var btnNext = this.btnNext;
+            var bThumbsLayer = this.bThumbsLayer;
+
+            var touchEnd = touch.end = {};
+
+            var src;
+
+            if (isTouch) {
+                if (evt.touches) {
+                    src = evt.touches.identifiedTouch(touch.id);
+                    touchEnd.time = evt.timeStamp;
+                } else {
+                    src = touch.prev || touchStart;
+                    touchEnd.time = src.time;
+                }
+            } else {
+                src = evt;
+                touchEnd.time = evt.timeStamp;
+            }
+
+            touchEnd.clientX = src.clientX;
+            touchEnd.clientY = src.clientY;
+            touchEnd.shiftX = src.clientX - touchStart.clientX;
+            touchEnd.shiftY = src.clientY - touchStart.clientY;
+
+            if (drag) {
+                if (touchStart.element == bControl) {
+                    if (cause == 'touchEnd') {
+                        this._completeSlidesDrag();
                     } else {
-                        slideImg.css('background-image', 'url(' + url + ')');
+                        this._moveToCurrentSlide();
                     }
                 } else {
-                    slide.removeClass(p.params._loading);
-                    slide.addClass(p.params._error);
-
-                    $.error('Image wasn\'t loaded: ' + url);
+                    if (Math.abs(touchEnd.shiftX) > 5 || Math.abs(touchEnd.shiftY) > 5) {
+                        this._completeThumbsDrag();
+                    } else {
+                        this._handleThumbsTap(evt);
+                    }
                 }
-            });
-
-            if (alt) {
-                slideImg
-                    .addClass(p.params._alt)
-                    .attr('data-alt', alt);
-            }
-        },
-
-        loadThumbs: function(galleryId) {
-            var p = data[galleryId],
-                count = p.count,
-                images = p.gallery,
-                loaded = 0;
-
-            p.galleryThumbs = [];
-            p.galleryThumbsLoaded = false;
-
-            for (var i = 0; i < count; i++) {
-                loadImage(images[i].thumb, function(success, url) {
-                    if (success) {
-                        loaded++;
-
-                        if (loaded == count) {
-                            p.galleryThumbsLoaded = true;
-                            methods.getThumbsSize(galleryId);
+            } else {
+                if (cause == 'touchEnd') {
+                    if (touchStart.element == bControl) {
+                        if (isSelfOrDescendantOf(evt.target, btnPrev, bControl)) {
+                            evt.preventDefault();
+                            this.prev();
+                        } else if (isSelfOrDescendantOf(evt.target, btnNext, bControl)) {
+                            evt.preventDefault();
+                            this.next();
                         }
                     } else {
-                        $.error('Image wasn\'t loaded: ' + url);
+                        this._handleThumbsTap(evt);
                     }
-                });
-            }
-        },
-
-        getThumbsSize: function(galleryId) {
-            var p = data[galleryId],
-                thumb = p.thumb;
-
-            thumb.each(function(i) {
-                var self = $(this);
-
-                p.galleryThumbs[i] = {};
-                p.galleryThumbs[i].width = self.outerWidth();
-                p.galleryThumbs[i].height = self.outerHeight();
-                p.galleryThumbs[i].top = self.position().top + parseInt(self.css('margin-top'));
-                p.galleryThumbs[i].left = self.position().left + parseInt(self.css('margin-left'));
-            });
-
-            p.thumbsLayerWidth = p.thumbsLayer.outerWidth();
-
-            methods.setCurrentThumb(galleryId, p.current, 1);
-        },
-
-        setCurrentThumb: function(galleryId, target, noEffects) {
-            var p = data[galleryId];
-
-            if (p.params.showThumbs == 'thumbs') {
-                var frame = p.thumbFrame,
-                    styles = {},
-                    current = p.galleryThumbs && p.galleryThumbs[target],
-                    thumbsW = p.thumbs.outerWidth(),
-                    layerW = p.thumbsLayer.outerWidth(),
-                    delay = noEffects ? '0s' : (p.params.delay * 0.8 / 1000) + 's',
-                    indent,
-                    validatedIndent;
-
-                p.thumbsDragging = thumbsW < layerW;
-
-                if (p.galleryThumbsLoaded) {
-                    styles.width = current.width + 'px';
-                    styles.height = current.height + 'px';
-
-                    if (p.params.transform) {
-                        var property = prefixes[p.params.transform.property];
-
-                        if (p.params.transform.has3d) {
-                            styles[property] = 'translate3d(' + current.left + 'px, ' + current.top + 'px, 0)';
-                        } else {
-                            styles[property] = 'translateX(' + current.left + 'px) translateY(' + current.top + 'px)';
-                        }
-                    } else {
-                        styles.top = current.top + 'px';
-                        styles.left = current.left + 'px';
-                    }
-
-                    indent = (thumbsW - current.width) * 0.5 - current.left;
-                    validatedIndent = validateIndent(indent);
-                    p.thumbsIndent = validatedIndent;
-
-                    frame
-                        .css('transition-duration', delay)
-                        .css(styles);
-
-                    p.thumbsLayer
-                        .css('transition-duration', delay)
-                        .css(methods.setIndent(galleryId, validatedIndent, 'px'));
                 }
             }
 
-            p.thumb.removeClass(p.params._current);
-            p.thumb
-                .filter('.' + p.params.modifierPrefix + target)
-                .addClass(p.params._current);
-
-            /*
-             * Validates recommended indent (inscribes layer into the container correctly)
-             *
-             * @param {number} indent of layer in the container
-             * @returns {number} Correct indent
-             */
-            function validateIndent(indent) {
-                if (indent > 0 || !p.thumbsDragging) {
-                    return 0;
-                }
-
-                var limit = thumbsW - layerW;
-
-                return indent < limit ? limit : indent;
-            }
-
+            this._touch = null;
+            this._drag = null;
         },
 
-        position: function(galleryId, target) {
-            var p = data[galleryId],
-                slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
-                img = p.gallery[target],
-                viewportRatio = p.viewportWidth / p.viewportHeight,
-                imgRatio = img.width / img.height;
+        _completeSlidesDrag: function() {
+            var touch = this._touch;
+            var touchStart = touch.start;
+            var touchEnd = touch.end;
 
-            // Algorithm
-            if (p.viewportWidth > img.width && p.viewportHeight > img.height) {
-                p.gallery[target].algorithm = 'center';
-                slide
-                    .removeClass(p.params._auto)
-                    .addClass(p.params._center);
-            } else {
-                p.gallery[target].algorithm = 'auto';
-                slide
-                    .removeClass(p.params._center)
-                    .addClass(p.params._auto);
-            }
-
-            // Orientation
-            if (imgRatio >= viewportRatio) {
-                p.gallery[target].orientation = 'landscape';
-                slide
-                    .removeClass(p.params._portrait)
-                    .addClass(p.params._landscape);
-            } else {
-                p.gallery[target].orientation = 'portrait';
-                slide
-                    .removeClass(p.params._landscape)
-                    .addClass(p.params._portrait);
-            }
-        },
-
-        checkButtons: function(galleryId) {
-            var p = data[galleryId];
-
-            if (p.current == 0) {
-                p.prev.addClass(p.params._disabled);
-            } else {
-                p.prev.removeClass(p.params._disabled);
-            }
-            if (p.current + p.params.slidesOnScreen - 1 == p.last) {
-                p.next.addClass(p.params._disabled);
-            } else {
-                p.next.removeClass(p.params._disabled);
-            }
-        },
-
-        setIndent: function(galleryId, value, unit) {
-            var p = data[galleryId],
-                result = {};
-
-            unit = unit || '%';
-
-            if (p.params.transform) {
-                var property = prefixes[p.params.transform.property];
-
-                if (p.params.transform.has3d) {
-                    result[property] = 'translate3d(' + value + unit + ', 0, 0)';
+            if ((touchEnd.time - touchStart.time) < 300 || Math.abs(touchEnd.shiftX) >= (this._bControlWidth / 4)) {
+                if (touchEnd.shiftX > 0) {
+                    if (this.canPrev()) {
+                        this.prev();
+                        return;
+                    }
                 } else {
-                    result[property] = 'translateX(' + value + unit + ')';
-                }
-            } else {
-                result.left = value + unit;
-            }
-
-            return result;
-        },
-
-        freeze: function(galleryId) {
-            var p = data[galleryId];
-
-            p.freeze = true;
-            p.root.addClass(p.params._freeze);
-        },
-
-        unfreeze: function(galleryId) {
-            var p = data[galleryId];
-
-            p.freeze = false;
-            p.root.removeClass(p.params._freeze);
-        },
-
-        getHTML: function(params, data) {
-            var thumbsHTML = '',
-                slidesHTML = '';
-
-            for (var i = 0, len = data.length; i < len; i++) {
-
-                // Thumbnails template
-
-                thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb +
-                    ' ' + params.modifierPrefix + i +
-                    ' ' + data[i].classes + '">';
-
-                if (params.showThumbs == 'thumbs' && data[i].url) {
-                    thumbsHTML += '<img src="' + data[i].thumb +
-                        '" class="' + params.thumbImg + '" data-rel="' + i + '">';
-                }
-
-                thumbsHTML += '</span>';
-
-                // Slides template
-
-                slidesHTML += '<div class="' + params.slide +
-                    ' ' + params.modifierPrefix + i +
-                    ' ' + (data[i].html ? params._html : params._loading) +
-                    '" data-id="' + i + '">';
-
-                if (data[i].html) {
-                    slidesHTML += data[i].html;
-                } else {
-                    if (params.ie && params.ie < 9) {
-                        slidesHTML += '<img src="" class="' + params.slideImg + ' ' + data[i].classes + '" />';
-                    } else {
-                        slidesHTML += '<div class="' + params.slideImg + ' ' + data[i].classes + '"></div>';
+                    if (this.canNext()) {
+                        this.next();
+                        return;
                     }
                 }
-
-                slidesHTML += '</div>';
             }
 
-            if (params.showThumbs == 'thumbs') {
-                thumbsHTML += '<div class="' + params.thumbFrame + '"></div>';
+            this._moveToCurrentSlide();
+        },
+
+        _completeThumbsDrag: function() {
+            var params = this._params;
+
+            var touch = this._touch;
+            var touchPrev = touch.prev;
+            var touchEnd = touch.end;
+
+            var bThumbsLayer = this.bThumbsLayer;
+
+            var offset;
+
+            if (!this._thumbsDraggable) {
+                offset = 0;
+            } else {
+                var lastStepShiftX = touchEnd.clientX - touchPrev.clientX;
+                var direction = lastStepShiftX < 0 ? -1 : 1;
+                var speed = Math.abs(lastStepShiftX / (touchEnd.time - touchPrev.time));
+
+                offset = direction * Math.pow(speed * 10, 2) + this._thumbsOffset;
+
+                if (offset > 0) {
+                    offset = 0;
+                } else {
+                    var limit = this._bThumbsWidth - this._bThumbsLayerWidth;
+
+                    if (offset < limit) {
+                        offset = limit;
+                    }
+                }
             }
 
-            return { thumbs: thumbsHTML, slides: slidesHTML };
+            this._thumbsOffset = offset;
+
+            if (prefixedTransitionDuration) {
+                bThumbsLayer.style[prefixedTransitionDuration] = params.duration + 'ms';
+            }
+
+            setOffsetX(bThumbsLayer, offset);
+        },
+
+        _handleThumbsTap: function(evt) {
+            var bThumbs = this.bThumbs;
+
+            var el = evt.target;
+
+            while (el != bThumbs) {
+                if (el.hasAttribute('data-rel')) {
+                    evt.preventDefault();
+                    this.go(+el.getAttribute('data-rel'));
+                    break;
+                }
+
+                if (!(el = el.parentNode)) {
+                    break;
+                }
+            }
+        },
+
+        update: function() {
+            this._updateDims();
+            this._updateThumbsDims();
+
+            this._moveToCurrent(true);
+        },
+
+        go: function(index) {
+            var current = this.current;
+
+            if (index == current || index < 0 || index > this._items.length - 1) {
+                return;
+            }
+
+            this.current = index;
+
+            this._loadActualSlides();
+            this._moveToCurrent();
+        },
+
+        canPrev: function() {
+            return this.current > 0;
+        },
+
+        canNext: function() {
+            return this.current < this._items.length - 1;
+        },
+
+        prev: function() {
+            this.go(this.current - 1);
+        },
+
+        next: function() {
+            this.go(this.current + 1);
+        },
+
+        freeze: function() {
+            //
+        },
+
+        unfreeze: function() {
+            //
+        },
+
+        _bindEvent: function(el, type, listener) {
+            var id = getUID(el) + '-' + type + '-' + getUID(listener);
+
+            if (!this._events.hasOwnProperty(id)) {
+                if (el.addEventListener) {
+                    el.addEventListener(type, listener, false);
+
+                    this._events[id] = {
+                        element: el,
+                        type: type,
+                        listener: listener
+                    };
+                } else {
+                    var wrapper = function(evt) {
+                        listener.call(el, fixEvent(evt || window.event));
+                    };
+
+                    wrapper._inner = listener;
+
+                    el.attachEvent('on' + type, wrapper);
+
+                    this._events[id] = {
+                        element: el,
+                        type: type,
+                        listener: wrapper
+                    };
+                }
+            }
+        },
+
+        _bindTransitionEnd: function(el, listener) {
+            var names = [
+                'transitionend',
+                'webkitTransitionEnd',
+                'MSTransitionEnd',
+                'oTransitionEnd'
+            ];
+
+            for (var i = 0, l = names.length; i < l; i++) {
+                this._bindEvent(el, names[i], listener);
+            }
+        },
+
+        _unbindEvent: function(el, type, listener) {
+            var id = getUID(el) + '-' + type + '-' + getUID(listener);
+
+            if (this._events.hasOwnProperty(id)) {
+                if (el.removeEventListener) {
+                    el.removeEventListener(type, listener, false);
+                } else {
+                    el.detachEvent('on' + type, this._events[id].listener);
+                }
+                delete this._events[id];
+            }
+        },
+
+        destroy: function() {
+            var events = this._events;
+
+            for (var id in events) {
+                if (events.hasOwnProperty(id)) {
+                    var event = events[id];
+
+                    if (event.element.removeEventListener) {
+                        event.element.removeEventListener(event.type, event.listener, false);
+                    } else {
+                        event.element.detachEvent('on' + event.type, event.listener);
+                    }
+                    delete events[id];
+                }
+            }
+
+            this.element._photor = null;
         }
     };
 
-    $.fn.photor = function(method) {
+    // Helpers
 
-        if (methods[method]) {
-            return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
-        } else if (typeof method == 'object' || !method) {
-            return methods.init.apply(this, arguments);
-        } else {
-            $.error('Unknown method: ' +  method);
+    var uidCounter = 0;
+
+    var reNotWhite = /\S+/g;
+
+    /**
+     * @param {string} message
+     */
+    function logError(message) {
+        if (typeof console != 'undefined') {
+            if (console.error) {
+                console.error(message);
+            } else {
+                console.log('Error: ' + message);
+            }
         }
+    }
 
+    /**
+     * @returns {int}
+     */
+    function getUID(obj) {
+        return obj._uid || (obj._uid = ++uidCounter);
+    }
+
+    /**
+     * @param {string} str
+     * @param {*} ...values
+     * @returns {string}
+     */
+    function format(str) {
+        var values = Array.prototype.slice.call(arguments, 1);
+
+        return str.replace(/%(\d+)/g, function(match, num) {
+            return values[Number(num) - 1];
+        });
+    }
+
+    var _createObject = Object.create || function(proto) {
+        function F() {}
+        F.prototype = proto;
+        return new F();
     };
 
-    $.fn.photor.data = data;
-
     /**
-     * Detect IE version
-     *
-     * @returns {int} Major version
+     * @param {Object} proto
+     * @param {Array<Object>} [...mixins]
+     * @returns {Object}
      */
-    function ie() {
-        var ua = navigator.userAgent.toLowerCase();
+    function createObject(proto) {
+        var obj = _createObject(proto);
 
-        return ua.indexOf('msie') > -1 ? parseInt(ua.split('msie')[1]) : false;
+        if (arguments.length > 1) {
+            for (var i = 1, l = arguments.length; i < l; i++) {
+                var mixin = arguments[i];
+
+                if (mixin === Object(mixin)) {
+                    extendObject(obj, mixin);
+                }
+            }
+        }
+        return obj;
     }
 
     /**
-     * Returns supported property for css-transform
-     *
-     * @returns {string} String key
+     * @param {Object} obj
+     * @param {Object} source
+     * @returns {Object}
      */
-    function getSupportedTransform() {
-        var out = false,
-            el = document.createElement('p');
-
-        for (var key in prefixes) {
-            if (prefixes.hasOwnProperty(key) && el.style[key] !== undefined) {
-                out = { property: key };
-
-                break;
+    function extendObject(obj, source) {
+        for (var name in source) {
+            if (source.hasOwnProperty(name)) {
+                obj[name] = source[name];
             }
         }
+        return obj;
+    }
 
-        document.body.appendChild(el);
+    var isArray = Array.isArray || function(obj) {
+        return Object.prototype.toString.call(obj) == '[object Array]';
+    };
 
-        if (out.property) {
-            el.style[out.property] = "translate3d(1px,1px,1px)";
-            out.has3d = window.getComputedStyle(el).getPropertyValue(prefixes[out.property]) != 'none';
-        }
+    /**
+     * @param {Object} instance
+     * @param {Array<string>} names
+     */
+    var bindMethods = Function.prototype.bind ?
+        function(instance, names) {
+            var i = names.length;
 
-        document.body.removeChild(el);
+            while (i) {
+                instance[names[--i]] = instance[names[i]].bind(instance);
+            }
+        } :
+        function(instance, names) {
+            var i = names.length;
 
-        return out;
+            while (i) {
+                (function(instance, name) {
+                    var listener = instance[name];
+
+                    instance[name] = function() {
+                        return listener.apply(instance, arguments);
+                    };
+                })(instance, names[--i]);
+            }
+        };
+
+    var hasClass;
+    var addClass;
+    var removeClass;
+
+    if (dummyElement.classList) {
+        hasClass = function(el, className) {
+            return el.classList.contains(className);
+        };
+
+        addClass = function(el, className) {
+            el.classList.add(className);
+        };
+
+        removeClass = function(el, className) {
+            el.classList.remove(className);
+        };
+    } else {
+        hasClass = function(el, className) {
+            return (el.className.match(reNotWhite) || []).indexOf(className) != -1;
+        };
+
+        addClass = function(el, className) {
+            var classNames = el.className.match(reNotWhite) || [];
+
+            if (classNames.indexOf(className) == -1) {
+                classNames.push(className);
+                el.className = classNames.join(' ');
+            }
+        };
+
+        removeClass = function(el, className) {
+            var classNames = el.className.match(reNotWhite) || [];
+            var index = classNames.indexOf(className);
+
+            if (index != -1) {
+                classNames.splice(index, 1);
+                el.className = classNames.join(' ');
+            }
+        };
     }
 
     /**
-     * Get prefixed css-property
-     *
-     * @returns {string} String key
+     * @param {string} html
+     * @returns {HTMLElement}
      */
-    function getPrefixed(property) {
-        var style = document.createElement('p').style,
-            prefixes = ['ms', 'O', 'Moz', 'Webkit'];
-
-        if (style[property] == '') {
-            return property;
-        }
-
-        property = property.charAt(0).toUpperCase() + property.slice(1);
-
-        for (var i = 0, len = prefixes.length; i < len; i++) {
-            if (style[prefixes[i] + property] == '') {
-                return prefixes[i] + property;
-            }
-        }
+    function createElementFromHTML(html) {
+        var el = document.createElement('div');
+        el.innerHTML = html;
+        return el.childNodes.length == 1 && el.firstChild.nodeType == 1 ? el.firstChild : el;
     }
 
     /**
-     * Кроссбраузерно добавляет обработчики событий
-     *
-     * @param {HTMLElement} element HTMLElement
-     * @param {Event} e Событие
-     * @param {Function} handler Обработчик события
-     * @param {bool} capture Capturing
+     * @param {Node} node
+     * @param {Node} ancestor
+     * @param {Node} [stoppingNode]
+     * @returns {boolean}
      */
-    function eventManager(element, e, handler, capture, off) {
-        capture = !!capture;
-
-        if (!element) {
-            return;
-        }
-
-        if (off) {
-
-            if (element.removeEventListener) {
-                element.removeEventListener(e, handler, capture);
-            } else {
-                $(element).off(e);
+    function isDescendantOf(node, ancestor, stoppingNode) {
+        if (stoppingNode) {
+            while (node = node.parentNode) {
+                if (node == ancestor) {
+                    return true;
+                }
+                if (node == stoppingNode) {
+                    break;
+                }
             }
-
         } else {
-
-            if (element.addEventListener) {
-                element.addEventListener(e, handler, capture);
-            } else {
-                $(element).on(e, handler);
+            while (node = node.parentNode) {
+                if (node == ancestor) {
+                    return true;
+                }
             }
-
         }
-    }
-
-    /**
-     * Проверяет наличие класса у HTML-элемента
-     *
-     * @param {HTMLElement} element HTMLElement
-     * @param {string} className Имя класса
-     * @returns {bool}
-     */
-    function hasClass(element, className) {
-        var classNames = ' ' + element.className + ' ';
-
-        className = ' ' + className + ' ';
-
-        if (classNames.replace(/[\r\n\t\f]+/g, ' ').indexOf(className) > -1) {
-            return true;
-        }
-
         return false;
     }
 
     /**
-     * Возвращает массив поддерживаемых событий
-     * Если браузер поддерживает pointer events или подключена handjs, вернет события указателя.
-     * Если нет, используем события мыши
-     *
-     * @returns {Array} Массив с названиями событий
+     * @param {Node} node
+     * @param {Node} ancestor
+     * @param {Node} [stoppingNode]
+     * @returns {boolean}
      */
-    function getSupportedEvents() {
-        var touchEnabled = 'ontouchstart' in window;
-
-        if (touchEnabled) {
-            return ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
-        }
-
-        return ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
+    function isSelfOrDescendantOf(node, ancestor, stoppingNode) {
+        return node == ancestor || isDescendantOf(node, ancestor, stoppingNode);
     }
 
     /**
-     * Устанавливает обработчики управления указателем (touch, mouse, pen)
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+     * @param {Node} node
+     * @returns {Node}
      */
-    function bindControl(galleryId) {
-        var p = data[galleryId],
-            control = p.control,
-            thumbs = p.thumbs,
-            touch = {};
-
-        /**
-         * Обработчик touchstart
-         *
-         * @param {Event} e Событие pointerdown
-         */
-        handlers.onStart = function(e) {
-            if (p.freeze) {
-                return;
-            }
-
-            // Запоминаем координаты и время
-            touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
-            touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
-            touch.t1 = new Date();
-            touch.isPressed = true;
-
-            // Запоминаем элемент, на котором вызвано событие
-            touch.isThumbs = hasClass(this, p.params.thumbs);
-            touch.thumbsStartX = p.thumbsIndent;
-
-            p.layer.css('transition-duration', '0s');
-            p.thumbsLayer.css('transition-duration', '0s');
-        };
-
-        /**
-         * Обработчик touch move
-         *
-         * @param {Event} e Событие pointermove
-         */
-        handlers.onMove = function(e) {
-            if (touch.isPressed && !p.freeze) {
-                // смещения
-                touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
-                touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
-
-                // абсолютные значения смещений
-                touch.shiftXAbs = Math.abs(touch.shiftX);
-                touch.shiftYAbs = Math.abs(touch.shiftY);
-
-                // Detect multitouch
-                touch.isMultitouch = touch.isMultitouch || !!e.touches && e.touches.length > 1;
-
-                if (touch.isMultitouch) {
-                    end();
-
-                    return;
-                }
-
-                // если мы ещё не определились
-                if (!touch.isSlide && !touch.isScroll) {
-                    // если вертикальное смещение - скроллим пока не отпустили палец
-                    if (touch.shiftYAbs >= 5 && touch.shiftYAbs > touch.shiftXAbs) {
-                        touch.isScroll = true;
-                    }
-
-                    // если горизонтальное - слайдим
-                    if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
-                        p.root.addClass(p.params._dragging);
-                        touch.isSlide = true;
-                        touch.startShift = getIndent(galleryId);
-                    }
-                }
-
-                // если слайдим
-                if (touch.isSlide) {
-
-                    if (touch.isThumbs) {
-                        if (p.thumbsDragging) {
-                            thumbsMove();
-                        }
-                    } else {
-                        // слайды таскаем, только если поддерживаются transition
-                        if (p.params.transition) {
-                            slidesMove();
-                        }
-                    }
-
-                    // запрещаем скролл
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    }
-                }
-            }
-        };
-
-        /**
-         * Обработчик touch end
-         *
-         * @param {Event} e Событие pointerup
-         */
-        handlers.onEnd = function(e) {
-            // Ловим клик
-            if (!touch.isSlide && !touch.isScroll && touch.isPressed) {
-
-                // Назад
-                if (hasClass(e.target, p.params.prev)) {
-                    methods.prev(galleryId);
-                }
-
-                // Вперед
-                if (hasClass(e.target, p.params.next)) {
-                    methods.next(galleryId);
-                }
-
-                // Клик по миниатюре
-                if (hasClass(e.target, p.params.thumbImg) || hasClass(e.target, p.params.thumb)) {
-                    var target = parseInt(e.target.getAttribute('data-rel'));
-
-                    if (target + p.params.slidesOnScreen - 1 > p.last) {
-                        target = p.last - p.params.slidesOnScreen + 1;
-                    }
-                    methods.go(galleryId, target);
-                }
-
-                if (e.stopPropagation && e.preventDefault) {
-                    e.stopPropagation();
-                    e.preventDefault(); // Нужно для отмены зума по doubletap
-                }
-            }
-
-            end();
-        };
-
-        /**
-         * Возвращает текущее значение отступа layer
-         *
-         * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-         */
-        function getIndent(galleryId) {
-            var p = data[galleryId],
-                value;
-
-            if (p.params.transform) {
-                var matrix = p.layer.css(prefixes[p.params.transform.property]).match(/(-?[0-9\.]+)/g);
-
-                value = matrix.length > 6 ? matrix[13] : matrix[4];
-            } else {
-                value = p.layer.css('left');
-            }
-
-            return parseInt(value);
+    function clearNode(node) {
+        while (node.lastChild) {
+            node.removeChild(node.lastChild);
         }
-
-        /**
-         * Завершение перемещения
-         */
-        function end() {
-            if (touch.isSlide) {
-                if (touch.isThumbs) {
-                    thumbsEnd();
-                } else {
-                    if (p.params.transition) {
-                        slidesEnd();
-                    }
-                }
-            }
-
-            touch = {};
-            p.root.removeClass(p.params._dragging);
-        }
-
-        /**
-         * Движение слайдов во время перетаскивания
-         */
-        function slidesMove() {
-            var resultIndent,
-                onScreen = p.params.slidesOnScreen;
-
-            if ((p.current == 0 && touch.shiftX > 0) || (p.current + onScreen - 1 == p.last && touch.shiftX < 0)) {
-                touch.shiftX = touch.shiftX / 3;
-            }
-
-            resultIndent = touch.shiftX + touch.startShift;
-
-            p.layer.css(methods.setIndent(galleryId, Math.round(resultIndent), 'px'));
-        }
-
-        /**
-         * Завершение движения слайдов
-         */
-        function slidesEnd() {
-            // Transition executes if delta more then 5% of container width
-            if (Math.abs(touch.shiftX) > p.controlWidth * 0.05) {
-                var shiftSlides = touch.shiftX / p.controlWidth * p.params.slidesOnScreen,
-                    target;
-
-                if (touch.shiftX < 0) {
-                    target = p.current - Math.floor(shiftSlides);
-                } else {
-                    target = p.current - Math.ceil(shiftSlides);
-                }
-
-                // Проверяем, существует ли целевой слайд
-                if (target < 0) {
-                    target = 0;
-                }
-                if (target + p.params.slidesOnScreen - 1 > p.last) {
-                    target = p.last - p.params.slidesOnScreen + 1;
-                }
-
-                methods.go(galleryId, target);
-
-            } else {
-                methods.go(galleryId, p.current);
-            }
-        }
-
-        /**
-         * Движение миниатюр при перетаскивании
-         */
-        function thumbsMove() {
-            var indent = touch.shiftX + touch.thumbsStartX,
-                limit = -1 * (p.thumbsLayerWidth - p.thumbsWidth);
-
-            // Если выходим за край
-            if (indent > 0) {
-                indent = indent / 3;
-            }
-            if (indent < limit) {
-                indent = limit + ((indent - limit) / 3);
-            }
-
-            p.thumbsIndent = indent;
-            p.thumbsLayer.css(methods.setIndent(galleryId, p.thumbsIndent, 'px'));
-        }
-
-        /**
-         * Завершение движения миниатюр
-         */
-        function thumbsEnd() {
-            if (p.thumbsDragging && touch.isSlide) {
-                var direction = touch.shiftX < 0 ? -1 : 1;
-
-                touch.t2 = new Date();
-                p.thumbsIndent = calcTailAnimation(p.thumbsIndent, direction);
-
-                p.thumbsLayer
-                    .css('transition-duration', '.24s')
-                    .css(methods.setIndent(galleryId, p.thumbsIndent, 'px'));
-            }
-        }
-
-        /**
-         * Вычисление конечной координаты слоя с миниатюрами с учетом движения по инерции
-         *
-         * @param {number} currentIndent Текущее положение слоя с миниатюрами в пикселях
-         * @param {number} direction Направление движения (-1|1)
-         * @returns {number} Значение координаты слоя с миниатюрами в пикселях
-         */
-        function calcTailAnimation(currentIndent, direction) {
-            var speed = Math.abs(10 * touch.shiftX / (touch.t2 - touch.t1)),
-                tail, limit;
-
-            tail = direction * parseInt(Math.pow(speed, 2)) + currentIndent;
-            limit = p.thumbs.outerWidth() - p.thumbsLayer.outerWidth();
-
-            if (tail > 0) {
-                return 0;
-            }
-
-            if (tail < limit) {
-                return limit;
-            }
-
-            return tail;
-        }
-
-        // Touch-события
-        p.events.push({
-            element: p.viewport[0],
-            event: evt[0],
-            handler: handlers.onStart
-        }, {
-            element: p.viewport[0],
-            event: evt[1],
-            handler: handlers.onMove,
-            capture: true
-        }, {
-            element: p.viewport[0],
-            event: evt[2],
-            handler: handlers.onEnd
-        }, {
-            element: p.viewport[0],
-            event: evt[3],
-            handler: handlers.onEnd
-        }, {
-            element: thumbs[0],
-            event: evt[0],
-            handler: handlers.onStart
-        }, {
-            element: thumbs[0],
-            event: evt[1],
-            handler: handlers.onMove,
-            capture: true
-        }, {
-            element: thumbs[0],
-            event: evt[2],
-            handler: handlers.onEnd
-        }, {
-            element: thumbs[0],
-            event: evt[3],
-            handler: handlers.onEnd
-        });
-
-        // Отмена перехода по ссылке миниатюры
-        for (var i = 0, len = p.thumb.length; i < len; i++) {
-            p.events.push({
-                element: p.thumb[i],
-                event: 'click',
-                handler: function(e) {
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    }
-
-                    return false;
-                }
-            });
-        }
-
-        // Отмена встроенного перетаскивания для картинок
-        for (var j = 0, m = p.thumbImg.length; j < m; j++) {
-            p.events.push({
-                element: p.thumbImg[j],
-                event: 'dragstart',
-                handler: function(e) {
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    }
-
-                    return false;
-                }
-            });
-        }
+        return node;
     }
 
-    /**
-     * Устанавливает обработчик изменения размера окна
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindResize(galleryId) {
-        if (!handlers.resize) {
-            var p = data[galleryId];
+    var getOffsetX;
+    var setOffsetX;
+    var setOffsets;
 
-            p.events.push({
-                element: window,
-                event: 'resize',
-                handler: methods.update
-            });
-        }
-    }
-
-    /**
-     * Устанавливает обработчики управления с клавиатуры
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindKeyboard(galleryId) {
-        var p = data[galleryId];
-
-        handlers.keydown = function(e) {
-            var key = e.which || e.keyCode,
-                node = e.target.nodeName.toLowerCase(),
-                contenteditable = !!e.target.attributes.contenteditable;
-
-            if (node != 'input' && node != 'textarea' && node != 'select' && !contenteditable) {
-                switch(key) {
-                    // Space
-                    case 32:
-                        methods.next(galleryId);
-                        break;
-
-                    // Left
-                    case 37:
-                        methods.prev(galleryId);
-                        break;
-
-                    // Right
-                    case 39:
-                        methods.next(galleryId);
-                        break;
-                }
-            }
+    if (prefixedTransform) {
+        getOffsetX = function(el) {
+            var matrix = window.getComputedStyle(el, null)[prefixedTransform].match(/\-?[0-9\.]+/g);
+            return parseFloat(matrix[matrix.length > 6 ? 13 : 4], 10);
         };
 
-        p.events.push({
-            element: window,
-            event: 'keydown',
-            handler: handlers.keydown
-        });
-    }
-
-    /**
-     * Устанавливает обработчики на окончание анимации
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindTransitionEnd(galleryId) {
-        var p = data[galleryId],
-            transitionEnd = ['webkitTransitionEnd', 'MSTransitionEnd', 'oTransitionEnd', 'transitionend'];
-
-        handlers.transitionEnd = function(e) {
-            var prop = e.propertyName;
-
-            if (prop.lastIndexOf('transform') != prop.length - 'transform'.length && prop != 'left') {
-                return;
+        setOffsetX = function(el, value, unit) {
+            if (unit === undefined) {
+                unit = 'px';
             }
 
-            callback(galleryId);
+            el.style[prefixedTransform] = 'translate(' + value + unit + ', 0)' +
+                (hasCSS3DTransforms ? ' translateZ(0)' : '');
         };
 
-        for (var i = 0, len = transitionEnd.length; i < len; i++) {
-            p.events.push({
-                element: p.layer[0],
-                event: transitionEnd[i],
-                handler: handlers.transitionEnd
-            });
-        }
-    }
-
-    function callback(galleryId) {
-        var p = data[galleryId];
-
-        p.root.removeClass(p.params._animated);
-
-        p.layer[0].style.transitionDuration = 0;
-
-        toggleSlides(galleryId, p.current);
-
-        if (p.params.onShow) {
-            p.params.onShow(p);
-        }
-    }
-
-    function toggleSlides(galleryId, target) {
-        var p = data[galleryId];
-
-        for (var i = 0, len = p.count; i < len; i++) {
-            var elem = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + i),
-                onScreen = p.params.slidesOnScreen;
-
-            if (i >= p.current - onScreen && i <= p.current + (onScreen * 2) - 1 || i >= target - onScreen && i <= target + (onScreen * 2) - 1) {
-                elem.removeClass(p.params._hidden);
-            } else {
-                elem.addClass(p.params._hidden);
+        setOffsets = function(el, x, y, unit) {
+            if (unit === undefined) {
+                unit = 'px';
             }
-        }
+
+            el.style[prefixedTransform] = 'translate(' + x + unit + ', ' + y + unit + ')' +
+                (hasCSS3DTransforms ? ' translateZ(0)' : '');
+        };
+    } else {
+        getOffsetX = function(el) {
+            var style = window.getComputedStyle ? window.getComputedStyle(el, null) : el.currentStyle;
+            return parseFloat(style.left, 10);
+        };
+
+        setOffsetX = function(el, value, unit) {
+            if (unit === undefined) {
+                unit = 'px';
+            }
+
+            el.style.left = value + unit;
+        };
+
+        setOffsets = function(el, x, y, unit) {
+            if (unit === undefined) {
+                unit = 'px';
+            }
+
+            el.style.top = y + unit;
+            el.style.left = x + unit;
+        };
     }
 
     /**
      * @param {string} url
      * @param {Function} callback
+     * @param {Object} [context]
      */
-    function loadImage(url, callback) {
+    function loadImage(url, callback, context) {
         var img = new Image();
 
         img.onload = img.onerror = function(evt) {
             img.onload = img.onerror = null;
-            callback(evt.type == 'load', url);
+            callback.call(context, evt.type == 'load', img);
         };
 
         img.src = url;
     }
 
-})(jQuery);
+    function preventDefault() {
+        this.returnValue = false;
+    }
+
+    function stopPropagation() {
+        this.cancelBubble = true;
+    }
+
+    function fixEvent(evt) {
+        if (evt.fixed) {
+            return evt;
+        }
+
+        var fixedEvent = createObject(evt);
+
+        fixedEvent.origEvent = evt;
+
+        if (!evt.target) {
+            fixedEvent.target = evt.srcElement || document;
+        }
+
+        if (evt.pageX === undefined && evt.clientX !== undefined) {
+            var html = document.documentElement;
+            var body = document.body;
+
+            fixedEvent.pageX = evt.clientX + (html.scrollLeft || body && body.scrollLeft || 0) - html.clientLeft;
+            fixedEvent.pageY = evt.clientY + (html.scrollTop || body && body.scrollTop || 0) - html.clientTop;
+        }
+
+        if (evt.which === undefined && evt.button !== undefined) {
+            if (evt.button & 1) {
+                fixedEvent.which = 1;
+            } else if (e.button & 4) {
+                fixedEvent.which = 2;
+            } else if (e.button & 2) {
+                fixedEvent.which = 3;
+            }
+        }
+
+        if (!evt.preventDefault) {
+            fixedEvent.preventDefault = preventDefault;
+        }
+
+        if (!evt.stopPropagation) {
+            fixedEvent.stopPropagation = stopPropagation;
+        }
+
+        fixedEvent.fixed = true;
+
+        return fixedEvent;
+    }
+
+    dummyElement = null;
+    dummyStyle = null;
+
+    // jQuery
+    // TODO: допилить
+
+    if (typeof jQuery == 'function') {
+        jQuery.fn.photor = function(method, options) {
+
+            if (method === undefined) {
+                return new Photor(this[0], options);
+            } else {
+                $.error('Unknown method: ' +  method);
+            }
+
+        };
+    }
+
+})();
