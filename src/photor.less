@@ -59,6 +59,23 @@
                 white-space: nowrap;
                 text-align: center;
 
+                &._auto {
+                    &._portrait .photor__viewportLayerSlideImg {
+                        width: auto;
+                        height: 100%;
+                        }
+                    &._landscape .photor__viewportLayerSlideImg {
+                        width: 100%;
+                        height: auto;
+                        }
+                    }
+                &._center {
+                    .photor__viewportLayerSlideImg {
+                        width: auto;
+                        height: auto;
+                        }
+                    }
+
                 &:before {
                     width: 0;
                     height: 100%;
@@ -85,11 +102,8 @@
                     }
 
                 &Img {
-                    position: absolute;
-                    top: 0;
-                    right: 1px;
-                    bottom: 0;
-                    left: 1px;
+                    width: 520px;
+                    height: 500px;
                     display: inline-block;
                     background-position: center center;
                     background-repeat: no-repeat;
@@ -124,25 +138,7 @@
 
                 /* Спрятанное изображение */
                 &._hidden {
-                    display: none;
-                    }
-
-                /* Алгоритм размещения фотографии по умолчанию */
-                &._auto {
-                    .photor__viewportLayerSlideImg {
-                        -webkit-background-size: contain;
-                        background-size: contain;
-
-                        @media (max-width: 400px) {
-                            -webkit-background-size: cover;
-                            background-size: cover;
-                            }
-                        }
-                    }
-
-                /* Алгоритм размещения фотографии по центру (для маленьких изображений) */
-                &._center {
-                    background-size: auto;
+                    visibility: hidden;
                     }
 
                 &._html:before,
@@ -302,22 +298,6 @@
 /* IE8 */
 .photor._ie8 {
     .photor__viewportLayerSlide {
-        &._auto {
-            &._portrait .photor__viewportLayerSlideImg {
-                width: auto;
-                height: 100%;
-                }
-            &._landscape .photor__viewportLayerSlideImg {
-                width: 100%;
-                height: auto;
-                }
-            }
-        &._center {
-            .photor__viewportLayerSlideImg {
-                width: auto;
-                height: auto;
-                }
-            }
         }
 
     .photor__viewportControl {

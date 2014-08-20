@@ -59,8 +59,18 @@
   text-align: center;
   /* Изображение не загружено */
   /* Спрятанное изображение */
-  /* Алгоритм размещения фотографии по умолчанию */
-  /* Алгоритм размещения фотографии по центру (для маленьких изображений) */
+}
+.photor__viewportLayerSlide._auto._portrait .photor__viewportLayerSlideImg {
+  width: auto;
+  height: 100%;
+}
+.photor__viewportLayerSlide._auto._landscape .photor__viewportLayerSlideImg {
+  width: 100%;
+  height: auto;
+}
+.photor__viewportLayerSlide._center .photor__viewportLayerSlideImg {
+  width: auto;
+  height: auto;
 }
 .photor__viewportLayerSlide:before {
   width: 0;
@@ -87,11 +97,8 @@
   content: '';
 }
 .photor__viewportLayerSlideImg {
-  position: absolute;
-  top: 0;
-  right: 1px;
-  bottom: 0;
-  left: 1px;
+  width: 520px;
+  height: 500px;
   display: inline-block;
   background-position: center center;
   background-repeat: no-repeat;
@@ -121,20 +128,7 @@
   display: none;
 }
 .photor__viewportLayerSlide._hidden {
-  display: none;
-}
-.photor__viewportLayerSlide._auto .photor__viewportLayerSlideImg {
-  -webkit-background-size: contain;
-  background-size: contain;
-}
-@media (max-width: 400px) {
-  .photor__viewportLayerSlide._auto .photor__viewportLayerSlideImg {
-    -webkit-background-size: cover;
-    background-size: cover;
-  }
-}
-.photor__viewportLayerSlide._center {
-  background-size: auto;
+  visibility: hidden;
 }
 .photor__viewportLayerSlide._html:before,
 .photor__viewportLayerSlide._html:after {
@@ -267,18 +261,6 @@
   cursor: grabbing;
 }
 /* IE8 */
-.photor._ie8 .photor__viewportLayerSlide._auto._portrait .photor__viewportLayerSlideImg {
-  width: auto;
-  height: 100%;
-}
-.photor._ie8 .photor__viewportLayerSlide._auto._landscape .photor__viewportLayerSlideImg {
-  width: 100%;
-  height: auto;
-}
-.photor._ie8 .photor__viewportLayerSlide._center .photor__viewportLayerSlideImg {
-  width: auto;
-  height: auto;
-}
 .photor._ie8 .photor__viewportControl {
   background: url('about:blank');
 }

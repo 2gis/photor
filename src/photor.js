@@ -385,17 +385,7 @@
                     params.slide,
                     params.itemPrefix + i,
                     slide.html ? params._html : params._loading,
-                    (function() {
-                        if (slideEl) {
-                            return '';
-                        }
-
-                        return format(
-                            ie && ie < 9 ? '<img src="" class="%1 %2">' : '<div class="%1 %2"></div>',
-                            params.slideImg,
-                            slide.classes
-                        );
-                    })()
+                    slideEl ? '' : format('<img src="" class="%1 %2">', params.slideImg, slide.classes)
                 );
 
                 var bSlide = createElementFromHTML(slideHTML);
@@ -496,13 +486,9 @@
                                 this._alignBSlideImg(index);
                                 this._orientBSlideImg(index);
 
-                                if (ie && ie < 9) {
-                                    bSlideImg.src = url;
-                                } else {
-                                    bSlideImg.style.backgroundImage = "url('" + url + "')";
-                                }
+                                bSlideImg.src = url;
                             } else {
-                                logError("Image wasn't loaded: " + url);
+                                logError('Image wasn\'t loaded: ' + url);
                             }
 
                             if (!loadingCount && callback) {
@@ -537,7 +523,7 @@
                         loadingCount--;
 
                         if (!success) {
-                            logError("Image wasn't loaded: " + url);
+                            logError('Image wasn\'t loaded: ' + url);
                         }
 
                         if (!loadingCount && callback) {
@@ -1231,6 +1217,24 @@
         update: function() {
             this._updateDims();
             this._updateThumbsDims();
+
+            var slides = this._slides,
+                blSlides = this.blSlides,
+                i = slides.length;
+
+            while (i) {
+                var slide = slides[--i];
+
+                if (slide.loaded) {
+                    var bSlideImg = blSlides[i].firstChild;
+
+                    slide.width = bSlideImg.width;
+                    slide.height = bSlideImg.height;
+
+                    this._alignBSlideImg(i);
+                    this._orientBSlideImg(i);
+                }
+            }
 
             this._moveToCurrentItems(true);
         },
