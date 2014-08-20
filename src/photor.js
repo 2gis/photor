@@ -103,9 +103,6 @@
         _mouseOverBControl: false,
         _mouseOverBThumbs: false,
 
-        _lastWheelTime: 0,
-        _lastWheelDelta: 0,
-
         _autoplayTimerId: undefined,
 
         // Elements
@@ -736,11 +733,6 @@
                 '_onBThumbsMouseEnter',
                 '_onBThumbsMouseLeave',
 
-                '_onBControlMouseWheel',
-                '_onBControlDOMMouseScroll',
-                '_onBThumbsMouseWheel',
-                '_onBThumbsDOMMouseScroll',
-
                 '_onDocumentKeydown',
 
                 '_onAutoplayTimerTick'
@@ -764,14 +756,6 @@
             this._bindEvent(bControl, 'mouseleave', this._onBControlMouseLeave);
             this._bindEvent(bThumbs, 'mouseenter', this._onBThumbsMouseEnter);
             this._bindEvent(bThumbs, 'mouseleave', this._onBThumbsMouseLeave);
-
-            if ('onmousewheel' in document) {
-                this._bindEvent(bControl, 'mousewheel', this._onBControlMouseWheel);
-                this._bindEvent(bThumbs, 'mousewheel', this._onBThumbsMouseWheel);
-            } else {
-                this._bindEvent(bControl, 'DOMMouseScroll', this._onBControlDOMMouseScroll);
-                this._bindEvent(bThumbs, 'DOMMouseScroll', this._onBThumbsDOMMouseScroll);
-            }
 
             if (this._params.keyboard) {
                 this._bindEvent(document, 'keydown', this._onDocumentKeydown);
@@ -1224,95 +1208,6 @@
         },
 
         /**
-         * @param {WheelEvent} evt
-         */
-        _onBControlMouseWheel: function(evt) {
-            if (evt.shiftKey && this._handleMouseWheel(evt.wheelDelta, this.bControl, evt)) {
-                evt.preventDefault();
-            }
-        },
-
-        /**
-         * @param {MouseScrollEvent} evt
-         */
-        _onBControlDOMMouseScroll: function(evt) {
-            if (evt.shiftKey && this._handleMouseWheel(evt.detail * -40, this.bControl, evt)) {
-                evt.preventDefault();
-            }
-        },
-
-        /**
-         * @param {WheelEvent} evt
-         */
-        _onBThumbsMouseWheel: function(evt) {
-            if (evt.shiftKey && this._handleMouseWheel(evt.wheelDelta, this.bThumbs, evt)) {
-                evt.preventDefault();
-            }
-        },
-
-        /**
-         * @param {MouseScrollEvent} evt
-         */
-        _onBThumbsDOMMouseScroll: function(evt) {
-            if (evt.shiftKey && this._handleMouseWheel(evt.detail * -40, this.bThumbs, evt)) {
-                evt.preventDefault();
-            }
-        },
-
-        /**
-         * @param {int} wheelDelta
-         * @param {HTMLElement} targetEl
-         * @returns {boolean}
-         */
-        _handleMouseWheel: function(wheelDelta, targetEl, evt) {
-            var params = this._params;
-
-            if (targetEl == this.bControl) {
-                var lastWheelTime = this._lastWheelTime;
-                var lastWheelDelta = this._lastWheelDelta;
-
-                this._lastWheelTime = evt.timeStamp;
-                this._lastWheelDelta = wheelDelta;
-
-                if ((evt.timeStamp - lastWheelTime) > 100 || Math.abs(lastWheelDelta) * 10 < Math.abs(wheelDelta)) {
-                    if (wheelDelta < 0) {
-                        return this.next(params.loop);
-                    } else {
-                        return this.prev(params.loop);
-                    }
-                }
-            } else {
-                if (!this._thumbsDraggable) {
-                    return false;
-                }
-
-                var offsetX = wheelDelta + this._bThumbsLayerOffsetX;
-
-                if (offsetX > 0) {
-                    offsetX = 0;
-                } else {
-                    var limit = this._bThumbsWidth - this._bThumbsLayerWidth;
-
-                    if (offsetX < limit) {
-                        offsetX = limit;
-                    }
-                }
-
-                this._bThumbsLayerOffsetX = offsetX;
-
-                if (prefixedTransitionDuration) {
-                    this.bThumbsLayer.style[prefixedTransitionDuration] = params.duration + 'ms';
-                }
-
-                setOffsetX(this.bThumbsLayer, offsetX);
-
-                return true;
-            }
-
-            return false;
-        },
-
-        /**
          * @param {KeyboardEvent} evt
          */
         _onDocumentKeydown: function(evt) {
@@ -1358,8 +1253,8 @@
                 this._autoplayTimerId = setTimeout(this._onAutoplayTimerTick, params.autoplay);
             }
 
-            var slideCount = this._slides.length;
-            var current = this.current;
+            var slideCount = this._slides.length,
+                current = this.current;
 
             if (loop) {
                 if (toIndex < 0) {
