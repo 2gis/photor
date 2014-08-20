@@ -80,8 +80,7 @@
   border: 2px solid #fff;
   border-right: 2px solid transparent;
   border-radius: 50%;
-  visibility: hidden;
-  opacity: 0;
+  display: none;
   transition: all .3s ease;
   -webkit-animation: photor__preloader .8s linear infinite;
   animation: photor__preloader .8s linear infinite;
@@ -94,8 +93,6 @@
   bottom: 0;
   left: 1px;
   display: inline-block;
-  visibility: visible;
-  opacity: 1;
   background-position: center center;
   background-repeat: no-repeat;
   vertical-align: middle;
@@ -118,11 +115,10 @@
   /* Прелоадер */
 }
 .photor__viewportLayerSlide._loading:after {
-  visibility: visible;
-  opacity: 1;
+  display: block;
 }
 .photor__viewportLayerSlide._loading .photor__viewportLayerSlideImg {
-  opacity: 0;
+  display: none;
 }
 .photor__viewportLayerSlide._hidden {
   display: none;

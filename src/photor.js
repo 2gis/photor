@@ -649,7 +649,6 @@
 
             if (prefixedTransitionDuration) {
                 var duration = noEffects ? '0ms' : this._params.duration + 'ms';
-
                 this.bViewportLayer.style[prefixedTransitionDuration] = duration;
             }
 
