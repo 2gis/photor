@@ -107,6 +107,18 @@
   vertical-align: middle;
   transition: opacity .2s ease;
 }
+.photor__viewportLayerSlideCaption {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  left: 1px;
+  padding: 4px;
+  display: block;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  text-align: center;
+  font: 14px/20px Arial;
+}
 .photor__viewportLayerSlide._loading {
   /* Прелоадер */
 }

@@ -130,18 +130,19 @@
             var params = this._params = extendObject({
 
                 // Elements
-                viewport:    photorPrefix + 'viewport',
-                layer:       photorPrefix + 'viewportLayer',
-                slide:       photorPrefix + 'viewportLayerSlide',
-                slideImg:    photorPrefix + 'viewportLayerSlideImg',
-                control:     photorPrefix + 'viewportControl',
-                next:        photorPrefix + 'viewportControlNext',
-                prev:        photorPrefix + 'viewportControlPrev',
-                thumbs:      photorPrefix + 'thumbs',
-                thumbsLayer: photorPrefix + 'thumbsLayer',
-                thumb:       photorPrefix + 'thumbsLayerItem',
-                thumbImg:    photorPrefix + 'thumbsLayerItemImg',
-                thumbFrame:  photorPrefix + 'thumbsLayerFrame',
+                viewport:     photorPrefix + 'viewport',
+                layer:        photorPrefix + 'viewportLayer',
+                slide:        photorPrefix + 'viewportLayerSlide',
+                slideImg:     photorPrefix + 'viewportLayerSlideImg',
+                slideCaption: photorPrefix + 'viewportLayerSlideCaption',
+                control:      photorPrefix + 'viewportControl',
+                next:         photorPrefix + 'viewportControlNext',
+                prev:         photorPrefix + 'viewportControlPrev',
+                thumbs:       photorPrefix + 'thumbs',
+                thumbsLayer:  photorPrefix + 'thumbsLayer',
+                thumb:        photorPrefix + 'thumbsLayerItem',
+                thumbImg:     photorPrefix + 'thumbsLayerItemImg',
+                thumbFrame:   photorPrefix + 'thumbsLayerFrame',
 
                 // State modifiers
                 _single: '_single',         // Модификатор для галереи с одной фотографией
@@ -380,12 +381,14 @@
                     slideEl = slide.element;
 
                 var slideHTML = format(
-                    '<div data-index="%1" class="%2 %3 %4">%5</div>',
+                    '<div data-index="%1" class="%2 %3 %4 %5">%6%7</div>',
                     i,
                     params.slide,
                     params.itemPrefix + i,
                     slide.html ? params._html : params._loading,
-                    slideEl ? '' : format('<img src="" class="%1 %2">', params.slideImg, slide.classes)
+                    slide.caption ? params._caption : '',
+                    slideEl ? '' : format('<img src="" class="%1 %2">', params.slideImg, slide.classes),
+                    slide.caption ? format('<div class="%1">%2</div>', params.slideCaption, slide.caption) : ''
                 );
 
                 var bSlide = createElementFromHTML(slideHTML);
