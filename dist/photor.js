@@ -1219,18 +1219,10 @@
             this._updateThumbsDims();
 
             var slides = this._slides,
-                blSlides = this.blSlides,
                 i = slides.length;
 
             while (i) {
-                var slide = slides[--i];
-
-                if (slide.loaded) {
-                    var bSlideImg = blSlides[i].firstChild;
-
-                    slide.width = bSlideImg.width;
-                    slide.height = bSlideImg.height;
-
+                if (slides[--i].loaded) {
                     this._alignBSlideImg(i);
                     this._orientBSlideImg(i);
                 }

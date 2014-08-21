@@ -1,11 +1,11 @@
 @-webkit-keyframes photor__preloader {
     0% {
         -webkit-transform: rotate(0deg);
-        transform: rotate(0deg);
+                transform: rotate(0deg);
     }
     100% {
         -webkit-transform: rotate(360deg);
-        transform: rotate(360deg);
+                transform: rotate(360deg);
     }
 }
 @keyframes photor__preloader {
@@ -25,18 +25,18 @@
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
     -ms-touch-action: pan-y;
-    touch-action: pan-y;
+        touch-action: pan-y;
 
     &__viewport {
         position: absolute;
         top: 0;
-        right: -1px;
+        right: 0;
         bottom: 60px;
-        left: -1px;
+        left: 0;
         overflow: hidden;
 
         &Layer {
@@ -45,9 +45,9 @@
             width: 100%;
             height: 100%;
             -webkit-transform: translate3d(0, 0, 0);
-            transform: translate3d(0, 0, 0);
+                    transform: translate3d(0, 0, 0);
             -webkit-transition-property: left, -webkit-transform;
-            transition-property: left, transform;
+                    transition-property: left, transform;
             transition-duration: .24s;
             transition-timing-function: cubic-bezier(.1, 0, .25, 1);
 
@@ -97,32 +97,20 @@
                     display: none;
                     transition: all .3s ease;
                     -webkit-animation: photor__preloader .8s linear infinite;
-                    animation: photor__preloader .8s linear infinite;
+                            animation: photor__preloader .8s linear infinite;
                     content: '';
                     }
 
                 &Img {
-                    width: 520px;
-                    height: 500px;
+                    border: solid transparent;
+                    border-width: 0 1px;
+                    box-sizing: border-box;
                     display: inline-block;
+                    opacity: 1;
                     background-position: center center;
                     background-repeat: no-repeat;
                     vertical-align: middle;
                     transition: opacity .2s ease;
-
-                    &._alt:before {
-                        position: absolute;
-                        right: 0;
-                        bottom: 0;
-                        left: 0;
-                        padding: 4px 0;
-                        display: block;
-                        background: rgba(0, 0, 0, .5);
-                        color: #fff;
-                        text-align: center;
-                        font: 14px/20px Arial;
-                        content: attr(data-alt);
-                        }
                     }
 
                 /* Изображение не загружено */
@@ -133,12 +121,13 @@
                         }
                     & .photor__viewportLayerSlideImg {
                         display: none;
+                        opacity: 0;
                         }
                     }
 
                 /* Спрятанное изображение */
                 &._hidden {
-                    visibility: hidden;
+                    display: none;
                     }
 
                 &._html:before,
@@ -204,9 +193,9 @@
             display: inline-block;
             text-align: left;
             -webkit-transform: translate3d(0, 0, 0);
-            transform: translate3d(0, 0, 0);
+                    transform: translate3d(0, 0, 0);
             -webkit-transition-property: left, -webkit-transform;
-            transition-property: left, transform;
+                    transition-property: left, transform;
             transition-duration: .24s;
             transition-timing-function: cubic-bezier(.1, 0, .25, 1);
 
@@ -229,7 +218,7 @@
                     border: 0;
                     vertical-align: top;
                     -webkit-transform: translate3d(0, 0, 0);
-                    transform: translate3d(0, 0, 0);
+                            transform: translate3d(0, 0, 0);
                     }
 
                 .photor._dots & {
@@ -261,7 +250,7 @@
                 height: 100%;
                 border: 2px solid #00afea;
                 -moz-box-sizing: border-box;
-                box-sizing: border-box;
+                     box-sizing: border-box;
                 background: rgba(171, 171, 171, .15);
                 transition-property: all;
                 transition-duration: 5s;
@@ -270,7 +259,7 @@
                 // Для мобилок и планшетов не анимируем изменение ширины
                 @media (max-device-width: 1280px) {
                     -webkit-transition-property: top, left, -webkit-transform;
-                    transition-property: top, left, transform;
+                            transition-property: top, left, transform;
                     }
                 }
             }
@@ -297,9 +286,6 @@
 
 /* IE8 */
 .photor._ie8 {
-    .photor__viewportLayerSlide {
-        }
-
     .photor__viewportControl {
         background: url('about:blank');
         }

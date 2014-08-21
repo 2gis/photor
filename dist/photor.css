@@ -33,9 +33,9 @@
 .photor__viewport {
   position: absolute;
   top: 0;
-  right: -1px;
+  right: 0;
   bottom: 60px;
-  left: -1px;
+  left: 0;
   overflow: hidden;
 }
 .photor__viewportLayer {
@@ -97,26 +97,15 @@
   content: '';
 }
 .photor__viewportLayerSlideImg {
-  width: 520px;
-  height: 500px;
+  border: solid transparent;
+  border-width: 0 1px;
+  box-sizing: border-box;
   display: inline-block;
+  opacity: 1;
   background-position: center center;
   background-repeat: no-repeat;
   vertical-align: middle;
   transition: opacity .2s ease;
-}
-.photor__viewportLayerSlideImg._alt:before {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 4px 0;
-  display: block;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  text-align: center;
-  font: 14px/20px Arial;
-  content: attr(data-alt);
 }
 .photor__viewportLayerSlide._loading {
   /* Прелоадер */
@@ -126,9 +115,10 @@
 }
 .photor__viewportLayerSlide._loading .photor__viewportLayerSlideImg {
   display: none;
+  opacity: 0;
 }
 .photor__viewportLayerSlide._hidden {
-  visibility: hidden;
+  display: none;
 }
 .photor__viewportLayerSlide._html:before,
 .photor__viewportLayerSlide._html:after {
