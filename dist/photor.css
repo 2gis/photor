@@ -60,26 +60,6 @@
   /* Изображение не загружено */
   /* Спрятанное изображение */
 }
-.photor__viewportLayerSlide._auto._portrait .photor__viewportLayerSlideImg {
-  width: auto;
-  height: 100%;
-}
-.photor__viewportLayerSlide._auto._landscape .photor__viewportLayerSlideImg {
-  width: 100%;
-  height: auto;
-}
-.photor__viewportLayerSlide._center .photor__viewportLayerSlideImg {
-  width: auto;
-  height: auto;
-}
-.photor__viewportLayerSlide:before {
-  width: 0;
-  height: 100%;
-  display: inline-block;
-  vertical-align: middle;
-  font-size: 0;
-  content: '';
-}
 .photor__viewportLayerSlide:after {
   position: absolute;
   top: 50%;
@@ -97,14 +77,11 @@
   content: '';
 }
 .photor__viewportLayerSlideImg {
-  border: solid transparent;
-  border-width: 0 1px;
-  box-sizing: border-box;
-  display: inline-block;
+  position: absolute;
+  display: block;
   opacity: 1;
   background-position: center center;
   background-repeat: no-repeat;
-  vertical-align: middle;
   transition: opacity .2s ease;
 }
 .photor__viewportLayerSlideCaption {

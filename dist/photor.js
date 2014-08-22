@@ -83,22 +83,11 @@
 
         frozen: false,
 
+        _thumbsType: undefined,
+        _thumbsDraggable: undefined,
+
         _touch: null,
         _drag: null,
-
-        _bViewportLayerOffsetX: 0,
-        _bThumbsLayerOffsetX: 0,
-
-        // Dimensions
-        _bControlWidth: undefined,
-        _bControlHeight: undefined,
-        _bViewportWidth: undefined,
-        _bViewportHeight: undefined,
-        _bThumbsWidth: undefined,
-        _bThumbsHeight: undefined,
-        _bThumbsLayerWidth: undefined,
-
-        _thumbsDraggable: undefined,
 
         _mouseOverBControl: false,
         _mouseOverBThumbs: false,
@@ -117,6 +106,19 @@
         bThumbFrame: null,
         blSlides: null,
         blThumbs: null,
+
+        // Offsets
+        _bViewportLayerOffsetX: 0,
+        _bThumbsLayerOffsetX: 0,
+
+        // Dimensions
+        _bControlWidth: undefined,
+        _bControlHeight: undefined,
+        _bViewportWidth: undefined,
+        _bViewportHeight: undefined,
+        _bThumbsWidth: undefined,
+        _bThumbsHeight: undefined,
+        _bThumbsLayerWidth: undefined,
 
         _init: function(el, options) {
             if (el._photor) {
@@ -179,7 +181,7 @@
                 autoplay: false,            // Задержка между сменой слайдов
                 loop: false,                // Зациклить галерею
                 duration: 300,              // Время анимации для слайдов
-                showThumbs: 'thumbs',       // thumbs / dots / false
+                showThumbs: 'thumbs',       // 'thumbs' / 'dots' / false
                 keyboard: true              // Управление с клавиатуры
 
             }, options);
@@ -236,25 +238,31 @@
          * @param {Array<Object>|HTMLElement|DocumentFragment} newSlides
          */
         setSlides: function(newSlides) {
-            this._thumbsDraggable = false;
-
             var params = this._params,
                 el = this.element;
 
-            this._updateSlides(newSlides);
+            this._thumbsType = params.showThumbs;
+            this._thumbsDraggable = false;
 
-            var slideCount = this._slides.length;
+            setOffsetX(this.bThumbsLayer, 0);
 
-            var current = params.current;
+            this._setSlides(newSlides);
 
-            if (current < 0 || current >= slideCount) {
-                current = 0;
+            var slideCount = this._slides.length,
+                current = this.current = calcIndex(params.current, slideCount);
+
+            if (slideCount == 1) {
+                addClass(el, params._single);
+            } else {
+                removeClass(el, params._single);
             }
 
-            this.current = current;
+            removeClass(el, params.modifierPrefix + 'thumbs');
+            removeClass(el, params.modifierPrefix + 'dots');
 
-            toggleClass(el, params._single, slideCount == 1);
-            toggleClass(el, params.modifierPrefix + params.showThumbs, params.showThumbs);
+            if (this._thumbsType) {
+                addClass(el, params.modifierPrefix + this._thumbsType);
+            }
 
             this._updateDOM();
 
@@ -263,7 +271,7 @@
 
             this._prepareActualSlides(function() {
 
-                if (params.showThumbs == 'thumbs') {
+                if (this._thumbsType == 'thumbs') {
                     this._loadThumbs(function() {
                         this._updateThumbsDims();
                         this._moveToCurrentItems(true);
@@ -276,9 +284,9 @@
         },
 
         /**
-         * @param {Array<Object>|HTMLElement|DocumentFragment} newSlides
+         * @param {Array<Object|HTMLElement>|HTMLElement|DocumentFragment} newSlides
          */
-        _updateSlides: function(newSlides) {
+        _setSlides: function(newSlides) {
             var slides = this._slides = [];
 
             var slideProto = {
@@ -300,31 +308,38 @@
                 classes: ''
             };
 
+            var hasHTML = false;
+
             var i = 0,
                 l;
 
             if (isArray(newSlides)) {
-
                 for (l = newSlides.length; i < l; i++) {
-                    var slide = createObject(slideProto, { loaded: false }, newSlides[i]);
+                    var slide = newSlides[i];
+
+                    if (slide.nodeType == 1) {
+                        slide = { element: slide };
+                    }
+
+                    if (slide.html || slide.element) {
+                        hasHTML = true;
+                    }
+
+                    slide = createObject(slideProto, { loaded: slide.html || slide.element }, slide);
 
                     if (slide.html && !slide.element) {
                         slide.element = createElementFromHTML(slide.html);
                     }
+
                     slides.push(slide);
                 }
-
             } else {
-
-                var hasHTML = false;
-
                 var childNodes = newSlides.childNodes;
 
                 for (l = childNodes.length; i < l; i++) {
                     var el = childNodes[i];
 
                     if (el.nodeType == 1) {
-
                         if (el.nodeName == 'IMG') {
                             slides.push(createObject(slideProto, {
                                 url: el.src,
@@ -341,18 +356,16 @@
                                 loaded: true
                             }));
                         }
-
                     }
                 }
-
-                if (hasHTML && this._params.showThumbs == 'thumbs') {
-                    this._params.showThumbs = 'dots';
-                }
-
             }
 
             if (!slides.length) {
                 throw new RangeError('Requires more slides');
+            }
+
+            if (hasHTML && this._thumbsType == 'thumbs') {
+                this._thumbsType = 'dots';
             }
         },
 
@@ -374,7 +387,6 @@
                 dfThumbs = document.createDocumentFragment();
 
             for (var i = 0, l = slides.length; i < l; i++) {
-
                 // Slides
 
                 var slide = slides[i],
@@ -385,7 +397,7 @@
                     i,
                     params.slide,
                     params.itemPrefix + i,
-                    slide.html ? params._html : params._loading,
+                    slideEl ? params._html : params._loading,
                     slide.caption ? params._caption : '',
                     slideEl ? '' : format('<img src="" class="%1 %2">', params.slideImg, slide.classes),
                     slide.caption ? format('<div class="%1">%2</div>', params.slideCaption, slide.caption) : ''
@@ -394,7 +406,7 @@
                 var bSlide = createElementFromHTML(slideHTML);
 
                 if (slideEl) {
-                    bSlide.appendChild(slideEl);
+                    bSlide.insertBefore(slideEl, bSlide.firstChild);
                 }
 
                 bSlide.style.left = (i * 100) + '%';
@@ -410,26 +422,26 @@
                     params.thumb,
                     params.itemPrefix + i,
                     slide.classes,
-                    (function() {
-                        if (params.showThumbs == 'thumbs' && slide.thumb) {
-                            return format('<img src="%1" data-rel="%2" class="%3">', slide.thumb, i, params.thumbImg);
-                        }
-
-                        return '';
-                    })()
+                    this._thumbsType == 'thumbs' && (slide.thumb || slide.url) ?
+                        format(
+                            '<img src="%1" data-rel="%2" class="%3">',
+                            (slide.thumb || slide.url),
+                            i,
+                            params.thumbImg
+                        ) :
+                        ''
                 );
 
                 var bThumb = createElementFromHTML(thumbHTML);
 
                 blThumbs.push(bThumb);
                 dfThumbs.appendChild(bThumb);
-
             }
 
             bViewportLayer.appendChild(dfSlides);
             bThumbsLayer.appendChild(dfThumbs);
 
-            if (params.showThumbs == 'thumbs') {
+            if (this._thumbsType == 'thumbs') {
                 bThumbsLayer.appendChild(this.bThumbFrame);
             }
         },
@@ -486,8 +498,7 @@
 
                                 removeClass(bSlide, modLoading);
 
-                                this._alignBSlideImg(index);
-                                this._orientBSlideImg(index);
+                                this._paintSlide(index);
 
                                 bSlideImg.src = url;
                             } else {
@@ -544,13 +555,21 @@
         /**
          * @param {int} index
          */
-        _alignBSlideImg: function(index) {
+        _paintSlide: function(index) {
             var params = this._params;
 
             var slide = this._slides[index],
-                bSlide = this.blSlides[index];
+                slideWidth = slide.width,
+                slideHeight = slide.height;
 
-            if (this._bViewportWidth > slide.width && this._bViewportHeight > slide.height) {
+            var bSlide = this.blSlides[index];
+
+            var bViewportWidth = this._bViewportWidth,
+                bViewportHeight = this._bViewportHeight;
+
+            // Algorithm
+
+            if (bViewportWidth > slideWidth && bViewportHeight > slideHeight) {
                 slide.algorithm = 'center';
 
                 removeClass(bSlide, params._auto);
@@ -561,19 +580,11 @@
                 removeClass(bSlide, params._center);
                 addClass(bSlide, params._auto);
             }
-        },
 
-        /**
-         * @param {int} index
-         */
-        _orientBSlideImg: function(index) {
-            var params = this._params;
+            // Orientation
 
-            var slide = this._slides[index],
-                bSlide = this.blSlides[index];
-
-            var slideRatio = slide.width / slide.height,
-                bViewportRatio = this._bViewportWidth / this._bViewportHeight;
+            var slideRatio = slideWidth / slideHeight,
+                bViewportRatio = bViewportWidth / bViewportHeight;
 
             if (slideRatio >= bViewportRatio) {
                 slide.orientation = 'landscape';
@@ -586,10 +597,35 @@
                 removeClass(bSlide, params._landscape);
                 addClass(bSlide, params._portrait);
             }
+
+            // Sizes
+
+            var bSlideImgStyle = bSlide.firstChild.style;
+
+            if (slide.algorithm == 'auto') {
+                if (slide.orientation == 'landscape') {
+                    var bSlideImgHeight = Math.round(slideHeight * (bViewportWidth / slideWidth));
+
+                    bSlideImgStyle.top = Math.round((bViewportHeight - bSlideImgHeight) / 2) + 'px';
+                    bSlideImgStyle.left = '0';
+                    bSlideImgStyle.width = bViewportWidth + 'px';
+                    bSlideImgStyle.height = bSlideImgHeight + 'px';
+                } else {
+                    var bSlideImgWidth = Math.round(slideWidth * (bViewportHeight / slideHeight));
+
+                    bSlideImgStyle.top = '0';
+                    bSlideImgStyle.left = Math.round((bViewportWidth - bSlideImgWidth) / 2) + 'px';
+                    bSlideImgStyle.width = bSlideImgWidth + 'px';
+                    bSlideImgStyle.height = bViewportHeight + 'px';
+                }
+            } else {
+                bSlideImgStyle.top = Math.round((bViewportHeight - slideHeight) / 2) + 'px';
+                bSlideImgStyle.left = Math.round((bViewportWidth - slideWidth) / 2) + 'px';
+            }
         },
 
         _updateThumbsDims: function() {
-            if (this._params.showThumbs != 'thumbs') {
+            if (this._thumbsType != 'thumbs') {
                 return;
             }
 
@@ -648,7 +684,7 @@
          * @param {boolean} [noEffects=false]
          */
         _moveToCurrentThumb: function(noEffects) {
-            if (this._params.showThumbs != 'thumbs') {
+            if (this._thumbsType != 'thumbs') {
                 return;
             }
 
@@ -657,7 +693,7 @@
             var bThumbsLayer = this.bThumbsLayer,
                 bThumbFrame = this.bThumbFrame;
 
-            this._computeThumbsOffset();
+            this._computeThumbsOffsetX();
 
             if (prefixedTransitionDuration) {
                 var duration = noEffects ? '0ms' : this._params.duration + 'ms';
@@ -674,7 +710,7 @@
             bThumbFrame.style.height = currentThumbDims.height + 'px';
         },
 
-        _computeThumbsOffset: function() {
+        _computeThumbsOffsetX: function() {
             var currentThumbDims = this._slides[this.current].thumbDims;
 
             var offsetX;
@@ -777,7 +813,9 @@
          * @param {MouseEvent} evt
          */
         _onBThumbsMouseDown: function(evt) {
-            this._handleTouchStart(evt, this.bThumbs, false);
+            if (evt.which == 1) {
+                this._handleTouchStart(evt, this.bThumbs, false);
+            }
         },
 
         /**
@@ -1201,12 +1239,12 @@
         _onDocumentKeydown: function(evt) {
             if (document.activeElement == document.body && !evt.target.attributes.contenteditable) {
                 switch (evt.which || evt.keyCode) {
-                    case 32:// Space
-                    case 39:// Right arrow
+                    case 32: // Space
+                    case 39: // Right arrow
                         this.next(this._params.loop);
                         break;
 
-                    case 37:// Left arrow
+                    case 37: // Left arrow
                         this.prev(this._params.loop);
                         break;
                 }
@@ -1225,9 +1263,8 @@
                 i = slides.length;
 
             while (i) {
-                if (slides[--i].loaded) {
-                    this._alignBSlideImg(i);
-                    this._orientBSlideImg(i);
+                if (!slides[--i].element && slides[i].loaded) {
+                    this._paintSlide(i);
                 }
             }
 
@@ -1254,15 +1291,9 @@
             var slideCount = this._slides.length,
                 current = this.current;
 
-            if (loop) {
-                if (toIndex < 0) {
-                    toIndex += slideCount;
-                } else if (toIndex >= slideCount) {
-                    toIndex -= slideCount;
-                }
-            }
+            toIndex = calcIndex(toIndex, slideCount, false);
 
-            if (toIndex == current || toIndex < 0 || toIndex >= slideCount) {
+            if (toIndex == current || toIndex === false) {
                 return false;
             }
 
@@ -1445,6 +1476,30 @@
     }
 
     /**
+     * @param {int} value
+     * @param {int} length
+     * @param {*} [altValue=0]
+     * @returns {int|*}
+     */
+    function calcIndex(value, length, altValue) {
+        if (value < 0) {
+            value += length;
+
+            if (value < 0) {
+                return altValue !== undefined ? altValue : 0;
+            }
+        } else if (value >= length) {
+            value -= length;
+
+            if (value >= length) {
+                return altValue !== undefined ? altValue : 0;
+            }
+        }
+
+        return value;
+    }
+
+    /**
      * @param {string} str
      * @param {*} ...values
      * @returns {string}
@@ -1529,8 +1584,7 @@
 
     var hasClass,
         addClass,
-        removeClass,
-        toggleClass;
+        removeClass;
 
     if (dummyElement.classList) {
         hasClass = function(el, className) {
@@ -1543,14 +1597,6 @@
 
         removeClass = function(el, className) {
             el.classList.remove(className);
-        };
-
-        toggleClass = function(el, className, stateValue) {
-            if (stateValue !== undefined ? stateValue : !hasClass(el, className)) {
-                el.classList.add(className);
-            } else {
-                el.classList.remove(className);
-            }
         };
     } else {
         var reNotWhite = /\S+/g;
@@ -1575,14 +1621,6 @@
             if (index != -1) {
                 classNames.splice(index, 1);
                 el.className = classNames.join(' ');
-            }
-        };
-
-        toggleClass = function(el, className, stateValue) {
-            if (stateValue !== undefined ? stateValue : !hasClass(el, className)) {
-                addClass(el, className);
-            } else {
-                removeClass(el, className);
             }
         };
     }
@@ -1792,8 +1830,10 @@
                     new Photor(this, options);
                 });
             } else {
+                var args = Array.prototype.slice.call(arguments, 1);
+
                 this.each(function() {
-                    this._photor[method].apply(this._photor, Array.prototype.slice.call(arguments, 1));
+                    this._photor[method].apply(this._photor, args);
                 });
             }
         };

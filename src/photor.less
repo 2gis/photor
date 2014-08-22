@@ -59,31 +59,6 @@
                 white-space: nowrap;
                 text-align: center;
 
-                &._auto {
-                    &._portrait .photor__viewportLayerSlideImg {
-                        width: auto;
-                        height: 100%;
-                        }
-                    &._landscape .photor__viewportLayerSlideImg {
-                        width: 100%;
-                        height: auto;
-                        }
-                    }
-                &._center {
-                    .photor__viewportLayerSlideImg {
-                        width: auto;
-                        height: auto;
-                        }
-                    }
-
-                &:before {
-                    width: 0;
-                    height: 100%;
-                    display: inline-block;
-                    vertical-align: middle;
-                    font-size: 0;
-                    content: '';
-                    }
                 &:after {
                     position: absolute;
                     top: 50%;
@@ -102,14 +77,11 @@
                     }
 
                 &Img {
-                    border: solid transparent;
-                    border-width: 0 1px;
-                    box-sizing: border-box;
-                    display: inline-block;
+                    position: absolute;
+                    display: block;
                     opacity: 1;
                     background-position: center center;
                     background-repeat: no-repeat;
-                    vertical-align: middle;
                     transition: opacity .2s ease;
                     }
 
