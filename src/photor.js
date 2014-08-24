@@ -337,7 +337,7 @@
                         if (el.nodeName == 'IMG') {
                             slides.push(createObject(slideProto, {
                                 url: el.src,
-                                thumb: el.getAttribute('data-thumb'),
+                                thumb: el.getAttribute('data-thumb') || el.src,
                                 caption: el.alt,
                                 loaded: false,
                                 classes: el.className
