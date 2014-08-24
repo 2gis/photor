@@ -393,7 +393,7 @@
                     params.itemPrefix + i,
                     slideEl ? params._html : params._loading,
                     slide.caption ? params._caption : '',
-                    slideEl ? '' : format('<img src="" class="%1 %2">', params.slideImg, slide.classes),
+                    slideEl ? '' : format('<img src="" class="%1 %2" alt="%3">', params.slideImg, slide.classes, slide.caption),
                     slide.caption ? format('<div class="%1">%2</div>', params.slideCaption, slide.caption) : ''
                 );
 
