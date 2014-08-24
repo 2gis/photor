@@ -112,8 +112,6 @@
         _bThumbsLayerOffsetX: 0,
 
         // Dimensions
-        _bControlWidth: undefined,
-        _bControlHeight: undefined,
         _bViewportWidth: undefined,
         _bViewportHeight: undefined,
         _bThumbsWidth: undefined,
@@ -217,12 +215,8 @@
         },
 
         _updateDims: function() {
-            var bControl = this.bControl,
-                bViewport = this.bViewport,
+            var bViewport = this.bViewport,
                 bThumbs = this.bThumbs;
-
-            this._bControlWidth = bControl.offsetWidth;
-            this._bControlHeight = bControl.offsetHeight;
 
             this._bViewportWidth = window.getComputedStyle ?
                 parseFloat(window.getComputedStyle(bViewport).width, 10) :
@@ -736,8 +730,8 @@
 
         _bindListeners: function() {
             bindMethods(this, [
-                '_onBControlTouchStart',
-                '_onBControlMouseDown',
+                '_onBViewportTouchStart',
+                '_onBViewportMouseDown',
                 '_onBThumbsTouchStart',
                 '_onBThumbsMouseDown',
 
@@ -752,8 +746,8 @@
 
                 '_onWindowResize',
 
-                '_onBControlMouseEnter',
-                '_onBControlMouseLeave',
+                '_onBViewportMouseEnter',
+                '_onBViewportMouseLeave',
                 '_onBThumbsMouseEnter',
                 '_onBThumbsMouseLeave',
 
@@ -764,11 +758,11 @@
         },
 
         _bindEvents: function() {
-            var bControl = this.bControl;
+            var bViewport = this.bViewport;
             var bThumbs = this.bThumbs;
 
-            this._bindEvent(bControl, 'touchstart', this._onBControlTouchStart);
-            this._bindEvent(bControl, 'mousedown', this._onBControlMouseDown);
+            this._bindEvent(bViewport, 'touchstart', this._onBViewportTouchStart);
+            this._bindEvent(bViewport, 'mousedown', this._onBViewportMouseDown);
             this._bindEvent(bThumbs, 'touchstart', this._onBThumbsTouchStart);
             this._bindEvent(bThumbs, 'mousedown', this._onBThumbsMouseDown);
 
@@ -776,8 +770,8 @@
 
             this._bindEvent(window, 'resize', this._onWindowResize);
 
-            this._bindEvent(bControl, 'mouseenter', this._onBControlMouseEnter);
-            this._bindEvent(bControl, 'mouseleave', this._onBControlMouseLeave);
+            this._bindEvent(bViewport, 'mouseenter', this._onBViewportMouseEnter);
+            this._bindEvent(bViewport, 'mouseleave', this._onBViewportMouseLeave);
             this._bindEvent(bThumbs, 'mouseenter', this._onBThumbsMouseEnter);
             this._bindEvent(bThumbs, 'mouseleave', this._onBThumbsMouseLeave);
 
@@ -789,16 +783,16 @@
         /**
          * @param {TouchEvent} evt
          */
-        _onBControlTouchStart: function(evt) {
-            this._handleTouchStart(evt, this.bControl, true);
+        _onBViewportTouchStart: function(evt) {
+            this._handleTouchStart(evt, this.bViewport, true);
         },
 
         /**
          * @param {MouseEvent} evt
          */
-        _onBControlMouseDown: function(evt) {
+        _onBViewportMouseDown: function(evt) {
             if (evt.which == 1) {
-                this._handleTouchStart(evt, this.bControl, false);
+                this._handleTouchStart(evt, this.bViewport, false);
             }
         },
 
@@ -938,16 +932,16 @@
             this.update();
         },
 
-        _onBControlMouseEnter: function() {
-            this._mouseOverBControl = true;
+        _onBViewportMouseEnter: function() {
+            this._mouseOverBViewport = true;
 
             if (this._params.autoplay) {
                 clearTimeout(this._autoplayTimerId);
             }
         },
 
-        _onBControlMouseLeave: function() {
-            this._mouseOverBControl = false;
+        _onBViewportMouseLeave: function() {
+            this._mouseOverBViewport = false;
 
             if (this._params.autoplay) {
                 this._autoplayTimerId = setTimeout(this._onAutoplayTimerTick, this._params.autoplay);
@@ -1011,7 +1005,7 @@
                     return;
                 }
 
-                targetLayer = touchStart.element == this.bControl ? bViewportLayer : bThumbsLayer;
+                targetLayer = touchStart.element == this.bViewport ? bViewportLayer : bThumbsLayer;
 
                 drag = this._drag = {
                     start: {
@@ -1096,7 +1090,7 @@
                 touchStart = touch.start,
                 touchEnd = touch.end = {};
 
-            var bControl = this.bControl;
+            var bViewport = this.bViewport;
 
             var positionSource = isTouch ? evt.touches[0] || touch.prev || touchStart : evt;
 
@@ -1109,7 +1103,7 @@
             touchEnd.timeStamp = evt.timeStamp;
 
             if (this._drag) {
-                if (touchStart.element == bControl) {
+                if (touchStart.element == bViewport) {
                     if (prefixedTransform) {
                         removeClass(this.element, params._dragging);
                     }
@@ -1128,11 +1122,11 @@
                 }
             } else {
                 if (cause == 'touchEnd') {
-                    if (touchStart.element == bControl) {
-                        if (isSelfOrDescendantOf(evt.target, this.btnPrev, bControl)) {
+                    if (touchStart.element == bViewport) {
+                        if (isSelfOrDescendantOf(evt.target, this.btnPrev, bViewport)) {
                             evt.preventDefault();
                             this.prev(params.loop);
-                        } else if (isSelfOrDescendantOf(evt.target, this.btnNext, bControl)) {
+                        } else if (isSelfOrDescendantOf(evt.target, this.btnNext, bViewport)) {
                             evt.preventDefault();
                             this.next(params.loop);
                         }
@@ -1156,9 +1150,9 @@
 
             if (
                 absShiftX >= absShiftY &&
-                    ((touchEnd.timeStamp - touchStart.timeStamp) < 250 || absShiftX >= (this._bControlWidth / 5))
+                    ((touchEnd.timeStamp - touchStart.timeStamp) < 250 || absShiftX >= (this._bViewportWidth / 5))
             ) {
-                var count = Math.max(Math.round(absShiftX / this._bControlWidth), 1),
+                var count = Math.max(Math.round(absShiftX / this._bViewportWidth), 1),
                     toIndex;
 
                 if (!this._params.loop) {
@@ -1283,7 +1277,7 @@
 
             var params = this._params;
 
-            if (params.autoplay && !this._mouseOverBControl) {
+            if (params.autoplay && !this._mouseOverBViewport) {
                 clearTimeout(this._autoplayTimerId);
                 this._autoplayTimerId = setTimeout(this._onAutoplayTimerTick, params.autoplay);
             }
