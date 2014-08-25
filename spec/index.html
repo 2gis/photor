@@ -171,7 +171,11 @@
     <script src="spec.js"></script>
 
     <script>
-        mocha.run();
+        if (window.mochaPhantomJS) {
+            mochaPhantomJS.run();
+        } else {
+            mocha.run();
+        }
     </script>
 
 </body>

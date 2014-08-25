@@ -110,8 +110,6 @@ describe("Photor", function() {
     describe(caseTitle, function() {
         var photor = new Photor(photorContainer[0]);
 
-        console.log(photor);
-
         testConstructor(photor);
         testDOM(photor, photorContainer, photorImages);
         testSlides(photor, photorContainer, photorImages);
