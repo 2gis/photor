@@ -1,25 +1,21 @@
 {
   "name": "photor",
-  "version": "0.0.0",
   "description": "JavaScript photo gallery",
-  "main": "",
-  "scripts": {
-    "test": "test"
-  },
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/2gis/photor.git"
   },
-  "keywords": [
-    "jQuery",
-    "gallery",
-    "plugin"
-  ],
-  "author": "Tim Chaptykov",
-  "license": "",
   "bugs": {
     "url": "https://github.com/2gis/photor/issues"
   },
+  "author": "Tim Chaptykov <tim.chaptykov@gmail.com>",
+  "contributors": [
+    {
+      "name": "Dmitry Vibe",
+      "email": "d.vibe@2gis.ru"
+    }
+  ],
   "homepage": "https://github.com/2gis/photor",
   "devDependencies": {
     "chai": "~1.7.2",
@@ -34,10 +30,6 @@
     "grunt-csso": "~0.5.3",
     "grunt-mocha-phantomjs": "^0.6.0",
     "jquery": "^2.1.1",
-    "mocha": "^1.21.4",
-    "mocha-phantomjs": "~3.1.4",
-    "phantomjs": "~1.9.2-6",
-    "sinon": "~1.7.3",
-    "underscore": "~1.5.2"
+    "mocha": "^1.21.4"
   }
 }
