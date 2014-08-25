@@ -1,28 +1,9 @@
-@-webkit-keyframes photor__preloader {
-    0% {
-        -webkit-transform: rotate(0deg);
-                transform: rotate(0deg);
-    }
-    100% {
-        -webkit-transform: rotate(360deg);
-                transform: rotate(360deg);
-    }
-}
-@keyframes photor__preloader {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
 .photor {
     position: relative;
+    overflow: hidden;
+    margin: auto;
     width: 100%;
     height: 100%;
-    margin: auto;
-    overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -webkit-user-select: none;
        -moz-user-select: none;
@@ -30,87 +11,58 @@
             user-select: none;
     -ms-touch-action: pan-y;
         touch-action: pan-y;
+    }
 
-    &__viewport {
+    .photor__viewport {
         position: absolute;
         top: 0;
         right: 0;
         bottom: 60px;
         left: 0;
         overflow: hidden;
+        }
 
-        &Layer {
+        .photor__viewportLayer {
             position: relative;
             z-index: 0;
             width: 100%;
             height: 100%;
-            -webkit-transform: translate3d(0, 0, 0);
-                    transform: translate3d(0, 0, 0);
+            transition-timing-function: cubic-bezier(.1, 0, .25, 1);
             -webkit-transition-property: left, -webkit-transform;
                     transition-property: left, transform;
-            transition-duration: .24s;
-            transition-timing-function: cubic-bezier(.1, 0, .25, 1);
+            -webkit-transform: translate3d(0, 0, 0);
+                    transform: translate3d(0, 0, 0);
+            }
 
-            &Slide {
+            .photor__viewportLayerSlide {
                 position: absolute;
                 top: 0;
                 width: 100%;
                 height: 100%;
-                white-space: nowrap;
                 text-align: center;
+                white-space: nowrap;
 
                 &:after {
                     position: absolute;
                     top: 50%;
                     left: 50%;
+                    display: none;
+                    margin: -9px 0 0 -9px;
                     width: 14px;
                     height: 14px;
-                    margin: -9px 0 0 -9px;
                     border: 2px solid #fff;
                     border-right: 2px solid transparent;
                     border-radius: 50%;
-                    display: none;
+                    content: '';
                     transition: all .3s ease;
                     -webkit-animation: photor__preloader .8s linear infinite;
                             animation: photor__preloader .8s linear infinite;
-                    content: '';
                     }
 
-                &Img {
-                    position: absolute;
+                &._loading:after {
                     display: block;
-                    opacity: 1;
-                    background-position: center center;
-                    background-repeat: no-repeat;
-                    transition: opacity .2s ease;
                     }
 
-                &Caption {
-                    position: absolute;
-                    right: 1px;
-                    bottom: 0;
-                    left: 1px;
-                    padding: 4px;
-                    display: block;
-                    background: rgba(0, 0, 0, .5);
-                    color: #fff;
-                    text-align: center;
-                    font: 14px/20px Arial;
-                    }
-
-                /* Изображение не загружено */
-                &._loading {
-                    /* Прелоадер */
-                    &:after {
-                        display: block;
-                        }
-                    & .photor__viewportLayerSlideImg {
-                        display: none;
-                        opacity: 0;
-                        }
-                    }
-
-                /* Спрятанное изображение */
                 &._hidden {
                     display: none;
                     }
@@ -120,9 +72,35 @@
                     display: none;
                     }
                 }
-            }
 
-        &Control {
+                .photor__viewportLayerSlideImg {
+                    position: absolute;
+                    display: block;
+                    background-position: center center;
+                    background-repeat: no-repeat;
+                    opacity: 1;
+                    transition: opacity .2s ease;
+
+                    .photor__viewportLayerSlide._loading & {
+                        display: none;
+                        opacity: 0;
+                        }
+                    }
+
+                .photor__viewportLayerSlideCaption {
+                    position: absolute;
+                    right: 1px;
+                    bottom: 0;
+                    left: 1px;
+                    display: block;
+                    padding: 4px;
+                    background: rgba(0, 0, 0, .5);
+                    color: #fff;
+                    text-align: center;
+                    font: 14px/20px Helvetica, Arial, sans-serif;
+                    }
+
+        .photor__viewportControl {
             position: absolute;
             top: 0;
             right: 0;
@@ -132,72 +110,93 @@
             cursor: move;
             cursor: -webkit-grab;
             cursor: -moz-grab;
+            }
 
-            // Arrows
-            &Prev,
-            &Next {
+            .photor__viewportControlPrev,
+            .photor__viewportControlNext {
                 position: absolute;
                 top: 0;
                 bottom: 0;
                 cursor: pointer;
                 -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 
-                /* Запрещенная фотография */
                 &._disabled {
                     cursor: default;
                     }
                 }
-            &Prev {
+
+            .photor__viewportControlPrev {
                 right: 70%;
                 left: 0;
                 }
-            &Next {
+
+            .photor__viewportControlNext {
                 right: 0;
                 left: 30%;
                 }
 
-            }
-        }
-
-    &__thumbs {
+    .photor__thumbs {
         position: absolute;
         right: 0;
         bottom: 0;
         left: 0;
-        height: 56px;
-        padding: 2px 0;
         overflow: hidden;
-        white-space: nowrap;
+        padding: 2px 0;
+        height: 56px;
         text-align: center;
+        white-space: nowrap;
         font-size: 0;
+        }
 
-        &Layer {
+        .photor__thumbsLayer {
             position: relative;
-            height: 100%;
-            margin: 0 -1px;
             display: inline-block;
+            margin: 0 -1px;
+            height: 100%;
             text-align: left;
-            -webkit-transform: translate3d(0, 0, 0);
-                    transform: translate3d(0, 0, 0);
+            transition-timing-function: cubic-bezier(.1, 0, .25, 1);
+            transition-duration: .24s;
             -webkit-transition-property: left, -webkit-transform;
                     transition-property: left, transform;
-            transition-duration: .24s;
-            transition-timing-function: cubic-bezier(.1, 0, .25, 1);
+            -webkit-transform: translate3d(0, 0, 0);
+                    transform: translate3d(0, 0, 0);
 
             ._noeffects & {
                 transition-duration: 0s;
                 }
+            }
 
-            &Item {
-                height: 100%;
-                margin: 0 1px;
+            .photor__thumbsLayerItem {
                 display: inline-block;
+                margin: 0 1px;
+                height: 100%;
                 outline: none;
                 vertical-align: top;
                 cursor: pointer;
                 -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 
-                &Img {
+                .photor._dots & {
+                    margin: 0;
+                    padding: 5px;
+                    width: 4px;
+                    height: 4px;
+                    }
+
+                .photor._dots &:before {
+                    display: block;
+                    width: 4px;
+                    height: 4px;
+                    border: 1px solid gray;
+                    border-radius: 3px;
+                    content: '';
+                    }
+
+                .photor._dots &._current:before {
+                    background: gray;
+                    }
+                }
+
+                .photor__thumbsLayerItemImg {
                     width: auto;
                     height: 100%;
                     border: 0;
@@ -206,72 +205,56 @@
                             transform: translate3d(0, 0, 0);
                     }
 
-                .photor._dots & {
-                    width: 4px;
-                    height: 4px;
-                    margin: 0;
-                    padding: 5px;
-
-                    &:before {
-                        width: 4px;
-                        height: 4px;
-                        border: 1px solid gray;
-                        border-radius: 3px;
-                        display: block;
-                        content: '';
-                        }
-
-                    &._current:before {
-                        background: gray;
-                        }
-                    }
-                }
-
-
-            // Current thumbs frame
-            &Frame {
+            .photor__thumbsLayerFrame {
                 position: absolute;
                 top: 0;
+                -moz-box-sizing: border-box;
+                box-sizing: border-box;
                 height: 100%;
                 border: 2px solid #00afea;
-                -moz-box-sizing: border-box;
-                     box-sizing: border-box;
                 background: rgba(171, 171, 171, .15);
-                transition-property: all;
-                transition-duration: 5s;
                 transition-timing-function: cubic-bezier(0.1, 0, .25, 1);
+                transition-duration: 5s;
+                transition-property: all;
 
-                // Для мобилок и планшетов не анимируем изменение ширины
                 @media (max-device-width: 1280px) {
                     -webkit-transition-property: top, left, -webkit-transform;
-                            transition-property: top, left, transform;
+                    transition-property: top, left, transform;
                     }
                 }
-            }
+
+
+@-webkit-keyframes photor__preloader {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+        }
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+        }
+    }
+@keyframes photor__preloader {
+    0% {
+        transform: rotate(0deg);
+        }
+    100% {
+        transform: rotate(360deg);
         }
     }
 
-/* Во время перетаскивания */
-.photor._dragging {
-    .photor__viewportControl {
-        cursor: move;
-        cursor: -webkit-grabbing;
-        cursor: -moz-grabbing;
-        cursor: grabbing;
 
-        &Prev,
-        &Next {
-            cursor: move;
-            cursor: -webkit-grabbing;
-            cursor: -moz-grabbing;
-            cursor: grabbing;
-            }
-        }
+.photor._dragging .photor__viewportControl,
+.photor._dragging .photor__viewportControlPrev,
+.photor._dragging .photor__viewportControlNext {
+    cursor: move;
+    cursor: -webkit-grabbing;
+    cursor: -moz-grabbing;
+    cursor: grabbing;
     }
+
 
 /* IE8 */
-.photor._ie8 {
-    .photor__viewportControl {
-        background: url('about:blank');
-        }
+.photor._ie8 .photor__viewportControl {
+    background: url('about:blank');
     }
