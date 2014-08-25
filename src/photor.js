@@ -1685,7 +1685,7 @@
 
         getOffsetX = function(el) {
             var matrix = window.getComputedStyle(el, null)[prefixedTransform].match(reNumber);
-            return parseFloat(matrix[matrix.length > 6 ? 13 : 4], 10);
+            return matrix ? parseFloat(matrix[matrix.length > 6 ? 13 : 4], 10) : 0;
         };
 
         setOffsetX = function(el, value, unit) {
