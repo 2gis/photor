@@ -243,7 +243,7 @@
             this._setSlides(newSlides);
 
             var slideCount = this._slides.length,
-                current = this.current = calcIndex(params.current, slideCount);
+                current = this.current = calcIndex(params.current, slideCount, this._params.loop);
 
             if (slideCount == 1) {
                 addClass(el, params._single);
@@ -1285,7 +1285,7 @@
             var slideCount = this._slides.length,
                 current = this.current;
 
-            toIndex = calcIndex(toIndex, slideCount, false);
+            toIndex = calcIndex(toIndex, slideCount, loop, false);
 
             if (toIndex == current || toIndex === false) {
                 return false;
@@ -1472,20 +1472,21 @@
     /**
      * @param {int} value
      * @param {int} length
+     * @param {bool} loop
      * @param {*} [altValue=0]
      * @returns {int|*}
      */
-    function calcIndex(value, length, altValue) {
+    function calcIndex(value, length, loop, altValue) {
         if (value < 0) {
             value += length;
 
-            if (value < 0) {
+            if (value < 0 || !loop) {
                 return altValue !== undefined ? altValue : 0;
             }
         } else if (value >= length) {
             value -= length;
 
-            if (value >= length) {
+            if (value >= length || !loop) {
                 return altValue !== undefined ? altValue : 0;
             }
         }
@@ -1685,7 +1686,7 @@
 
         getOffsetX = function(el) {
             var matrix = window.getComputedStyle(el, null)[prefixedTransform].match(reNumber);
-            return parseFloat(matrix[matrix.length > 6 ? 13 : 4], 10);
+            return matrix ? parseFloat(matrix[matrix.length > 6 ? 13 : 4], 10) : 0;
         };
 
         setOffsetX = function(el, value, unit) {
