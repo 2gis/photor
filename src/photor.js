@@ -1331,7 +1331,13 @@
                 return false;
             }
 
-            return this.go(this.current - 1, loop);
+            var toIndex = this.current - 1;
+
+            if (toIndex < 0 && !loop) {
+                return;
+            }
+
+            return this.go(toIndex, loop);
         },
 
         /**
@@ -1343,7 +1349,13 @@
                 return false;
             }
 
-            return this.go(this.current + 1, loop);
+            var toIndex = this.current + 1;
+
+            if (toIndex == this._slides.length && !loop) {
+                return;
+            }
+
+            return this.go(toIndex, loop);
         },
 
         freeze: function() {
