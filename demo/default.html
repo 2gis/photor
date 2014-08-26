@@ -3,74 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <title>Photor demo</title>
-    <link rel="stylesheet" href="../dist/photor.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            }
-        html,
-        body {
-            height: 100%;
-            }
 
-        .custom {
-            width: 100%;
-            height: 100%;
-            background: #ccc;
-            color: #000;
-            text-align: center;
-            font: 36px Helvetica, Arial, sans-serif;
-            }
-        .custom:before {
-            width: 0;
-            height: 100%;
-            margin: 0 0 0 -4px;
-            display: inline-block;
-            vertical-align: middle;
-            content: '';
-            }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../dist/photor.min.css">
 
     <meta name="viewport" content="width=device-width">
     <meta name="msapplication-tap-highlight" content="no">
 </head>
 <body>
 
-<div class="photor" id="one">
+<div class="wrapper">
 
-    <div class="photor__viewport">
+    <header class="header">
 
-        <div class="photor__viewportLayer">
-            <img src="images/1.jpg" data-thumb="thumbs/1.jpg">
-            <img src="images/2.jpg" data-thumb="thumbs/2.jpg" alt="">
-            <img src="images/3.jpg" data-thumb="thumbs/3.jpg" alt="test">
-            <img src="images/4.jpg" data-thumb="thumbs/4.jpg">
-            <img src="images/5.jpg" data-thumb="thumbs/5.jpg" alt="test caption">
-            <img src="images/6.jpg" data-thumb="thumbs/6.jpg" alt="test caption text">
-            <img src="images/7.jpg" data-thumb="thumbs/7.jpg">
-            <img src="images/8.jpg" data-thumb="thumbs/8.jpg">
-            <img src="images/9.jpg" data-thumb="thumbs/9.jpg">
+        <h1 class="header__title">Photor demo</h1>
+        <p class="header__desc">Minimalistic lightweight gallery with touch devices support</p>
+
+        <a href="https://github.com/2gis/photor" class="header__repo">Fork me on Github</a>
+
+    </header>
+
+    <div class="photor">
+
+        <div class="photor__viewport">
+
+            <div class="photor__viewportLayer"></div>
+
+            <div class="photor__viewportControl">
+                <div class="photor__viewportControlPrev"></div>
+                <div class="photor__viewportControlNext"></div>
+            </div>
+
         </div>
 
-        <div class="photor__viewportControl">
-            <div class="photor__viewportControlPrev"></div>
-            <div class="photor__viewportControlNext"></div>
+        <div class="photor__thumbs">
+            <div class="photor__thumbsLayer"></div>
         </div>
 
-    </div>
-
-    <div class="photor__thumbs">
-        <div class="photor__thumbsLayer"></div>
     </div>
 
 </div>
+
+<footer class="footer">
+    Photo credit:
+    <a href="https://www.flickr.com/photos/intherough">intherough</a>,
+    <a href="https://www.flickr.com/photos/mladjenovic_n">Nebojsa Mladjenovic</a>,
+    <a href="https://www.flickr.com/photos/blavandmaster">blavandmaster</a>,
+    <a href="https://www.flickr.com/photos/dave_kr8">David Kracht</a>,
+    <a href="https://www.flickr.com/photos/iceninejon">IceNineJon</a>,
+    <a href="https://www.flickr.com/photos/giorgio_f">Giorgio</a>,
+    <a href="https://www.flickr.com/photos/99574551@N04">Massmo Relsig</a>,
+    <a href="https://www.flickr.com/photos/cabanillas2012">Cabanillas</a>,
+    <a href="https://www.flickr.com/photos/14723335@N05">thor_mark</a>,
+    <a href="https://www.flickr.com/photos/kdg59">kadege59</a>,
+    <a href="https://www.flickr.com/photos/gato-gato-gato">gato-gato-gato</a>,
+    <a href="https://www.flickr.com/photos/31856336@N03">subarcticmike</a>,
+    <a href="https://www.flickr.com/photos/adriensifre">Fotografik33</a>,
+    <a href="https://www.flickr.com/photos/webinteger">Dietrich Bojko Photographie</a>
+</footer>
 
 <script src="http://yandex.st/jquery/1.11.0/jquery.min.js"></script>
 <script src="../dist/photor.js"></script>
 <script>
     $(document).ready(function() {
-        $('#one').photor({ current: -1 });
+        $('.photor').photor({
+            algorithm: 'cover',
+            data: [
+                {
+                    url: "images/01.jpg",
+                    thumb: "thumbs/01.jpg"
+                }, {
+                    url: "images/02.jpg",
+                    thumb: "thumbs/02.jpg"
+                }, {
+                    url: "images/03.jpg",
+                    thumb: "thumbs/03.jpg"
+                }, {
+                    url: "images/04.jpg",
+                    thumb: "thumbs/04.jpg"
+                }, {
+                    url: "images/05.jpg",
+                    thumb: "thumbs/05.jpg"
+                }, {
+                    url: "images/06.jpg",
+                    thumb: "thumbs/06.jpg"
+                }, {
+                    url: "images/07.jpg",
+                    thumb: "thumbs/07.jpg"
+                }, {
+                    url: "images/08.jpg",
+                    thumb: "thumbs/08.jpg"
+                }, {
+                    url: "images/09.jpg",
+                    thumb: "thumbs/09.jpg"
+                }, {
+                    url: "images/10.jpg",
+                    thumb: "thumbs/10.jpg"
+                }, {
+                    url: "images/11.jpg",
+                    thumb: "thumbs/11.jpg"
+                }, {
+                    url: "images/12.jpg",
+                    thumb: "thumbs/12.jpg"
+                }, {
+                    url: "images/13.jpg",
+                    thumb: "thumbs/13.jpg"
+                }, {
+                    url: "images/14.jpg",
+                    thumb: "thumbs/14.jpg"
+                }, {
+                    url: "images/15.jpg",
+                    thumb: "thumbs/15.jpg"
+                }
+            ]
+        });
     });
 </script>
 
