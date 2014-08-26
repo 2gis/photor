@@ -8,17 +8,15 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
 
 *Full support:* Chrome, Firefox, Safari, Opera 12+, IE 10+, iOS, Android.
 
-*Partial support:* IE 7—9 (without animations).
+*Partial support:* IE 8—9 (without animations).
 
 ##Usage
 
-1. Include `jQuery`, `photor.min.js` and `photor.min.css`:
+1. Include `photor.min.js` and `photor.min.css`:
 
     ```html
-    <script src="//ajax.googleapis.colim/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-
-    <link  href="photor.min.css" rel="stylesheet"> <!-- 1.4 KB in gzip -->
-    <script src="photor.min.js"></script> <!-- 4.8 KB in gzip -->
+    <link href="photor.min.css" rel="stylesheet"> <!-- 1.3 KB in gzip -->
+    <script src="photor.min.js"></script> <!-- 6.7 KB in gzip -->
     ```
 
 2. Add some HTML:
@@ -44,7 +42,7 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
         </div>
 
         <div class="photor__thumbs">
-            <div class="photor__thumbsWrap"></div>
+            <div class="photor__thumbsLayer"></div>
         </div>
 
     </div>
@@ -53,6 +51,16 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
     Note: `data-href` contains a path to the full size photo.
 
 3. Initialize Photor:
+
+    ```html
+    <script>
+        var element = document.querySelector('.photor');
+
+        new Photor(element);
+    </script>
+    ```
+
+    Or initialize with jQuery:
 
     ```html
     <script>
@@ -92,16 +100,14 @@ $('.photor').photor({
 
     // General options
     current: 0,           // {Number}  Index of start slide
-    delay: 300,           // {Number}  Transition duration
+    duration: 300,        // {Number}  Transition duration
     loop: false,          // {Boolean} Loop gallery
-    slidesOnScreen: 1,    // {Number}  Number of visible slides in viewport
 
     // Handlers
-    single: false,        // {Boolean} Initialize event handlers if gallery contains only one photo?
     keyboard: true,       // {Boolean} Initialize keyboard event handlers?
 
     // Prefixes
-    slideIdPrefix: '_',   // {String}  Prefix for class with slide index (e.g. "_12")
+    itemPrefix: '_',      // {String}  Prefix for class with slide index (e.g. "_12")
     ieClassPrefix: '_ie', // {String}  Prefix for class with IE version (e.g. "_ie8")
 
     // Classnames
@@ -144,65 +150,3 @@ $('.photor').photor({
 
 });
 ```
-
-##Methods
-
-Note: some methods take `galleryId` as their first parameter. This allows you to have multiple independent instances of Photor in your app.
-
-* ###init
-
-    Initializes Photor.
-
-    * `options {Object}` Options for initialization, see format above.
-
-* ###update
-
-    Recalculates sizes and positions. Call it if the size of your gallery was changed or some elements were hidden.
-
-    * No parameters
-
-* ###destroy
-
-    Destroys a single specified instance or all instances of Photor.
-
-    * *`galleryId {String|Number}` optional*
-
-* ###handlers
-
-    Sets up handlers for current instance of gallery.
-
-    * `galleryId {String|Number}`
-
-* ###go
-
-    Transitions to the specified slide.
-
-    * `galleryId {String|Number}`
-    * `target {Number}` Index of target slide
-    * *`delay {Number}` optional* Sets transition duration
-
-* ###next
-
-    Transitions to the next slide.
-
-    * `galleryId {String|Number}`
-
-* ###prev
-
-    Transitions to the previous slide.
-
-    * `galleryId {String|Number}`
-
-* ###loadSlides
-
-    Loads photos before and after the specified slide.
-
-    * `galleryId {String|Number}`
-    * `target {Number}` Index of target slide
-
-* ###loadSlide
-
-    Loads a photo.
-
-    * `galleryId {String|Number}`
-    * `target {Number}` Index of target slide
