@@ -46,11 +46,17 @@ module.exports = function(grunt) {
             }
         },
 
+        mocha_phantomjs: {
+            options: {
+                view: '1024x768'
+            },
+            all: ['spec/*.html']
+        },
+
         connect: {
             server: {
                 options: {
-                    port: 3000,
-                    base: ''
+                    port: 3000
                 }
             }
         },
@@ -84,11 +90,12 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-csso');
     grunt.loadNpmTasks('grunt-contrib-connect');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-mocha-phantomjs');
 
     // Tasks
     grunt.registerTask('js', ['jshint', 'concat:js', 'uglify']);
     grunt.registerTask('css', ['less', 'csso']);
-    grunt.registerTask('default', ['clean', 'js', 'css']);
+    grunt.registerTask('default', ['clean', 'js', 'css', 'mocha_phantomjs']);
     grunt.registerTask('dev', ['default', 'connect', 'watch']);
 
 };

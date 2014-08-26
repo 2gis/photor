@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <title>Photor tests</title>
+
+    <link rel="stylesheet" media="all" href="../node_modules/mocha/mocha.css">
+    <link rel="stylesheet" media="all" href="../dist/photor.css">
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            }
+        .photor {
+            width: 640px;
+            height: 420px;
+            }
+
+    </style>
+
+</head>
+<body>
+
+    <div id="mocha"><p><a href=".">Index</a></p></div>
+    <div id="messages"></div>
+    <div id="fixtures"></div>
+
+    <!-- Empty container -->
+    <div class="photor" id="photor-1" title="No slides, no control">
+
+        <div class="photor__viewport">
+            <div class="photor__viewportLayer"></div>
+        </div>
+
+        <div class="photor__thumbs">
+            <div class="photor__thumbsLayer"></div>
+        </div>
+
+    </div>
+
+    <!-- One image without control -->
+    <div class="photor" id="photor-2" title="One image without control and thumbnails">
+
+        <div class="photor__viewport">
+            <div class="photor__viewportLayer">
+                <img src="../demo/images/1.jpg">
+            </div>
+        </div>
+
+        <div class="photor__thumbs">
+            <div class="photor__thumbsLayer"></div>
+        </div>
+
+    </div>
+
+    <!-- Two images without control and thumbnails -->
+    <div class="photor" id="photor-3" title="Two images without control">
+
+        <div class="photor__viewport">
+            <div class="photor__viewportLayer">
+                <img src="../demo/images/1.jpg">
+                <img src="../demo/images/2.jpg">
+            </div>
+        </div>
+
+        <div class="photor__thumbs">
+            <div class="photor__thumbsLayer"></div>
+        </div>
+
+    </div>
+
+    <!-- Three images without control and thumbnails -->
+    <div class="photor" id="photor-4" title="Three images without control">
+
+        <div class="photor__viewport">
+            <div class="photor__viewportLayer">
+                <img src="../demo/images/1.jpg">
+                <img src="../demo/images/2.jpg">
+                <img src="../demo/images/3.jpg">
+            </div>
+        </div>
+
+        <div class="photor__thumbs">
+            <div class="photor__thumbsLayer"></div>
+        </div>
+
+    </div>
+
+    <!-- Five images with thumbnails, without control -->
+    <div class="photor" id="photor-5" title="Five images with thumbnails, without control">
+
+        <div class="photor__viewport">
+            <div class="photor__viewportLayer">
+                <img src="../demo/images/1.jpg" data-thumb="../demo/thumbs/1.jpg">
+                <img src="../demo/images/2.jpg" data-thumb="../demo/thumbs/2.jpg">
+                <img src="../demo/images/3.jpg" data-thumb="../demo/thumbs/3.jpg">
+                <img src="../demo/images/4.jpg" data-thumb="../demo/thumbs/4.jpg">
+                <img src="../demo/images/5.jpg" data-thumb="../demo/thumbs/5.jpg">
+            </div>
+        </div>
+
+        <div class="photor__thumbs">
+            <div class="photor__thumbsLayer"></div>
+        </div>
+
+    </div>
+
+    <!-- Five images with control and thumbnails -->
+    <div class="photor" id="photor-6" title="Five images with thumbnails, without control">
+
+        <div class="photor__viewport">
+
+            <div class="photor__viewportLayer">
+                <img src="../demo/images/1.jpg" data-thumb="../demo/thumbs/1.jpg">
+                <img src="../demo/images/2.jpg" data-thumb="../demo/thumbs/2.jpg">
+                <img src="../demo/images/3.jpg" data-thumb="../demo/thumbs/3.jpg">
+                <img src="../demo/images/4.jpg" data-thumb="../demo/thumbs/4.jpg">
+                <img src="../demo/images/5.jpg" data-thumb="../demo/thumbs/5.jpg">
+            </div>
+
+            <div class="photor__viewportControl">
+                <div class="photor__viewportControlPrev"></div>
+                <div class="photor__viewportControlNext"></div>
+            </div>
+
+        </div>
+
+        <div class="photor__thumbs">
+            <div class="photor__thumbsLayer"></div>
+        </div>
+
+    </div>
+
+    <!-- Rich images -->
+    <div class="photor" id="photor-7" title="Five images with thumbnails, without control">
+
+        <div class="photor__viewport">
+
+            <div class="photor__viewportLayer">
+                <img src="../demo/images/1.jpg" data-thumb="../demo/thumbs/1.jpg" class="my-custom-class" alt="Custom description">
+                <img src="../demo/images/2.jpg" data-thumb="../demo/thumbs/2.jpg">
+                <img src="../demo/images/3.jpg" data-thumb="../demo/thumbs/3.jpg">
+                <img src="../demo/images/4.jpg" data-thumb="../demo/thumbs/4.jpg">
+                <img src="../demo/images/5.jpg" data-thumb="../demo/thumbs/5.jpg">
+            </div>
+
+            <div class="photor__viewportControl">
+                <div class="photor__viewportControlPrev"></div>
+                <div class="photor__viewportControlNext"></div>
+            </div>
+
+        </div>
+
+        <div class="photor__thumbs">
+            <div class="photor__thumbsLayer"></div>
+        </div>
+
+    </div>
+
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script src="../node_modules/chai/chai.js"></script>
+    <script src="../node_modules/jquery/dist/jquery.js"></script>
+    <script src="../dist/photor.js"></script>
+
+    <script>
+        mocha.setup('bdd');
+    </script>
+
+    <script src="spec.js"></script>
+
+    <script>
+        if (window.mochaPhantomJS) {
+            mochaPhantomJS.run();
+        } else {
+            mocha.run();
+        }
+    </script>
+
+</body>
+</html>

@@ -1,56 +1,166 @@
-;(function($) {
+;(function(undefined) {
 
     // Server side
     if (typeof window == 'undefined') {
         return;
     }
 
-    var prefixes = {
-            'transform': 'transform',
-            'WebkitTransform': '-webkit-transform',
-            'MozTransform': '-moz-transform',
-            'msTransform': '-ms-transform',
-            'OTransform': '-o-transform'
-        },
-        data = [],
-        evt = getSupportedEvents(),
-        handlers = [],
-        params;
+    var dummyElement = document.createElement('div'),
+        dummyStyle = dummyElement.style;
 
-    var methods = {
-        init: function(options) {
-            var blockPrefix = 'photor__';
+    var prefixed = {};
 
-            params = $.extend({
+    (function() {
+        var unprefixed = [
+            'transform',
+            'transition',
+            'transitionDuration',
+            'perspective'
+        ];
+
+        var vendors = ['webkit', 'Moz', 'ms', 'O'],
+            vendorCount = vendors.length;
+
+        for (var i = 0, l = unprefixed.length; i < l; i++) {
+            var name = unprefixed[i];
+
+            if (name in dummyStyle) {
+                prefixed[name] = name;
+                continue;
+            }
+
+            prefixed[name] = false;
+
+            var upperFirst = name.charAt(0).toUpperCase() + name.slice(1);
+
+            for (var j = 0; j < vendorCount; j++) {
+                var prefixedName = vendors[i] + upperFirst;
+
+                if (prefixedName in dummyStyle) {
+                    prefixed[name] = prefixedName;
+                    break;
+                }
+            }
+        }
+    })();
+
+    var prefixedTransform = prefixed['transform'],
+        prefixedTransition = prefixed['transition'],
+        prefixedTransitionDuration = prefixed['transitionDuration'];
+
+    var hasCSS3DTransforms = !!prefixed['perspective'];
+
+    var prefixedValTransform = prefixedTransform && {
+        'transform': 'transform',
+        'webkitTransform': '-webkit-transform',
+        'MozTransform': '-moz-transform',
+        'msTransform': '-ms-transform',
+        'OTransform': '-o-transform'
+    }[prefixedTransform];
+
+    var ie = (function(ua) {
+        return ua.indexOf('msie') != -1 ? parseInt(ua.split('msie')[1]) : false;
+    })(navigator.userAgent.toLowerCase());
+
+    var photorPrefix = 'photor__';
+
+    function Photor(el, options) {
+        var instance = this instanceof Photor ? this : createObject(Photor.prototype);
+
+        instance._init(el, options);
+        return instance;
+    }
+
+    Photor.prototype = {
+        constructor: Photor,
+
+        _events: null,
+
+        _params: null,
+
+        _slides: null,
+        current: undefined,
+
+        frozen: false,
+
+        _thumbsType: undefined,
+        _thumbsDraggable: undefined,
+
+        _touch: null,
+        _drag: null,
+
+        _mouseOverBControl: false,
+        _mouseOverBThumbs: false,
+
+        _autoplayTimerId: undefined,
+
+        // Elements
+        element: null,
+        bControl: null,
+        btnPrev: null,
+        btnNext: null,
+        bThumbs: null,
+        bViewport: null,
+        bViewportLayer: null,
+        bThumbsLayer: null,
+        bThumbFrame: null,
+        blSlides: null,
+        blThumbs: null,
+
+        // Offsets
+        _bViewportLayerOffsetX: 0,
+        _bThumbsLayerOffsetX: 0,
+
+        // Dimensions
+        _bViewportWidth: undefined,
+        _bViewportHeight: undefined,
+        _bThumbsWidth: undefined,
+        _bThumbsHeight: undefined,
+        _bThumbsLayerWidth: undefined,
+
+        _init: function(el, options) {
+            if (el._photor) {
+                throw new TypeError('Photor is already initialized for this element');
+            }
+
+            el._photor = this;
+
+            this._events = {};
+
+            var params = this._params = extendObject({
 
                 // Elements
-                control:     blockPrefix + 'viewportControl',
-                next:        blockPrefix + 'viewportControlNext',
-                prev:        blockPrefix + 'viewportControlPrev',
-                thumbs:      blockPrefix + 'thumbs',
-                thumbsLayer: blockPrefix + 'thumbsWrap',
-                thumb:       blockPrefix + 'thumbsWrapItem',
-                thumbImg:    blockPrefix + 'thumbsWrapItemImg',
-                thumbFrame:  blockPrefix + 'thumbsWrapFrame',
-                viewport:    blockPrefix + 'viewport',
-                layer:       blockPrefix + 'viewportLayer',
-                slide:       blockPrefix + 'viewportLayerSlide',
-                slideImg:    blockPrefix + 'viewportLayerSlideImg',
+                viewport:     photorPrefix + 'viewport',
+                layer:        photorPrefix + 'viewportLayer',
+                slide:        photorPrefix + 'viewportLayerSlide',
+                slideImg:     photorPrefix + 'viewportLayerSlideImg',
+                slideCaption: photorPrefix + 'viewportLayerSlideCaption',
+                control:      photorPrefix + 'viewportControl',
+                next:         photorPrefix + 'viewportControlNext',
+                prev:         photorPrefix + 'viewportControlPrev',
+                thumbs:       photorPrefix + 'thumbs',
+                thumbsLayer:  photorPrefix + 'thumbsLayer',
+                thumb:        photorPrefix + 'thumbsLayerItem',
+                thumbImg:     photorPrefix + 'thumbsLayerItemImg',
+                thumbFrame:   photorPrefix + 'thumbsLayerFrame',
 
                 // State modifiers
+                _single: '_single',         // Модификатор для галереи с одной фотографией
+                _dragging: '_dragging',     // Перетаскивание
+                _animated: '_animated',     // На время анимации
+                _freeze: '_freeze',         // Галерея "заморожена"
+                _disabled: '_disabled',     // Элемент управления запрещен
+
+                // Slide state modifiers
+                _current: '_current',       // Текущий слайд или миниатюра
                 _loading: '_loading',       // Фотография загружается
                 _error: '_error',           // Не удалось загрузить фотографию
-                _current: '_current',       // Текущий слайд или миниатюра
-                _dragging: '_dragging',     // Перетаскивание
-                _disabled: '_disabled',     // Элемент управления запрещен
-                _alt: '_alt',               // Есть подпись к фотографиям
-                _single: '_single',         // Модификатор для галереи с одной фотографией
-                _animated: '_animated',     // На время анимации
-                _hidden: '_hidden',         // Спрятанный слайд
                 _html: '_html',             // Слайд с html-содержимым
-                _freeze: '_freeze',         // Галерея "заморожена"
+                _caption: '_caption',       // Есть подпись к фотографии
+                _hidden: '_hidden',         // Спрятанный слайд
 
-                // Algorithm
+                // Algorithms
+                algorithm: 'contain',         // Алгоритм размещения фотографии при маленьком размере экрана: 'contain' / 'cover'
                 _auto: '_auto',             // Фотография больше вьюпорта
                 _center: '_center',         // Фотография меньше вьюпорта
 
@@ -61,1222 +171,1679 @@
                 // Thumbs
                 _draggable: '_draggable',   // Разрешено перетаскивание на миниатюрах
 
+                modifierPrefix: '_',        // Префикс модификатора
+                itemPrefix: '_item',        // Префикс элемента списка
+                ieClassPrefix: '_ie',       // Префикс модификатора для IE
+
                 // Settings
-                single: false,              // Инициализировать обработчики для одиночного изображения
                 current: 0,                 // Текуший слайд
-                count: 0,                   // Количество фотографий
-                last: -1,                   // Индекс последней фотографии
-                delay: 300,                 // Время анимации для слайдов
+                autoplay: false,            // Задержка между сменой слайдов
                 loop: false,                // Зациклить галерею
-                showThumbs: 'thumbs',       // thumbs / dots / null
-                keyboard: true,             // Управление с клавиатуры
-                modifierPrefix: '_',        // Префикс для класса с номером слайда
-                ieClassPrefix: '_ie',       // Префикс для класса с версией IE
-                slidesOnScreen: 1,          // Количество видимых слайдов во вьюпорте
-
-                // Supported features
-                transform: getSupportedTransform(),
-                transition: getPrefixed('transition'),
-
-                ie: ie()
+                duration: 300,              // Время анимации для слайдов
+                showThumbs: 'thumbs',       // 'thumbs' / 'dots' / false
+                keyboard: true              // Управление с клавиатуры
 
             }, options);
 
-            return this.each(function() {
-                var root = $(this),
-                    galleryId = this.id || data.length,
-                    p = {}, // Current instance of gallery
-                    content = {},
-                    thumbs = [],
-                    imageTemplate = {
-                        url: '',
-                        thumb: '',
-                        caption: '',
-                        width: 0,
-                        height: 0,
-                        loaded: false,
-                        classes: ''
-                    },
-                    hasHTML = false;
+            this.element = el;
+            this.bControl = el.querySelector('.' + params.control);
+            this.btnPrev = el.querySelector('.' + params.prev);
+            this.btnNext = el.querySelector('.' + params.next);
+            this.bThumbs = el.querySelector('.' + params.thumbs);
+            this.bViewport = el.querySelector('.' + params.viewport);
+            this.bViewportLayer = el.querySelector('.' + params.layer);
+            this.bThumbsLayer = el.querySelector('.' + params.thumbsLayer);
+            this.bThumbFrame = document.createElement('div');
 
-                // Disable double init
-                if (root.attr('data-photor-id')) {
-                    // galleryId = this.dataset.photorId;
-                    return;
-                }
+            if (ie) {
+                addClass(el, params.ieClassPrefix + ie);
+            }
 
-                p.params = $.extend({}, params);
+            addClass(this.bThumbFrame, params.thumbFrame);
 
-                // Get elements
-                p.root        = root;
-                p.control     = root.find('.' + p.params.control);
-                p.next        = root.find('.' + p.params.next);
-                p.prev        = root.find('.' + p.params.prev);
-                p.thumbs      = root.find('.' + p.params.thumbs);
-                p.thumbsLayer = root.find('.' + p.params.thumbsLayer);
-                p.viewport    = root.find('.' + p.params.viewport);
-                p.layer       = root.find('.' + p.params.layer);
+            this._updateDims();
 
-                // Data collection
-                p.gallery = [];
+            var data = params.data;
 
-                // Initialization by object
-                if (p.params.data && p.params.data.length) {
+            this.setSlides(data && data.length ? data : this.bViewportLayer);
 
-                    for (var i = 0, len = p.params.data.length; i < len; i++) {
-                        p.gallery.push($.extend({}, imageTemplate, p.params.data[i]));
-                    }
+            this._bindListeners();
+            this._bindEvents();
 
-                // Initialization by slides
+            if (params.autoplay) {
+                this._autoplayTimerId = setTimeout(this._onAutoplayTimerTick, params.autoplay);
+            }
+        },
+
+        _updateDims: function() {
+            var bViewport = this.bViewport,
+                bThumbs = this.bThumbs;
+
+            this._bViewportWidth = window.getComputedStyle ?
+                parseFloat(window.getComputedStyle(bViewport).width, 10) :
+                bViewport.offsetWidth;
+
+            this._bViewportHeight = bViewport.offsetHeight;
+
+            this._bThumbsWidth = bThumbs.offsetWidth;
+            this._bThumbsHeight = bThumbs.offsetHeight;
+        },
+
+        /**
+         * @param {Array<Object>|HTMLElement|DocumentFragment} newSlides
+         */
+        setSlides: function(newSlides) {
+            var params = this._params,
+                el = this.element;
+
+            this._thumbsType = params.showThumbs;
+            this._thumbsDraggable = false;
+
+            setOffsetX(this.bThumbsLayer, 0);
+
+            this._setSlides(newSlides);
+
+            var slideCount = this._slides.length,
+                current = this.current = calcIndex(params.current, slideCount);
+
+            if (slideCount == 1) {
+                addClass(el, params._single);
+            } else {
+                removeClass(el, params._single);
+            }
+
+            removeClass(el, params.modifierPrefix + 'thumbs');
+            removeClass(el, params.modifierPrefix + 'dots');
+
+            if (this._thumbsType) {
+                addClass(el, params.modifierPrefix + this._thumbsType);
+            }
+
+            this._updateDOM();
+
+            addClass(this.blSlides[current], params._current);
+            addClass(this.blThumbs[current], params._current);
+
+            this._prepareActualSlides(function() {
+
+                if (this._thumbsType == 'thumbs') {
+                    this._loadThumbs(function() {
+                        this._updateThumbsDims();
+                        this._moveToCurrentItems(true);
+                    });
                 } else {
-
-                    var slides = root.find('.' + p.params.layer + ' > *');
-
-                    if (slides.length) {
-                        slides.each(function() {
-                            var isPhoto = this.nodeName == 'IMG';
-
-                            if (isPhoto) {
-                                p.gallery.push($.extend({}, imageTemplate, {
-                                    url: this.src,
-                                    caption: this.alt,
-                                    thumb: $(this).data('thumb'),
-                                    classes: this.className
-                                }));
-                            } else {
-                                hasHTML = true;
-
-                                p.gallery.push($.extend({}, imageTemplate, {
-                                    html: this.outerHTML,
-                                    loaded: true
-                                }));
-                            }
-                        });
-                    }
-
+                    this._moveToCurrentItems(true);
                 }
 
-                if (hasHTML && p.params.showThumbs == 'thumbs') {
-                    p.params.showThumbs = 'dots';
-                }
-
-                if (p.params.slidesOnScreen != 1) {
-                    p.params.showThumbs = null;
-                }
-
-                // Build DOM
-                content = methods.getHTML(p.params, p.gallery);
-
-                p.layer.html(content.slides);
-                p.thumbsLayer.html(content.thumbs);
-
-                // Get builded elements
-                p.thumb       = root.find('.' + p.params.thumb);
-                p.thumbImg    = root.find('.' + p.params.thumbImg);
-                p.thumbFrame  = root.find('.' + p.params.thumbFrame);
-                p.slide       = root.find('.' + p.params.slide);
-                p.slideImg    = root.find('.' + p.params.slideImg);
-
-                p.slide.each(function(i) {
-                    $(this).css('left', i * 100 + '%');
-                });
-
-                // Settings
-                p.current = p.params.current;
-                p.count = p.gallery.length;
-                p.last = p.count - 1;
-                p.thumbsDragging = false;
-                p.thumbsIndent = 0;
-                p.events = [];
-
-                if (window.getComputedStyle) {
-                    p.viewportWidth = parseFloat(window.getComputedStyle(p.viewport[0]).width);
-                } else {
-                    p.viewportWidth = p.viewport.outerWidth();
-                }
-                p.viewportHeight = p.viewport.outerHeight();
-                p.controlWidth = p.control.outerWidth();
-                p.controlHeight = p.control.outerHeight();
-                p.thumbsWidth = p.thumbs.outerWidth();
-                p.thumbsHeight = p.thumbs.outerHeight();
-
-                data[galleryId] = p;
-                root.attr('data-photor-id', galleryId);
-
-                if (p.params.showThumbs) {
-                    root.addClass(p.params.modifierPrefix + p.params.showThumbs);
-                }
-
-                if (p.params.ie) {
-                    root.addClass(p.params.ieClassPrefix + p.params.ie);
-                }
-
-                if (p.gallery.length == 1) {
-                    root.addClass(p.params._single);
-                }
-
-                if (p.params.showThumbs == 'thumbs') {
-                    methods.loadThumbs(galleryId);
-                }
-
-                if (p.gallery.length > 1 || p.params.single) {
-                    methods.handlers(galleryId);
-                }
-
-                methods.go(galleryId, p.current, 0);
-                callback(galleryId);
             });
         },
 
-        update: function() {
-            for (var key in data) {
-                if (data.hasOwnProperty(key)) {
-                    updateInstance(key);
-                }
-            }
+        /**
+         * @param {Array<Object|HTMLElement>|HTMLElement|DocumentFragment} newSlides
+         */
+        _setSlides: function(newSlides) {
+            var slides = this._slides = [];
 
-            function updateInstance(galleryId) {
-                var p = data[galleryId];
+            var slideProto = {
+                url: undefined,
+                thumb: undefined,
 
-                if (window.getComputedStyle) {
-                    p.viewportWidth = parseFloat(window.getComputedStyle(p.viewport[0]).width);
-                } else {
-                    p.viewportWidth = p.viewport.outerWidth();
-                }
-                p.viewportHeight = p.viewport.outerHeight();
-                p.controlWidth = p.control.outerWidth();
-                p.controlHeight = p.control.outerHeight();
-                p.thumbsWidth = p.thumbs.outerWidth();
-                p.thumbsHeight = p.thumbs.outerHeight();
-                p.thumbsLayerWidth = p.thumbsLayer.outerWidth();
+                html: undefined,
+                element: null,
 
-                p.slide.each(function(i) {
-                    methods.position(galleryId, i);
-                });
+                caption: '',
 
-                if (p.params.showThumbs == 'thumbs') {
-                    methods.getThumbsSize(galleryId);
-                }
+                width: undefined,
+                height: undefined,
 
-                p.layer
-                    .css('transition-duration', '0s')
-                    .css(methods.setIndent(galleryId, -100 * p.current));
-            }
-        },
+                thumbDims: null,
 
-        destroy: function(galleryId) {
+                loaded: undefined,
 
-            if (typeof galleryId != 'undefined') {
-                unbindInstance(galleryId);
-            } else {
-                for (var key in data) {
-                    if (data.hasOwnProperty(key)) {
-                        unbindInstance(key);
+                classes: ''
+            };
+
+            var hasHTML = false;
+
+            var i = 0,
+                l;
+
+            if (isArray(newSlides)) {
+                for (l = newSlides.length; i < l; i++) {
+                    var slide = newSlides[i];
+
+                    if (slide.nodeType == 1) {
+                        slide = { element: slide };
                     }
-                }
-            }
 
-
-            /*
-             * Удалить обработчики для указанного инстанса галереи
-             *
-             * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-             */
-            function unbindInstance(id) {
-                var p = data[id];
-
-                for (var i = 0, len = p.events.length; i < len; i++) {
-                    eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture, 1);
-                }
-            }
-        },
-
-        handlers: function(galleryId) {
-            var p = data[galleryId];
-
-            bindControl(galleryId);
-            bindResize(galleryId);
-            bindTransitionEnd(galleryId);
-
-            if (p.params.keyboard) {
-                bindKeyboard(galleryId);
-            }
-
-            for (var i = 0, len = p.events.length; i < len; i++) {
-                eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture);
-            }
-        },
-
-        go: function(galleryId, target, delay) {
-            var p = data[galleryId];
-
-            if (p.freeze) {
-                return;
-            }
-
-            toggleSlides(galleryId, target);
-
-            delay = delay == null ? p.params.delay : delay;
-
-            p.root.addClass(p.params._animated);
-
-            p.layer
-                .css('transition-duration', delay + 'ms')
-                // .css(methods.setIndent(galleryId, -target * p.viewportWidth));
-                .css(methods.setIndent(galleryId, -target * (p.viewportWidth / p.params.slidesOnScreen), 'px'));
-
-            p.current = target;
-
-            // Load slide's range
-            methods.loadSlides(galleryId, target);
-            methods.checkButtons(galleryId);
-
-            // Mark slide and thumb as current
-            methods.setCurrentThumb(galleryId, target);
-
-            p.slide.removeClass(p.params._current);
-            p.slide
-                .filter('.' + p.params.modifierPrefix + target)
-                .addClass(p.params._current);
-
-            if (!p.params.transition) {
-                callback(galleryId);
-            }
-
-        },
-
-        next: function(galleryId) {
-            var p = data[galleryId];
-
-            if (p.current + p.params.slidesOnScreen - 1 < p.last) {
-                methods.go(galleryId, p.current + 1);
-            } else {
-                methods.go(galleryId, p.params.loop ? 0 : p.current);
-            }
-        },
-
-        prev: function(galleryId) {
-            var p = data[galleryId];
-
-            if (p.current > 0) {
-                methods.go(galleryId, p.current - 1);
-            } else {
-                methods.go(galleryId, p.params.loop ? p.last : 0);
-            }
-        },
-
-        loadSlides: function(galleryId, target) {
-            var p = data[galleryId],
-                onScreen = p.params.slidesOnScreen,
-                from = target - onScreen < 0 ? 0 : target - onScreen,
-                to = target + (onScreen * 2) - 1 > p.last ? p.last : target + (onScreen * 2) - 1;
-
-            for (var i = from; i <= to; i++) {
-                if (p.gallery[i] && !p.gallery[i].loaded) {
-                    methods.loadSlide(galleryId, i);
-                }
-            }
-        },
-
-        loadSlide: function(galleryId, target) {
-            var p = data[galleryId],
-                slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
-                slideImg = slide.find('.' + p.params.slideImg),
-                alt = p.gallery[target].caption;
-
-            loadImage(p.gallery[target].url, function(success, url) {
-                if (success) {
-                    p.gallery[target].loaded = true;
-                    p.gallery[target].width = this.width;
-                    p.gallery[target].height = this.height;
-
-                    methods.position(galleryId, target);
-
-                    slide.removeClass(p.params._loading);
-
-                    if (p.params.ie && p.params.ie < 9) {
-                        slideImg.attr('src', url);
-                    } else {
-                        slideImg.css('background-image', 'url(' + url + ')');
+                    if (slide.html || slide.element) {
+                        hasHTML = true;
                     }
-                } else {
-                    slide.removeClass(p.params._loading);
-                    slide.addClass(p.params._error);
 
-                    $.error('Image wasn\'t loaded: ' + url);
-                }
-            });
+                    slide = createObject(slideProto, { loaded: slide.html || slide.element }, slide);
 
-            if (alt) {
-                slideImg
-                    .addClass(p.params._alt)
-                    .attr('data-alt', alt);
-            }
-        },
-
-        loadThumbs: function(galleryId) {
-            var p = data[galleryId],
-                count = p.count,
-                images = p.gallery,
-                loaded = 0;
-
-            p.galleryThumbs = [];
-            p.galleryThumbsLoaded = false;
-
-            for (var i = 0; i < count; i++) {
-                loadImage(images[i].thumb, function(success, url) {
-                    if (success) {
-                        loaded++;
-
-                        if (loaded == count) {
-                            p.galleryThumbsLoaded = true;
-                            methods.getThumbsSize(galleryId);
-                        }
-                    } else {
-                        $.error('Image wasn\'t loaded: ' + url);
+                    if (slide.html && !slide.element) {
+                        slide.element = createElementFromHTML(slide.html);
                     }
-                });
-            }
-        },
 
-        getThumbsSize: function(galleryId) {
-            var p = data[galleryId],
-                thumb = p.thumb;
+                    slides.push(slide);
+                }
+            } else {
+                var childNodes = newSlides.childNodes;
 
-            thumb.each(function(i) {
-                var self = $(this);
+                for (l = childNodes.length; i < l; i++) {
+                    var el = childNodes[i];
 
-                p.galleryThumbs[i] = {};
-                p.galleryThumbs[i].width = self.outerWidth();
-                p.galleryThumbs[i].height = self.outerHeight();
-                p.galleryThumbs[i].top = self.position().top + parseInt(self.css('margin-top'));
-                p.galleryThumbs[i].left = self.position().left + parseInt(self.css('margin-left'));
-            });
-
-            p.thumbsLayerWidth = p.thumbsLayer.outerWidth();
-
-            methods.setCurrentThumb(galleryId, p.current, 1);
-        },
-
-        setCurrentThumb: function(galleryId, target, noEffects) {
-            var p = data[galleryId];
-
-            if (p.params.showThumbs == 'thumbs') {
-                var frame = p.thumbFrame,
-                    styles = {},
-                    current = p.galleryThumbs && p.galleryThumbs[target],
-                    thumbsW = p.thumbs.outerWidth(),
-                    layerW = p.thumbsLayer.outerWidth(),
-                    delay = noEffects ? '0s' : (p.params.delay * 0.8 / 1000) + 's',
-                    indent,
-                    validatedIndent;
-
-                p.thumbsDragging = thumbsW < layerW;
-
-                if (p.galleryThumbsLoaded) {
-                    styles.width = current.width + 'px';
-                    styles.height = current.height + 'px';
-
-                    if (p.params.transform) {
-                        var property = prefixes[p.params.transform.property];
-
-                        if (p.params.transform.has3d) {
-                            styles[property] = 'translate3d(' + current.left + 'px, ' + current.top + 'px, 0)';
+                    if (el.nodeType == 1) {
+                        if (el.nodeName == 'IMG') {
+                            slides.push(createObject(slideProto, {
+                                url: el.src,
+                                thumb: el.getAttribute('data-thumb') || el.src,
+                                caption: el.alt,
+                                loaded: false,
+                                classes: el.className
+                            }));
                         } else {
-                            styles[property] = 'translateX(' + current.left + 'px) translateY(' + current.top + 'px)';
+                            hasHTML = true;
+
+                            slides.push(createObject(slideProto, {
+                                element: el,
+                                loaded: true
+                            }));
                         }
-                    } else {
-                        styles.top = current.top + 'px';
-                        styles.left = current.left + 'px';
                     }
-
-                    indent = (thumbsW - current.width) * 0.5 - current.left;
-                    validatedIndent = validateIndent(indent);
-                    p.thumbsIndent = validatedIndent;
-
-                    frame
-                        .css('transition-duration', delay)
-                        .css(styles);
-
-                    p.thumbsLayer
-                        .css('transition-duration', delay)
-                        .css(methods.setIndent(galleryId, validatedIndent, 'px'));
                 }
             }
 
-            p.thumb.removeClass(p.params._current);
-            p.thumb
-                .filter('.' + p.params.modifierPrefix + target)
-                .addClass(p.params._current);
-
-            /*
-             * Validates recommended indent (inscribes layer into the container correctly)
-             *
-             * @param {number} indent of layer in the container
-             * @returns {number} Correct indent
-             */
-            function validateIndent(indent) {
-                if (indent > 0 || !p.thumbsDragging) {
-                    return 0;
-                }
-
-                var limit = thumbsW - layerW;
-
-                return indent < limit ? limit : indent;
+            if (!slides.length) {
+                throw new RangeError('Requires more slides');
             }
 
+            if (hasHTML && this._thumbsType == 'thumbs') {
+                this._thumbsType = 'dots';
+            }
         },
 
-        position: function(galleryId, target) {
-            var p = data[galleryId],
-                slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
-                img = p.gallery[target],
-                viewportRatio = p.viewportWidth / p.viewportHeight,
-                imgRatio = img.width / img.height;
+        _updateDOM: function() {
+            var params = this._params;
+
+            var slides = this._slides;
+
+            var bViewportLayer = this.bViewportLayer,
+                bThumbsLayer = this.bThumbsLayer;
+
+            var blSlides = this.blSlides = [],
+                blThumbs = this.blThumbs = [];
+
+            clearNode(bViewportLayer);
+            clearNode(bThumbsLayer);
+
+            var dfSlides = document.createDocumentFragment(),
+                dfThumbs = document.createDocumentFragment();
+
+            for (var i = 0, l = slides.length; i < l; i++) {
+                // Slides
+
+                var slide = slides[i],
+                    slideEl = slide.element;
+
+                var slideHTML = format(
+                    '<div data-index="%1" class="%2 %3 %4 %5">%6%7</div>',
+                    i,
+                    params.slide,
+                    params.itemPrefix + i,
+                    slideEl ? params._html : params._loading,
+                    slide.caption ? params._caption : '',
+                    slideEl ? '' : format('<img src="" class="%1 %2" alt="%3">', params.slideImg, slide.classes, slide.caption),
+                    slide.caption ? format('<div class="%1">%2</div>', params.slideCaption, slide.caption) : ''
+                );
+
+                var bSlide = createElementFromHTML(slideHTML);
+
+                if (slideEl) {
+                    bSlide.insertBefore(slideEl, bSlide.firstChild);
+                }
+
+                bSlide.style.left = (i * 100) + '%';
+
+                blSlides.push(bSlide);
+                dfSlides.appendChild(bSlide);
+
+                // Thumbs
+
+                var thumbHTML = format(
+                    '<span data-rel="%1" class="%2 %3 %4">%5</span>',
+                    i,
+                    params.thumb,
+                    params.itemPrefix + i,
+                    slide.classes,
+                    this._thumbsType == 'thumbs' && (slide.thumb || slide.url) ?
+                        format(
+                            '<img src="%1" data-rel="%2" class="%3">',
+                            (slide.thumb || slide.url),
+                            i,
+                            params.thumbImg
+                        ) :
+                        ''
+                );
+
+                var bThumb = createElementFromHTML(thumbHTML);
+
+                blThumbs.push(bThumb);
+                dfThumbs.appendChild(bThumb);
+            }
+
+            bViewportLayer.appendChild(dfSlides);
+            bThumbsLayer.appendChild(dfThumbs);
+
+            if (this._thumbsType == 'thumbs') {
+                bThumbsLayer.appendChild(this.bThumbFrame);
+            }
+        },
+
+        /**
+         * @param {Function} [callback]
+         */
+        _prepareActualSlides: function(callback) {
+            var modHidden = this._params._hidden;
+
+            var blSlides = this.blSlides;
+
+            var startIndex = Math.max(0, this.current - 1),
+                endIndex = Math.min(blSlides.length - 1, this.current + 1);
+
+            for (var i = startIndex; i <= endIndex; i++) {
+                removeClass(blSlides[i], modHidden);
+            }
+
+            this._loadActualSlides(callback);
+        },
+
+        /**
+         * @param {Function} [callback]
+         */
+        _loadActualSlides: function(callback) {
+            var modLoading = this._params._loading;
+
+            var slides = this._slides,
+                blSlides = this.blSlides;
+
+            var startIndex = Math.max(0, this.current - 1),
+                endIndex = Math.min(slides.length - 1, this.current + 1);
+
+            var loadingCount = 0;
+
+            for (var i = startIndex; i <= endIndex; i++) {
+                var slide = slides[i];
+
+                if (!slide.loaded) {
+                    (function(index, slide, url) {
+                        loadingCount++;
+
+                        loadImage(url, function(success, img) {
+                            loadingCount--;
+
+                            if (success) {
+                                var bSlide = blSlides[index],
+                                    bSlideImg = bSlide.firstChild;
+
+                                slide.width = img.width;
+                                slide.height = img.height;
+                                slide.loaded = true;
+
+                                removeClass(bSlide, modLoading);
+
+                                this._paintSlide(index);
+
+                                bSlideImg.src = url;
+                            } else {
+                                logError('Image wasn\'t loaded: ' + url);
+                            }
+
+                            if (!loadingCount && callback) {
+                                callback.call(this);
+                            }
+                        }, this);
+                    }).call(this, i, slide, slide.url);
+                }
+            }
+
+            if (!loadingCount && callback) {
+                callback.call(this);
+            }
+        },
+
+        /**
+         * @param {Function} [callback]
+         */
+        _loadThumbs: function(callback) {
+            var slides = this._slides;
+
+            var loadingCount = 0;
+
+            for (var i = 0, l = slides.length; i < l; i++) {
+                var slide = slides[i],
+                    url = slide.thumb || slide.url;
+
+                if (url) {
+                   loadingCount++;
+
+                   loadImage(url, function(success) {
+                        loadingCount--;
+
+                        if (!success) {
+                            logError('Image wasn\'t loaded: ' + url);
+                        }
+
+                        if (!loadingCount && callback) {
+                            callback.call(this);
+                        }
+                    }, this);
+                }
+            }
+
+            if (!loadingCount && callback) {
+                callback.call(this);
+            }
+        },
+
+        /**
+         * @param {int} index
+         */
+        _paintSlide: function(index) {
+            var params = this._params;
+
+            var slide = this._slides[index],
+                slideWidth = slide.width,
+                slideHeight = slide.height;
+
+            var bSlide = this.blSlides[index];
+
+            var bViewportWidth = this._bViewportWidth,
+                bViewportHeight = this._bViewportHeight;
 
             // Algorithm
-            if (p.viewportWidth > img.width && p.viewportHeight > img.height) {
-                p.gallery[target].algorithm = 'center';
-                slide
-                    .removeClass(p.params._auto)
-                    .addClass(p.params._center);
+
+            if (bViewportWidth > slideWidth && bViewportHeight > slideHeight) {
+                slide.algorithm = 'center';
+
+                removeClass(bSlide, params._auto);
+                addClass(bSlide, params._center);
             } else {
-                p.gallery[target].algorithm = 'auto';
-                slide
-                    .removeClass(p.params._center)
-                    .addClass(p.params._auto);
+                slide.algorithm = 'auto';
+
+                removeClass(bSlide, params._center);
+                addClass(bSlide, params._auto);
             }
 
             // Orientation
-            if (imgRatio >= viewportRatio) {
-                p.gallery[target].orientation = 'landscape';
-                slide
-                    .removeClass(p.params._portrait)
-                    .addClass(p.params._landscape);
+
+            var slideRatio = slideWidth / slideHeight,
+                bViewportRatio = bViewportWidth / bViewportHeight;
+
+            if (slideRatio >= bViewportRatio) {
+                slide.orientation = 'landscape';
+
+                removeClass(bSlide, params._portrait);
+                addClass(bSlide, params._landscape);
             } else {
-                p.gallery[target].orientation = 'portrait';
-                slide
-                    .removeClass(p.params._landscape)
-                    .addClass(p.params._portrait);
+                slide.orientation = 'portrait';
+
+                removeClass(bSlide, params._landscape);
+                addClass(bSlide, params._portrait);
             }
-        },
 
-        checkButtons: function(galleryId) {
-            var p = data[galleryId];
+            // Sizes
 
-            if (p.current == 0) {
-                p.prev.addClass(p.params._disabled);
-            } else {
-                p.prev.removeClass(p.params._disabled);
-            }
-            if (p.current + p.params.slidesOnScreen - 1 == p.last) {
-                p.next.addClass(p.params._disabled);
-            } else {
-                p.next.removeClass(p.params._disabled);
-            }
-        },
+            var bSlideImgStyle = bSlide.firstChild.style;
 
-        setIndent: function(galleryId, value, unit) {
-            var p = data[galleryId],
-                result = {};
+            if (slide.algorithm == 'auto' || params.algorithm == 'cover') {
+                if (slide.orientation == (params.algorithm == 'cover' ? 'portrait' : 'landscape')) {
+                    var bSlideImgHeight = Math.round(slideHeight * (bViewportWidth / slideWidth));
 
-            unit = unit || '%';
-
-            if (p.params.transform) {
-                var property = prefixes[p.params.transform.property];
-
-                if (p.params.transform.has3d) {
-                    result[property] = 'translate3d(' + value + unit + ', 0, 0)';
+                    bSlideImgStyle.top = Math.round((bViewportHeight - bSlideImgHeight) / 2) + 'px';
+                    bSlideImgStyle.left = '0';
+                    bSlideImgStyle.width = bViewportWidth + 'px';
+                    bSlideImgStyle.height = bSlideImgHeight + 'px';
                 } else {
-                    result[property] = 'translateX(' + value + unit + ')';
+                    var bSlideImgWidth = Math.round(slideWidth * (bViewportHeight / slideHeight));
+
+                    bSlideImgStyle.top = '0';
+                    bSlideImgStyle.left = Math.round((bViewportWidth - bSlideImgWidth) / 2) + 'px';
+                    bSlideImgStyle.width = bSlideImgWidth + 'px';
+                    bSlideImgStyle.height = bViewportHeight + 'px';
                 }
             } else {
-                result.left = value + unit;
+                bSlideImgStyle.top = Math.round((bViewportHeight - slideHeight) / 2) + 'px';
+                bSlideImgStyle.left = Math.round((bViewportWidth - slideWidth) / 2) + 'px';
+            }
+        },
+
+        _updateThumbsDims: function() {
+            if (this._thumbsType != 'thumbs') {
+                return;
             }
 
-            return result;
+            var slides = this._slides;
+
+            var blThumbs = this.blThumbs,
+                i = blThumbs.length;
+
+            while (i) {
+                var bThumb = blThumbs[--i];
+
+                slides[i].thumbDims = {
+                    top: bThumb.offsetTop,
+                    left: bThumb.offsetLeft,
+                    width: bThumb.offsetWidth,
+                    height: bThumb.offsetHeight
+                };
+            }
+
+            this._bThumbsLayerWidth = this.bThumbsLayer.offsetWidth;
+
+            this._thumbsDraggable = this._bThumbsWidth < this._bThumbsLayerWidth;
         },
 
-        freeze: function(galleryId) {
-            var p = data[galleryId];
-
-            p.freeze = true;
-            p.root.addClass(p.params._freeze);
+        /**
+         * @param {boolean} [noEffects=false]
+         */
+        _moveToCurrentItems: function(noEffects) {
+            this._moveToCurrentSlide(noEffects);
+            this._moveToCurrentThumb(noEffects);
         },
 
-        unfreeze: function(galleryId) {
-            var p = data[galleryId];
+        /**
+         * @param {boolean} [noEffects=false]
+         */
+        _moveToCurrentSlide: function(noEffects) {
+            var offsetX = -1 * this._bViewportWidth * this.current;
 
-            p.freeze = false;
-            p.root.removeClass(p.params._freeze);
+            if (this._bViewportLayerOffsetX == offsetX) {
+                return;
+            }
+
+            addClass(this.element, this._params._animated);
+
+            this._bViewportLayerOffsetX = offsetX;
+
+            if (prefixedTransitionDuration) {
+                var duration = noEffects ? '0ms' : this._params.duration + 'ms';
+                this.bViewportLayer.style[prefixedTransitionDuration] = duration;
+            }
+
+            setOffsetX(this.bViewportLayer, offsetX);
         },
 
-        getHTML: function(params, data) {
-            var thumbsHTML = '',
-                slidesHTML = '';
+        /**
+         * @param {boolean} [noEffects=false]
+         */
+        _moveToCurrentThumb: function(noEffects) {
+            if (this._thumbsType != 'thumbs') {
+                return;
+            }
 
-            for (var i = 0, len = data.length; i < len; i++) {
+            var currentThumbDims = this._slides[this.current].thumbDims;
 
-                // Thumbnails template
+            var bThumbsLayer = this.bThumbsLayer,
+                bThumbFrame = this.bThumbFrame;
 
-                thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb +
-                    ' ' + params.modifierPrefix + i +
-                    ' ' + data[i].classes + '">';
+            this._computeThumbsOffsetX();
 
-                if (params.showThumbs == 'thumbs' && data[i].url) {
-                    thumbsHTML += '<img src="' + data[i].thumb +
-                        '" class="' + params.thumbImg + '" data-rel="' + i + '">';
+            if (prefixedTransitionDuration) {
+                var duration = noEffects ? '0ms' : this._params.duration + 'ms';
+
+                bThumbsLayer.style[prefixedTransitionDuration] = duration;
+                bThumbFrame.style[prefixedTransitionDuration] = duration;
+            }
+
+            setOffsetX(bThumbsLayer, this._bThumbsLayerOffsetX);
+
+            setOffsets(bThumbFrame, currentThumbDims.left, currentThumbDims.top);
+
+            bThumbFrame.style.width = currentThumbDims.width + 'px';
+            bThumbFrame.style.height = currentThumbDims.height + 'px';
+        },
+
+        _computeThumbsOffsetX: function() {
+            var currentThumbDims = this._slides[this.current].thumbDims;
+
+            var offsetX;
+
+            if (!this._thumbsDraggable) {
+                offsetX = 0;
+            } else {
+                offsetX = (this._bThumbsWidth - currentThumbDims.width) / 2 - currentThumbDims.left;
+
+                if (offsetX > 0) {
+                    offsetX = 0;
+                } else {
+                    var limit = this._bThumbsWidth - this._bThumbsLayerWidth;
+
+                    if (offsetX < limit) {
+                        offsetX = limit;
+                    }
+                }
+            }
+
+            this._bThumbsLayerOffsetX = offsetX;
+        },
+
+        _bindListeners: function() {
+            bindMethods(this, [
+                '_onBViewportTouchStart',
+                '_onBViewportMouseDown',
+                '_onBThumbsTouchStart',
+                '_onBThumbsMouseDown',
+
+                '_onDocumentTouchMove',
+                '_onDocumentTouchEnd',
+                '_onDocumentTouchCancel',
+
+                '_onDocumentMouseMove',
+                '_onDocumentMouseUp',
+
+                '_onBViewportLayerTransitionEnd',
+
+                '_onWindowResize',
+
+                '_onBViewportMouseEnter',
+                '_onBViewportMouseLeave',
+                '_onBThumbsMouseEnter',
+                '_onBThumbsMouseLeave',
+
+                '_onDocumentKeydown',
+
+                '_onAutoplayTimerTick'
+            ]);
+        },
+
+        _bindEvents: function() {
+            var bViewport = this.bViewport;
+            var bThumbs = this.bThumbs;
+
+            this._bindEvent(bViewport, 'touchstart', this._onBViewportTouchStart);
+            this._bindEvent(bViewport, 'mousedown', this._onBViewportMouseDown);
+            this._bindEvent(bThumbs, 'touchstart', this._onBThumbsTouchStart);
+            this._bindEvent(bThumbs, 'mousedown', this._onBThumbsMouseDown);
+
+            this._bindTransitionEnd(this.bViewportLayer, this._onBViewportLayerTransitionEnd);
+
+            this._bindEvent(window, 'resize', this._onWindowResize);
+
+            this._bindEvent(bViewport, 'mouseenter', this._onBViewportMouseEnter);
+            this._bindEvent(bViewport, 'mouseleave', this._onBViewportMouseLeave);
+            this._bindEvent(bThumbs, 'mouseenter', this._onBThumbsMouseEnter);
+            this._bindEvent(bThumbs, 'mouseleave', this._onBThumbsMouseLeave);
+
+            if (this._params.keyboard) {
+                this._bindEvent(document, 'keydown', this._onDocumentKeydown);
+            }
+        },
+
+        /**
+         * @param {TouchEvent} evt
+         */
+        _onBViewportTouchStart: function(evt) {
+            this._handleTouchStart(evt, this.bViewport, true);
+        },
+
+        /**
+         * @param {MouseEvent} evt
+         */
+        _onBViewportMouseDown: function(evt) {
+            if (evt.which == 1) {
+                this._handleTouchStart(evt, this.bViewport, false);
+            }
+        },
+
+        /**
+         * @param {TouchEvent} evt
+         */
+        _onBThumbsTouchStart: function(evt) {
+            this._handleTouchStart(evt, this.bThumbs, true);
+        },
+
+        /**
+         * @param {MouseEvent} evt
+         */
+        _onBThumbsMouseDown: function(evt) {
+            if (evt.which == 1) {
+                this._handleTouchStart(evt, this.bThumbs, false);
+            }
+        },
+
+        /**
+         * @param {TouchEvent|MouseEvent} evt
+         * @param {HTMLElement} el
+         * @param {boolean} isTouch
+         */
+        _handleTouchStart: function(evt, el, isTouch) {
+            if (this.frozen || this.touch) {
+                return;
+            }
+
+            var positionSource = isTouch ? evt.touches[0] : evt;
+
+            this._touch = {
+                start: {
+                    clientX: positionSource.clientX,
+                    clientY: positionSource.clientY,
+                    timeStamp: evt.timeStamp,
+                    element: el
+                }
+            };
+
+            this._observeTouch(isTouch);
+        },
+
+        /**
+         * @param {boolean} isTouch
+         */
+        _observeTouch: function(isTouch) {
+            if (isTouch) {
+                this._bindEvent(document, 'touchmove', this._onDocumentTouchMove);
+                this._bindEvent(document, 'touchend', this._onDocumentTouchEnd);
+                this._bindEvent(document, 'touchcancel', this._onDocumentTouchCancel);
+            } else {
+                this._bindEvent(document, 'mousemove', this._onDocumentMouseMove);
+                this._bindEvent(document, 'mouseup', this._onDocumentMouseUp);
+            }
+        },
+
+        /**
+         * @param {boolean} isTouch
+         */
+        _stopTouchObserving: function(isTouch) {
+            if (isTouch) {
+                this._unbindEvent(document, 'touchmove', this._onDocumentTouchMove);
+                this._unbindEvent(document, 'touchend', this._onDocumentTouchEnd);
+                this._unbindEvent(document, 'touchcancel', this._onDocumentTouchCancel);
+            } else {
+                this._unbindEvent(document, 'mousemove', this._onDocumentMouseMove);
+                this._unbindEvent(document, 'mouseup', this._onDocumentMouseUp);
+            }
+        },
+
+        /**
+         * @param {TouchEvent} evt
+         */
+        _onDocumentTouchMove: function(evt) {
+            this._handleTouchMove(evt, true);
+        },
+
+        /**
+         * @param {TouchEvent} evt
+         */
+        _onDocumentTouchEnd: function(evt) {
+            this._handleTouchEnd(evt, true);
+        },
+
+        /**
+         * @param {TouchEvent} evt
+         */
+        _onDocumentTouchCancel: function(evt) {
+            this._completeTouch(evt, true, 'touchCancel');
+        },
+
+        /**
+         * @param {MouseEvent} evt
+         */
+        _onDocumentMouseMove: function(evt) {
+            this._handleTouchMove(evt, false);
+        },
+
+        /**
+         * @param {MouseEvent} evt
+         */
+        _onDocumentMouseUp: function(evt) {
+            this._handleTouchEnd(evt, false);
+        },
+
+        /**
+         * @param {TransitionEvent} evt
+         */
+        _onBViewportLayerTransitionEnd: function(evt) {
+            if (evt.propertyName.slice(-1 * 'transform'.length) != 'transform' && evt.propertyName != 'left') {
+                return;
+            }
+
+            var params = this._params,
+                modHidden = params._hidden;
+
+            var blSlides = this.blSlides;
+
+            removeClass(this.element, params._animated);
+
+            var startIndex = Math.max(0, this.current - 1),
+                endIndex = Math.min(blSlides.length - 1, this.current + 1);
+
+            for (var i = 0, l = blSlides.length; i < l; i++) {
+                if (i < startIndex || i > endIndex) {
+                    addClass(blSlides[i], modHidden);
+                }
+            }
+
+            if (params.onShow) {
+                params.onShow.call(this);
+            }
+        },
+
+        _onWindowResize: function() {
+            this.update();
+        },
+
+        _onBViewportMouseEnter: function() {
+            this._mouseOverBViewport = true;
+
+            if (this._params.autoplay) {
+                clearTimeout(this._autoplayTimerId);
+            }
+        },
+
+        _onBViewportMouseLeave: function() {
+            this._mouseOverBViewport = false;
+
+            if (this._params.autoplay) {
+                this._autoplayTimerId = setTimeout(this._onAutoplayTimerTick, this._params.autoplay);
+            }
+        },
+
+        _onBThumbsMouseEnter: function() {
+            this._mouseOverBThumbs = true;
+        },
+
+        _onBThumbsMouseLeave: function() {
+            this._mouseOverBThumbs = false;
+        },
+
+        /**
+         * @param {TouchEvent|MouseEvent} evt
+         * @param {boolean} isTouch
+         */
+        _handleTouchMove: function(evt, isTouch) {
+            var touch = this._touch;
+
+            if (!touch) {
+                return;
+            }
+
+            var touchStart = touch.start;
+
+            var prevSource = touch.clientX === undefined ? touchStart : touch;
+
+            touch.prev = {
+                clientX: prevSource.clientX,
+                clientY: prevSource.clientY,
+                timeStamp: prevSource.timeStamp
+            };
+
+            var positionSource = isTouch ? evt.touches[0] : evt;
+
+            touch.clientX = positionSource.clientX;
+            touch.clientY = positionSource.clientY;
+
+            touch.shiftX = touch.clientX - touchStart.clientX;
+            touch.shiftY = touch.clientY - touchStart.clientY;
+
+            touch.timeStamp = evt.timeStamp;
+
+            if (isTouch && evt.touches.length > 1) {
+                this._completeTouch(evt, true, 'multitouch');
+                return;
+            }
+
+            var drag = this._drag;
+
+            var bViewportLayer = this.bViewportLayer,
+                bThumbsLayer = this.bThumbsLayer;
+
+            var targetLayer;
+
+            if (!drag) {
+                if (isTouch && Math.abs(touch.shiftX) < Math.abs(touch.shiftY)) {
+                    this._completeTouch(evt, true, 'scroll');
+                    return;
                 }
 
-                thumbsHTML += '</span>';
+                targetLayer = touchStart.element == this.bViewport ? bViewportLayer : bThumbsLayer;
 
-                // Slides template
+                drag = this._drag = {
+                    start: {
+                        targetLayerOffset: getOffsetX(targetLayer)
+                    },
 
-                slidesHTML += '<div class="' + params.slide +
-                    ' ' + params.modifierPrefix + i +
-                    ' ' + (data[i].html ? params._html : params._loading) +
-                    '" data-id="' + i + '">';
+                    targetLayer: targetLayer
+                };
+            } else {
+                targetLayer = drag.targetLayer;
+            }
 
-                if (data[i].html) {
-                    slidesHTML += data[i].html;
-                } else {
-                    if (params.ie && params.ie < 9) {
-                        slidesHTML += '<img src="" class="' + params.slideImg + ' ' + data[i].classes + '" />';
-                    } else {
-                        slidesHTML += '<div class="' + params.slideImg + ' ' + data[i].classes + '"></div>';
+            evt.preventDefault();
+
+            var dragging = false;
+
+            if (targetLayer == bViewportLayer) {
+                if (prefixedTransform) {
+                    addClass(this.element, this._params._dragging);
+                    dragging = true;
+                }
+            } else {
+                if (this._thumbsDraggable) {
+                    dragging = true;
+                }
+            }
+
+            if (dragging) {
+                var offsetX = drag.start.targetLayerOffset + touch.shiftX;
+
+                if (targetLayer == bThumbsLayer || !this._params.loop) {
+                    if (offsetX > 0) {
+                        offsetX /= 3;
+                    } else if (offsetX < 0) {
+                        var limit;
+
+                        if (targetLayer == bViewportLayer) {
+                            limit = -1 * this._bViewportWidth * (this._slides.length - 1);
+                        } else {
+                            limit = this._bThumbsWidth - this._bThumbsLayerWidth;
+                        }
+
+                        if (offsetX < limit) {
+                            offsetX = limit + ((offsetX - limit) / 3);
+                        }
                     }
                 }
 
-                slidesHTML += '</div>';
+                if (targetLayer == bViewportLayer) {
+                    this._bViewportLayerOffsetX = offsetX;
+                } else {
+                    this._bThumbsLayerOffsetX = offsetX;
+                }
+
+                if (prefixedTransitionDuration) {
+                    targetLayer.style[prefixedTransitionDuration] = '0s';
+                }
+
+                setOffsetX(targetLayer, offsetX);
             }
+        },
 
-            if (params.showThumbs == 'thumbs') {
-                thumbsHTML += '<div class="' + params.thumbFrame + '"></div>';
-            }
+        /**
+         * @param {TouchEvent|MouseEvent} evt
+         * @param {boolean} isTouch
+         */
+        _handleTouchEnd: function(evt, isTouch) {
+            this._completeTouch(evt, isTouch, 'touchEnd');
+        },
 
-            return { thumbs: thumbsHTML, slides: slidesHTML };
-        }
-    };
+        /**
+         * @param {TouchEvent|MouseEvent} evt
+         * @param {boolean} isTouch
+         * @param {string} cause
+         */
+        _completeTouch: function(evt, isTouch, cause) {
+            this._stopTouchObserving(isTouch);
 
-    $.fn.photor = function(method) {
+            var params = this._params;
 
-        if (methods[method]) {
-            return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
-        } else if (typeof method == 'object' || !method) {
-            return methods.init.apply(this, arguments);
-        } else {
-            $.error('Unknown method: ' +  method);
-        }
+            var touch = this._touch,
+                touchStart = touch.start,
+                touchEnd = touch.end = {};
 
-    };
+            var bViewport = this.bViewport;
 
-    $.fn.photor.data = data;
+            var positionSource = isTouch ? evt.touches[0] || touch.prev || touchStart : evt;
 
-    /**
-     * Detect IE version
-     *
-     * @returns {int} Major version
-     */
-    function ie() {
-        var ua = navigator.userAgent.toLowerCase();
+            touchEnd.clientX = positionSource.clientX;
+            touchEnd.clientY = positionSource.clientY;
 
-        return ua.indexOf('msie') > -1 ? parseInt(ua.split('msie')[1]) : false;
-    }
+            touchEnd.shiftX = touchEnd.clientX - touchStart.clientX;
+            touchEnd.shiftY = touchEnd.clientY - touchStart.clientY;
 
-    /**
-     * Returns supported property for css-transform
-     *
-     * @returns {string} String key
-     */
-    function getSupportedTransform() {
-        var out = false,
-            el = document.createElement('p');
+            touchEnd.timeStamp = evt.timeStamp;
 
-        for (var key in prefixes) {
-            if (prefixes.hasOwnProperty(key) && el.style[key] !== undefined) {
-                out = { property: key };
+            if (this._drag) {
+                if (touchStart.element == bViewport) {
+                    if (prefixedTransform) {
+                        removeClass(this.element, params._dragging);
+                    }
 
-                break;
-            }
-        }
-
-        document.body.appendChild(el);
-
-        if (out.property) {
-            el.style[out.property] = "translate3d(1px,1px,1px)";
-            out.has3d = window.getComputedStyle(el).getPropertyValue(prefixes[out.property]) != 'none';
-        }
-
-        document.body.removeChild(el);
-
-        return out;
-    }
-
-    /**
-     * Get prefixed css-property
-     *
-     * @returns {string} String key
-     */
-    function getPrefixed(property) {
-        var style = document.createElement('p').style,
-            prefixes = ['ms', 'O', 'Moz', 'Webkit'];
-
-        if (style[property] == '') {
-            return property;
-        }
-
-        property = property.charAt(0).toUpperCase() + property.slice(1);
-
-        for (var i = 0, len = prefixes.length; i < len; i++) {
-            if (style[prefixes[i] + property] == '') {
-                return prefixes[i] + property;
-            }
-        }
-    }
-
-    /**
-     * Кроссбраузерно добавляет обработчики событий
-     *
-     * @param {HTMLElement} element HTMLElement
-     * @param {Event} e Событие
-     * @param {Function} handler Обработчик события
-     * @param {bool} capture Capturing
-     */
-    function eventManager(element, e, handler, capture, off) {
-        capture = !!capture;
-
-        if (!element) {
-            return;
-        }
-
-        if (off) {
-
-            if (element.removeEventListener) {
-                element.removeEventListener(e, handler, capture);
+                    if (cause == 'touchEnd') {
+                        this._completeSlidesDrag();
+                    } else {
+                        this._moveToCurrentSlide();
+                    }
+                } else {
+                    if (Math.abs(touchEnd.shiftX) > 5 || Math.abs(touchEnd.shiftY) > 5) {
+                        this._completeThumbsDrag();
+                    } else {
+                        this._handleThumbsTap(evt, isTouch);
+                    }
+                }
             } else {
-                $(element).off(e);
+                if (cause == 'touchEnd') {
+                    if (touchStart.element == bViewport) {
+                        if (isSelfOrDescendantOf(evt.target, this.btnPrev, bViewport)) {
+                            evt.preventDefault();
+                            this.prev(params.loop);
+                        } else if (isSelfOrDescendantOf(evt.target, this.btnNext, bViewport)) {
+                            evt.preventDefault();
+                            this.next(params.loop);
+                        }
+                    } else {
+                        this._handleThumbsTap(evt, isTouch);
+                    }
+                }
             }
 
-        } else {
+            this._touch = null;
+            this._drag = null;
+        },
 
-            if (element.addEventListener) {
-                element.addEventListener(e, handler, capture);
+        _completeSlidesDrag: function() {
+            var touch = this._touch,
+                touchStart = touch.start,
+                touchEnd = touch.end;
+
+            var absShiftX = Math.abs(touchEnd.shiftX),
+                absShiftY = Math.abs(touchEnd.shiftY);
+
+            if (
+                absShiftX >= absShiftY &&
+                    ((touchEnd.timeStamp - touchStart.timeStamp) < 250 || absShiftX >= (this._bViewportWidth / 5))
+            ) {
+                var count = Math.max(Math.round(absShiftX / this._bViewportWidth), 1),
+                    toIndex;
+
+                if (!this._params.loop) {
+                    if (touchEnd.shiftX > 0) {
+                        toIndex = Math.max(0, this.current - count);
+                    } else {
+                        toIndex = Math.min(this.current + count, this._slides.length - 1);
+                    }
+                } else {
+                    toIndex = this.current + (touchEnd.shiftX > 0 ? -count : count);
+                }
+
+                if (this.go(toIndex, this._params.loop)) {
+                    return;
+                }
+            }
+
+            this._moveToCurrentSlide();
+        },
+
+        _completeThumbsDrag: function() {
+            if (!this._thumbsDraggable) {
+                return;
+            }
+
+            var touch = this._touch,
+                touchPrev = touch.prev,
+                touchEnd = touch.end;
+
+            var lastShiftX = touchEnd.clientX - touchPrev.clientX,
+                direction = lastShiftX < 0 ? -1 : 1,
+                speed = Math.abs(lastShiftX / (touchEnd.timeStamp - touchPrev.timeStamp));
+
+            var offsetX = direction * Math.pow(speed * 10, 3) + this._bThumbsLayerOffsetX;
+
+            if (offsetX > 0) {
+                offsetX = 0;
             } else {
-                $(element).on(e, handler);
+                var limit = this._bThumbsWidth - this._bThumbsLayerWidth;
+
+                if (offsetX < limit) {
+                    offsetX = limit;
+                }
             }
 
-        }
-    }
+            this._bThumbsLayerOffsetX = offsetX;
 
-    /**
-     * Проверяет наличие класса у HTML-элемента
-     *
-     * @param {HTMLElement} element HTMLElement
-     * @param {string} className Имя класса
-     * @returns {bool}
-     */
-    function hasClass(element, className) {
-        var classNames = ' ' + element.className + ' ';
+            if (prefixedTransitionDuration) {
+                this.bThumbsLayer.style[prefixedTransitionDuration] = this._params.duration + 'ms';
+            }
 
-        className = ' ' + className + ' ';
+            setOffsetX(this.bThumbsLayer, offsetX);
+        },
 
-        if (classNames.replace(/[\r\n\t\f]+/g, ' ').indexOf(className) > -1) {
+        /**
+         * @param {TouchEvent|MouseEvent} evt
+         * @param {boolean} isTouch
+         */
+        _handleThumbsTap: function(evt, isTouch) {
+            var el = evt.target;
+
+            while (el != this.bThumbs) {
+                if (el.hasAttribute('data-rel')) {
+                    evt.preventDefault();
+                    this.go(Number(el.getAttribute('data-rel')));
+                    break;
+                }
+
+                if (!(el = el.parentNode)) {
+                    break;
+                }
+            }
+        },
+
+        /**
+         * @param {KeyboardEvent} evt
+         */
+        _onDocumentKeydown: function(evt) {
+            if (document.activeElement == document.body && !evt.target.attributes.contenteditable) {
+                switch (evt.which || evt.keyCode) {
+                    case 32: // Space
+                    case 39: // Right arrow
+                        this.next(this._params.loop);
+                        break;
+
+                    case 37: // Left arrow
+                        this.prev(this._params.loop);
+                        break;
+                }
+            }
+        },
+
+        _onAutoplayTimerTick: function() {
+            this.go(this.current + 1 == this._slides.length ? 0 : this.current + 1);
+        },
+
+        update: function() {
+            this._updateDims();
+            this._updateThumbsDims();
+
+            var slides = this._slides,
+                i = slides.length;
+
+            while (i) {
+                if (!slides[--i].element && slides[i].loaded) {
+                    this._paintSlide(i);
+                }
+            }
+
+            this._moveToCurrentItems(true);
+        },
+
+        /**
+         * @param {int} toIndex
+         * @param {boolean} [loop=false]
+         * @returns {boolean}
+         */
+        go: function(toIndex, loop) {
+            if (this.frozen) {
+                return false;
+            }
+
+            var params = this._params;
+
+            if (params.autoplay && !this._mouseOverBViewport) {
+                clearTimeout(this._autoplayTimerId);
+                this._autoplayTimerId = setTimeout(this._onAutoplayTimerTick, params.autoplay);
+            }
+
+            var slideCount = this._slides.length,
+                current = this.current;
+
+            toIndex = calcIndex(toIndex, slideCount, false);
+
+            if (toIndex == current || toIndex === false) {
+                return false;
+            }
+
+            var modCurrent = params._current;
+
+            removeClass(this.blSlides[current], modCurrent);
+            removeClass(this.blThumbs[current], modCurrent);
+
+            current = this.current = toIndex;
+
+            addClass(this.blSlides[current], modCurrent);
+            addClass(this.blThumbs[current], modCurrent);
+
+            this._prepareActualSlides();
+            this._moveToCurrentItems();
+
             return true;
+        },
+
+        /**
+         * @returns {boolean}
+         */
+        canPrev: function() {
+            return this.current > 0;
+        },
+
+        /**
+         * @returns {boolean}
+         */
+        canNext: function() {
+            return this.current < this._slides.length - 1;
+        },
+
+        /**
+         * @param {boolean} [loop=false]
+         * @returns {boolean}
+         */
+        prev: function(loop) {
+            if (this.frozen) {
+                return false;
+            }
+
+            var toIndex = this.current - 1;
+
+            if (toIndex < 0 && !loop) {
+                return;
+            }
+
+            return this.go(toIndex, loop);
+        },
+
+        /**
+         * @param {boolean} [loop=false]
+         * @returns {boolean}
+         */
+        next: function(loop) {
+            if (this.frozen) {
+                return false;
+            }
+
+            var toIndex = this.current + 1;
+
+            if (toIndex == this._slides.length && !loop) {
+                return;
+            }
+
+            return this.go(toIndex, loop);
+        },
+
+        freeze: function() {
+            this.frozen = true;
+        },
+
+        unfreeze: function() {
+            this.frozen = false;
+        },
+
+        /**
+         * @param {Object} target
+         * @param {string} type
+         * @param {Function} listener
+         */
+        _bindEvent: function(target, type, listener) {
+            var id = getUID(target) + '-' + type + '-' + getUID(listener);
+
+            if (!this._events.hasOwnProperty(id)) {
+                if (target.addEventListener) {
+                    target.addEventListener(type, listener, false);
+
+                    this._events[id] = {
+                        target: target,
+                        type: type,
+                        listener: listener
+                    };
+                } else {
+                    var wrapper = function(evt) {
+                        listener.call(target, fixEvent(evt || window.event));
+                    };
+
+                    wrapper._inner = listener;
+
+                    target.attachEvent('on' + type, wrapper);
+
+                    this._events[id] = {
+                        target: target,
+                        type: type,
+                        listener: wrapper
+                    };
+                }
+            }
+        },
+
+        /**
+         * @param {HTMLElement} el
+         * @param {Function} listener
+         */
+        _bindTransitionEnd: function(el, listener) {
+            var names = [
+                'transitionend',
+                'webkitTransitionEnd',
+                'MSTransitionEnd',
+                'oTransitionEnd'
+            ];
+
+            for (var i = 0, l = names.length; i < l; i++) {
+                this._bindEvent(el, names[i], listener);
+            }
+        },
+
+        /**
+         * @param {Object} target
+         * @param {string} type
+         * @param {Function} listener
+         */
+        _unbindEvent: function(target, type, listener) {
+            var id = getUID(target) + '-' + type + '-' + getUID(listener);
+
+            if (this._events.hasOwnProperty(id)) {
+                if (target.removeEventListener) {
+                    target.removeEventListener(type, listener, false);
+                } else {
+                    target.detachEvent('on' + type, this._events[id].listener);
+                }
+                delete this._events[id];
+            }
+        },
+
+        destroy: function() {
+            clearTimeout(this._autoplayTimerId);
+
+            var events = this._events;
+
+            for (var id in events) {
+                if (events.hasOwnProperty(id)) {
+                    var event = events[id];
+
+                    if (event.target.removeEventListener) {
+                        event.target.removeEventListener(event.type, event.listener, false);
+                    } else {
+                        event.target.detachEvent('on' + event.type, event.listener);
+                    }
+                    delete events[id];
+                }
+            }
+
+            this.element._photor = null;
+        }
+    };
+
+    // Helpers
+
+    /**
+     * @param {string} message
+     */
+    function logError(message) {
+        if (typeof console != 'undefined') {
+            if (console.error) {
+                console.error(message);
+            } else {
+                console.log('Error: ' + message);
+            }
+        }
+    }
+
+    var uidCounter = 0;
+
+    /**
+     * @returns {int}
+     */
+    function getUID(obj) {
+        return obj._uid || (obj._uid = ++uidCounter);
+    }
+
+    /**
+     * @param {int} value
+     * @param {int} length
+     * @param {*} [altValue=0]
+     * @returns {int|*}
+     */
+    function calcIndex(value, length, altValue) {
+        if (value < 0) {
+            value += length;
+
+            if (value < 0) {
+                return altValue !== undefined ? altValue : 0;
+            }
+        } else if (value >= length) {
+            value -= length;
+
+            if (value >= length) {
+                return altValue !== undefined ? altValue : 0;
+            }
         }
 
+        return value;
+    }
+
+    /**
+     * @param {string} str
+     * @param {*} ...values
+     * @returns {string}
+     */
+    function format(str) {
+        var values = Array.prototype.slice.call(arguments, 1);
+
+        return str.replace(/%(\d+)/g, function(match, num) {
+            return values[Number(num) - 1];
+        });
+    }
+
+    var _createObject = Object.create || function(proto) {
+        function F() {}
+        F.prototype = proto;
+        return new F();
+    };
+
+    /**
+     * @param {Object} proto
+     * @param {Array<Object>} [...mixins]
+     * @returns {Object}
+     */
+    function createObject(proto) {
+        var obj = _createObject(proto);
+
+        if (arguments.length > 1) {
+            for (var i = 1, l = arguments.length; i < l; i++) {
+                var mixin = arguments[i];
+
+                if (mixin === Object(mixin)) {
+                    extendObject(obj, mixin);
+                }
+            }
+        }
+        return obj;
+    }
+
+    /**
+     * @param {Object} obj
+     * @param {Object} source
+     * @returns {Object}
+     */
+    function extendObject(obj, source) {
+        for (var name in source) {
+            if (source.hasOwnProperty(name)) {
+                obj[name] = source[name];
+            }
+        }
+        return obj;
+    }
+
+    var isArray = Array.isArray || function(obj) {
+        return Object.prototype.toString.call(obj) == '[object Array]';
+    };
+
+    /**
+     * @param {Object} instance
+     * @param {Array<string>} names
+     */
+    var bindMethods;
+
+    if (Function.prototype.bind) {
+        bindMethods = function(instance, names) {
+            for (var i = 0, l = names.length; i < l; i++) {
+                instance[names[i]] = instance[names[i]].bind(instance);
+            }
+        };
+    } else {
+        bindMethods = function(instance, names) {
+            for (var i = 0, l = names.length; i < l; i++) {
+                (function(instance, name) {
+                    var listener = instance[name];
+
+                    instance[name] = function() {
+                        return listener.apply(instance, arguments);
+                    };
+                })(instance, names[i]);
+            }
+        };
+    }
+
+    var hasClass,
+        addClass,
+        removeClass;
+
+    if (dummyElement.classList) {
+        hasClass = function(el, className) {
+            return el.classList.contains(className);
+        };
+
+        addClass = function(el, className) {
+            el.classList.add(className);
+        };
+
+        removeClass = function(el, className) {
+            el.classList.remove(className);
+        };
+    } else {
+        var reNotWhite = /\S+/g;
+
+        hasClass = function(el, className) {
+            return (el.className.match(reNotWhite) || []).indexOf(className) != -1;
+        };
+
+        addClass = function(el, className) {
+            var classNames = el.className.match(reNotWhite) || [];
+
+            if (classNames.indexOf(className) == -1) {
+                classNames.push(className);
+                el.className = classNames.join(' ');
+            }
+        };
+
+        removeClass = function(el, className) {
+            var classNames = el.className.match(reNotWhite) || [],
+                index = classNames.indexOf(className);
+
+            if (index != -1) {
+                classNames.splice(index, 1);
+                el.className = classNames.join(' ');
+            }
+        };
+    }
+
+    /**
+     * @param {string} html
+     * @returns {HTMLElement}
+     */
+    function createElementFromHTML(html) {
+        var el = document.createElement('div');
+        el.innerHTML = html;
+        return el.childNodes.length == 1 && el.firstChild.nodeType == 1 ? el.firstChild : el;
+    }
+
+    /**
+     * @param {Node} node
+     * @param {Node} ancestor
+     * @param {Node} [limitNode]
+     * @returns {boolean}
+     */
+    function isDescendantOf(node, ancestor, limitNode) {
+        if (limitNode) {
+            while (node = node.parentNode) {
+                if (node == ancestor) {
+                    return true;
+                }
+                if (node == limitNode) {
+                    break;
+                }
+            }
+        } else {
+            while (node = node.parentNode) {
+                if (node == ancestor) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
     /**
-     * Возвращает массив поддерживаемых событий
-     * Если браузер поддерживает pointer events или подключена handjs, вернет события указателя.
-     * Если нет, используем события мыши
-     *
-     * @returns {Array} Массив с названиями событий
+     * @param {Node} node
+     * @param {Node} ancestor
+     * @param {Node} [limitNode]
+     * @returns {boolean}
      */
-    function getSupportedEvents() {
-        var touchEnabled = 'ontouchstart' in window;
-
-        if (touchEnabled) {
-            return ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
-        }
-
-        return ['mousedown', 'mousemove', 'mouseup', 'mouseleave'];
+    function isSelfOrDescendantOf(node, ancestor, limitNode) {
+        return node == ancestor || isDescendantOf(node, ancestor, limitNode);
     }
 
     /**
-     * Устанавливает обработчики управления указателем (touch, mouse, pen)
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
+     * @param {Node} node
+     * @returns {Node}
      */
-    function bindControl(galleryId) {
-        var p = data[galleryId],
-            control = p.control,
-            thumbs = p.thumbs,
-            touch = {};
-
-        /**
-         * Обработчик touchstart
-         *
-         * @param {Event} e Событие pointerdown
-         */
-        handlers.onStart = function(e) {
-            if (p.freeze) {
-                return;
-            }
-
-            // Запоминаем координаты и время
-            touch.x1 = e.clientX || e.touches && e.touches[0].clientX;
-            touch.y1 = e.clientY || e.touches && e.touches[0].clientY;
-            touch.t1 = new Date();
-            touch.isPressed = true;
-
-            // Запоминаем элемент, на котором вызвано событие
-            touch.isThumbs = hasClass(this, p.params.thumbs);
-            touch.thumbsStartX = p.thumbsIndent;
-
-            p.layer.css('transition-duration', '0s');
-            p.thumbsLayer.css('transition-duration', '0s');
-        };
-
-        /**
-         * Обработчик touch move
-         *
-         * @param {Event} e Событие pointermove
-         */
-        handlers.onMove = function(e) {
-            if (touch.isPressed && !p.freeze) {
-                // смещения
-                touch.shiftX = (e.clientX || e.touches && e.touches[0].clientX) - touch.x1;
-                touch.shiftY = (e.clientY || e.touches && e.touches[0].clientY) - touch.y1;
-
-                // абсолютные значения смещений
-                touch.shiftXAbs = Math.abs(touch.shiftX);
-                touch.shiftYAbs = Math.abs(touch.shiftY);
-
-                // Detect multitouch
-                touch.isMultitouch = touch.isMultitouch || !!e.touches && e.touches.length > 1;
-
-                if (touch.isMultitouch) {
-                    end();
-
-                    return;
-                }
-
-                // если мы ещё не определились
-                if (!touch.isSlide && !touch.isScroll) {
-                    // если вертикальное смещение - скроллим пока не отпустили палец
-                    if (touch.shiftYAbs >= 5 && touch.shiftYAbs > touch.shiftXAbs) {
-                        touch.isScroll = true;
-                    }
-
-                    // если горизонтальное - слайдим
-                    if (touch.shiftXAbs >= 5 && touch.shiftXAbs > touch.shiftYAbs) {
-                        p.root.addClass(p.params._dragging);
-                        touch.isSlide = true;
-                        touch.startShift = getIndent(galleryId);
-                    }
-                }
-
-                // если слайдим
-                if (touch.isSlide) {
-
-                    if (touch.isThumbs) {
-                        if (p.thumbsDragging) {
-                            thumbsMove();
-                        }
-                    } else {
-                        // слайды таскаем, только если поддерживаются transition
-                        if (p.params.transition) {
-                            slidesMove();
-                        }
-                    }
-
-                    // запрещаем скролл
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    }
-                }
-            }
-        };
-
-        /**
-         * Обработчик touch end
-         *
-         * @param {Event} e Событие pointerup
-         */
-        handlers.onEnd = function(e) {
-            // Ловим клик
-            if (!touch.isSlide && !touch.isScroll && touch.isPressed) {
-
-                // Назад
-                if (hasClass(e.target, p.params.prev)) {
-                    methods.prev(galleryId);
-                }
-
-                // Вперед
-                if (hasClass(e.target, p.params.next)) {
-                    methods.next(galleryId);
-                }
-
-                // Клик по миниатюре
-                if (hasClass(e.target, p.params.thumbImg) || hasClass(e.target, p.params.thumb)) {
-                    var target = parseInt(e.target.getAttribute('data-rel'));
-
-                    if (target + p.params.slidesOnScreen - 1 > p.last) {
-                        target = p.last - p.params.slidesOnScreen + 1;
-                    }
-                    methods.go(galleryId, target);
-                }
-
-                if (e.stopPropagation && e.preventDefault) {
-                    e.stopPropagation();
-                    e.preventDefault(); // Нужно для отмены зума по doubletap
-                }
-            }
-
-            end();
-        };
-
-        /**
-         * Возвращает текущее значение отступа layer
-         *
-         * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-         */
-        function getIndent(galleryId) {
-            var p = data[galleryId],
-                value;
-
-            if (p.params.transform) {
-                var matrix = p.layer.css(prefixes[p.params.transform.property]).match(/(-?[0-9\.]+)/g);
-
-                value = matrix.length > 6 ? matrix[13] : matrix[4];
-            } else {
-                value = p.layer.css('left');
-            }
-
-            return parseInt(value);
+    function clearNode(node) {
+        while (node.lastChild) {
+            node.removeChild(node.lastChild);
         }
-
-        /**
-         * Завершение перемещения
-         */
-        function end() {
-            if (touch.isSlide) {
-                if (touch.isThumbs) {
-                    thumbsEnd();
-                } else {
-                    if (p.params.transition) {
-                        slidesEnd();
-                    }
-                }
-            }
-
-            touch = {};
-            p.root.removeClass(p.params._dragging);
-        }
-
-        /**
-         * Движение слайдов во время перетаскивания
-         */
-        function slidesMove() {
-            var resultIndent,
-                onScreen = p.params.slidesOnScreen;
-
-            if ((p.current == 0 && touch.shiftX > 0) || (p.current + onScreen - 1 == p.last && touch.shiftX < 0)) {
-                touch.shiftX = touch.shiftX / 3;
-            }
-
-            resultIndent = touch.shiftX + touch.startShift;
-
-            p.layer.css(methods.setIndent(galleryId, Math.round(resultIndent), 'px'));
-        }
-
-        /**
-         * Завершение движения слайдов
-         */
-        function slidesEnd() {
-            // Transition executes if delta more then 5% of container width
-            if (Math.abs(touch.shiftX) > p.controlWidth * 0.05) {
-                var shiftSlides = touch.shiftX / p.controlWidth * p.params.slidesOnScreen,
-                    target;
-
-                if (touch.shiftX < 0) {
-                    target = p.current - Math.floor(shiftSlides);
-                } else {
-                    target = p.current - Math.ceil(shiftSlides);
-                }
-
-                // Проверяем, существует ли целевой слайд
-                if (target < 0) {
-                    target = 0;
-                }
-                if (target + p.params.slidesOnScreen - 1 > p.last) {
-                    target = p.last - p.params.slidesOnScreen + 1;
-                }
-
-                methods.go(galleryId, target);
-
-            } else {
-                methods.go(galleryId, p.current);
-            }
-        }
-
-        /**
-         * Движение миниатюр при перетаскивании
-         */
-        function thumbsMove() {
-            var indent = touch.shiftX + touch.thumbsStartX,
-                limit = -1 * (p.thumbsLayerWidth - p.thumbsWidth);
-
-            // Если выходим за край
-            if (indent > 0) {
-                indent = indent / 3;
-            }
-            if (indent < limit) {
-                indent = limit + ((indent - limit) / 3);
-            }
-
-            p.thumbsIndent = indent;
-            p.thumbsLayer.css(methods.setIndent(galleryId, p.thumbsIndent, 'px'));
-        }
-
-        /**
-         * Завершение движения миниатюр
-         */
-        function thumbsEnd() {
-            if (p.thumbsDragging && touch.isSlide) {
-                var direction = touch.shiftX < 0 ? -1 : 1;
-
-                touch.t2 = new Date();
-                p.thumbsIndent = calcTailAnimation(p.thumbsIndent, direction);
-
-                p.thumbsLayer
-                    .css('transition-duration', '.24s')
-                    .css(methods.setIndent(galleryId, p.thumbsIndent, 'px'));
-            }
-        }
-
-        /**
-         * Вычисление конечной координаты слоя с миниатюрами с учетом движения по инерции
-         *
-         * @param {number} currentIndent Текущее положение слоя с миниатюрами в пикселях
-         * @param {number} direction Направление движения (-1|1)
-         * @returns {number} Значение координаты слоя с миниатюрами в пикселях
-         */
-        function calcTailAnimation(currentIndent, direction) {
-            var speed = Math.abs(10 * touch.shiftX / (touch.t2 - touch.t1)),
-                tail, limit;
-
-            tail = direction * parseInt(Math.pow(speed, 2)) + currentIndent;
-            limit = p.thumbs.outerWidth() - p.thumbsLayer.outerWidth();
-
-            if (tail > 0) {
-                return 0;
-            }
-
-            if (tail < limit) {
-                return limit;
-            }
-
-            return tail;
-        }
-
-        // Touch-события
-        p.events.push({
-            element: p.viewport[0],
-            event: evt[0],
-            handler: handlers.onStart
-        }, {
-            element: p.viewport[0],
-            event: evt[1],
-            handler: handlers.onMove,
-            capture: true
-        }, {
-            element: p.viewport[0],
-            event: evt[2],
-            handler: handlers.onEnd
-        }, {
-            element: p.viewport[0],
-            event: evt[3],
-            handler: handlers.onEnd
-        }, {
-            element: thumbs[0],
-            event: evt[0],
-            handler: handlers.onStart
-        }, {
-            element: thumbs[0],
-            event: evt[1],
-            handler: handlers.onMove,
-            capture: true
-        }, {
-            element: thumbs[0],
-            event: evt[2],
-            handler: handlers.onEnd
-        }, {
-            element: thumbs[0],
-            event: evt[3],
-            handler: handlers.onEnd
-        });
-
-        // Отмена перехода по ссылке миниатюры
-        for (var i = 0, len = p.thumb.length; i < len; i++) {
-            p.events.push({
-                element: p.thumb[i],
-                event: 'click',
-                handler: function(e) {
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    }
-
-                    return false;
-                }
-            });
-        }
-
-        // Отмена встроенного перетаскивания для картинок
-        for (var j = 0, m = p.thumbImg.length; j < m; j++) {
-            p.events.push({
-                element: p.thumbImg[j],
-                event: 'dragstart',
-                handler: function(e) {
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    }
-
-                    return false;
-                }
-            });
-        }
+        return node;
     }
 
-    /**
-     * Устанавливает обработчик изменения размера окна
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindResize(galleryId) {
-        if (!handlers.resize) {
-            var p = data[galleryId];
+    var getOffsetX,
+        setOffsetX,
+        setOffsets;
 
-            p.events.push({
-                element: window,
-                event: 'resize',
-                handler: methods.update
-            });
-        }
-    }
+    if (prefixedTransform) {
+        var reNumber = /\-?[0-9\.]+/g;
 
-    /**
-     * Устанавливает обработчики управления с клавиатуры
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindKeyboard(galleryId) {
-        var p = data[galleryId];
-
-        handlers.keydown = function(e) {
-            var key = e.which || e.keyCode,
-                node = e.target.nodeName.toLowerCase(),
-                contenteditable = !!e.target.attributes.contenteditable;
-
-            if (node != 'input' && node != 'textarea' && node != 'select' && !contenteditable) {
-                switch(key) {
-                    // Space
-                    case 32:
-                        methods.next(galleryId);
-                        break;
-
-                    // Left
-                    case 37:
-                        methods.prev(galleryId);
-                        break;
-
-                    // Right
-                    case 39:
-                        methods.next(galleryId);
-                        break;
-                }
-            }
+        getOffsetX = function(el) {
+            var matrix = window.getComputedStyle(el, null)[prefixedTransform].match(reNumber);
+            return matrix ? parseFloat(matrix[matrix.length > 6 ? 13 : 4], 10) : 0;
         };
 
-        p.events.push({
-            element: window,
-            event: 'keydown',
-            handler: handlers.keydown
-        });
-    }
-
-    /**
-     * Устанавливает обработчики на окончание анимации
-     *
-     * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
-     */
-    function bindTransitionEnd(galleryId) {
-        var p = data[galleryId],
-            transitionEnd = ['webkitTransitionEnd', 'MSTransitionEnd', 'oTransitionEnd', 'transitionend'];
-
-        handlers.transitionEnd = function(e) {
-            var prop = e.propertyName;
-
-            if (prop.lastIndexOf('transform') != prop.length - 'transform'.length && prop != 'left') {
-                return;
+        setOffsetX = function(el, value, unit) {
+            if (unit === undefined) {
+                unit = 'px';
             }
 
-            callback(galleryId);
+            el.style[prefixedTransform] = 'translate(' + value + unit + ', 0)' +
+                (hasCSS3DTransforms ? ' translateZ(0)' : '');
         };
 
-        for (var i = 0, len = transitionEnd.length; i < len; i++) {
-            p.events.push({
-                element: p.layer[0],
-                event: transitionEnd[i],
-                handler: handlers.transitionEnd
-            });
-        }
-    }
-
-    function callback(galleryId) {
-        var p = data[galleryId];
-
-        p.root.removeClass(p.params._animated);
-
-        p.layer[0].style.transitionDuration = 0;
-
-        toggleSlides(galleryId, p.current);
-
-        if (p.params.onShow) {
-            p.params.onShow(p);
-        }
-    }
-
-    function toggleSlides(galleryId, target) {
-        var p = data[galleryId];
-
-        for (var i = 0, len = p.count; i < len; i++) {
-            var elem = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + i),
-                onScreen = p.params.slidesOnScreen;
-
-            if (i >= p.current - onScreen && i <= p.current + (onScreen * 2) - 1 || i >= target - onScreen && i <= target + (onScreen * 2) - 1) {
-                elem.removeClass(p.params._hidden);
-            } else {
-                elem.addClass(p.params._hidden);
+        setOffsets = function(el, x, y, unit) {
+            if (unit === undefined) {
+                unit = 'px';
             }
-        }
+
+            el.style[prefixedTransform] = 'translate(' + x + unit + ', ' + y + unit + ')' +
+                (hasCSS3DTransforms ? ' translateZ(0)' : '');
+        };
+    } else {
+        getOffsetX = function(el) {
+            var style = window.getComputedStyle ? window.getComputedStyle(el, null) : el.currentStyle;
+            return parseFloat(style.left, 10);
+        };
+
+        setOffsetX = function(el, value, unit) {
+            if (unit === undefined) {
+                unit = 'px';
+            }
+
+            el.style.left = value + unit;
+        };
+
+        setOffsets = function(el, x, y, unit) {
+            if (unit === undefined) {
+                unit = 'px';
+            }
+
+            el.style.top = y + unit;
+            el.style.left = x + unit;
+        };
     }
 
     /**
      * @param {string} url
      * @param {Function} callback
+     * @param {Object} [context]
      */
-    function loadImage(url, callback) {
+    function loadImage(url, callback, context) {
         var img = new Image();
 
         img.onload = img.onerror = function(evt) {
             img.onload = img.onerror = null;
-            callback(evt.type == 'load', url);
+            callback.call(context, evt.type == 'load', img);
         };
 
         img.src = url;
     }
 
-})(jQuery);
+    function preventDefault() {
+        this.returnValue = false;
+    }
+
+    function stopPropagation() {
+        this.cancelBubble = true;
+    }
+
+    function fixEvent(evt) {
+        if (evt.fixed) {
+            return evt;
+        }
+
+        var fixedEvent = createObject(evt);
+
+        fixedEvent.origEvent = evt;
+
+        if (!evt.target) {
+            fixedEvent.target = evt.srcElement || document;
+        }
+
+        if (evt.pageX === undefined && evt.clientX !== undefined) {
+            var html = document.documentElement,
+                body = document.body;
+
+            fixedEvent.pageX = evt.clientX + (html.scrollLeft || body && body.scrollLeft || 0) - html.clientLeft;
+            fixedEvent.pageY = evt.clientY + (html.scrollTop || body && body.scrollTop || 0) - html.clientTop;
+        }
+
+        if (evt.which === undefined && evt.button !== undefined) {
+            if (evt.button & 1) {
+                fixedEvent.which = 1;
+            } else if (e.button & 4) {
+                fixedEvent.which = 2;
+            } else if (e.button & 2) {
+                fixedEvent.which = 3;
+            }
+        }
+
+        if (!evt.preventDefault) {
+            fixedEvent.preventDefault = preventDefault;
+        }
+
+        if (!evt.stopPropagation) {
+            fixedEvent.stopPropagation = stopPropagation;
+        }
+
+        fixedEvent.fixed = true;
+
+        return fixedEvent;
+    }
+
+    dummyElement = null;
+    dummyStyle = null;
+
+    if (typeof exports != 'undefined') {
+        if (typeof module != 'undefined' && module.exports) {
+            module.exports = Photor;
+        } else {
+            exports.Photor = Photor;
+        }
+    } else {
+        window.Photor = Photor;
+    }
+
+    // jQuery
+
+    if (typeof jQuery == 'function') {
+        jQuery.fn.photor = function(method, options) {
+            if (typeof method != 'string') {
+                options = method;
+                method = undefined;
+            }
+
+            if (!method) {
+                this.each(function() {
+                    new Photor(this, options);
+                });
+            } else {
+                var args = Array.prototype.slice.call(arguments, 1);
+
+                this.each(function() {
+                    this._photor[method].apply(this._photor, args);
+                });
+            }
+        };
+    }
+
+})();
