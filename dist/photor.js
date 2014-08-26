@@ -160,6 +160,7 @@
                 _hidden: '_hidden',         // Спрятанный слайд
 
                 // Algorithms
+                algorithm: 'contain',         // Алгоритм размещения фотографии при маленьком размере экрана: 'contain' / 'cover'
                 _auto: '_auto',             // Фотография больше вьюпорта
                 _center: '_center',         // Фотография меньше вьюпорта
 
@@ -243,7 +244,7 @@
             this._setSlides(newSlides);
 
             var slideCount = this._slides.length,
-                current = this.current = calcIndex(params.current, slideCount, this._params.loop);
+                current = this.current = calcIndex(params.current, slideCount);
 
             if (slideCount == 1) {
                 addClass(el, params._single);
@@ -596,8 +597,8 @@
 
             var bSlideImgStyle = bSlide.firstChild.style;
 
-            if (slide.algorithm == 'auto') {
-                if (slide.orientation == 'landscape') {
+            if (slide.algorithm == 'auto' || params.algorithm == 'cover') {
+                if (slide.orientation == (params.algorithm == 'cover' ? 'portrait' : 'landscape')) {
                     var bSlideImgHeight = Math.round(slideHeight * (bViewportWidth / slideWidth));
 
                     bSlideImgStyle.top = Math.round((bViewportHeight - bSlideImgHeight) / 2) + 'px';
@@ -1285,7 +1286,7 @@
             var slideCount = this._slides.length,
                 current = this.current;
 
-            toIndex = calcIndex(toIndex, slideCount, loop, false);
+            toIndex = calcIndex(toIndex, slideCount, false);
 
             if (toIndex == current || toIndex === false) {
                 return false;
@@ -1472,21 +1473,20 @@
     /**
      * @param {int} value
      * @param {int} length
-     * @param {bool} loop
      * @param {*} [altValue=0]
      * @returns {int|*}
      */
-    function calcIndex(value, length, loop, altValue) {
+    function calcIndex(value, length, altValue) {
         if (value < 0) {
             value += length;
 
-            if (value < 0 || !loop) {
+            if (value < 0) {
                 return altValue !== undefined ? altValue : 0;
             }
         } else if (value >= length) {
             value -= length;
 
-            if (value >= length || !loop) {
+            if (value >= length) {
                 return altValue !== undefined ? altValue : 0;
             }
         }
