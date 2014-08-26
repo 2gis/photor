@@ -28,6 +28,7 @@ body {
     color: #fff;
     font: 14px/30px Helvetica, Arial, sans-serif;
     z-index: 1;
+    overflow: hidden;
     }
 
     .header__title {
@@ -91,3 +92,9 @@ body {
         background: linear-gradient(to top, rgba(241, 113, 111, .3), rgba(241, 113, 111, .3)) 0 90%/1px 1px repeat-x;
         }
 
+
+@media all and (max-width: 640px) {
+    .header__desc {
+        display: none;
+        }
+    }
