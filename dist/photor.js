@@ -66,7 +66,7 @@
                 current: 0,                 // Текуший слайд
                 count: 0,                   // Количество фотографий
                 last: -1,                   // Индекс последней фотографии
-                delay: 300,                 // Время анимации для слайдов
+                duration: 300,                 // Время анимации для слайдов
                 loop: false,                // Зациклить галерею
                 showThumbs: 'thumbs',       // thumbs / dots / null
                 keyboard: true,             // Управление с клавиатуры
@@ -307,7 +307,7 @@
             }
         },
 
-        go: function(galleryId, target, delay) {
+        go: function(galleryId, target, duration) {
             var p = data[galleryId];
 
             if (p.freeze) {
@@ -316,12 +316,12 @@
 
             toggleSlides(galleryId, target);
 
-            delay = delay == null ? p.params.delay : delay;
+            duration = duration == null ? p.params.duration : duration;
 
             p.root.addClass(p.params._animated);
 
             p.layer
-                .css('transition-duration', delay + 'ms')
+                .css('transition-duration', duration + 'ms')
                 // .css(methods.setIndent(galleryId, -target * p.viewportWidth));
                 .css(methods.setIndent(galleryId, -target * (p.viewportWidth / p.params.slidesOnScreen), 'px'));
 
@@ -467,7 +467,7 @@
                     current = p.galleryThumbs && p.galleryThumbs[target],
                     thumbsW = p.thumbs.outerWidth(),
                     layerW = p.thumbsLayer.outerWidth(),
-                    delay = noEffects ? '0s' : (p.params.delay * 0.8 / 1000) + 's',
+                    duration = noEffects ? '0s' : (p.params.duration * 0.8 / 1000) + 's',
                     indent,
                     validatedIndent;
 
@@ -495,11 +495,11 @@
                     p.thumbsIndent = validatedIndent;
 
                     frame
-                        .css('transition-duration', delay)
+                        .css('transition-duration', duration)
                         .css(styles);
 
                     p.thumbsLayer
-                        .css('transition-duration', delay)
+                        .css('transition-duration', duration)
                         .css(methods.setIndent(galleryId, validatedIndent, 'px'));
                 }
             }
