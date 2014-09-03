@@ -1840,7 +1840,9 @@
                 var args = Array.prototype.slice.call(arguments, 1);
 
                 this.each(function() {
-                    this._photor[method].apply(this._photor, args);
+                    if (this._photor) {
+                        this._photor[method].apply(this._photor, args);
+                    }
                 });
             }
         };
