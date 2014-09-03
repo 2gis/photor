@@ -78,7 +78,7 @@
 
         _params: null,
 
-        _slides: null,
+        slides: null,
         current: undefined,
 
         frozen: false,
@@ -243,7 +243,7 @@
 
             this._setSlides(newSlides);
 
-            var slideCount = this._slides.length,
+            var slideCount = this.slides.length,
                 current = this.current = calcIndex(params.current, slideCount);
 
             if (slideCount == 1) {
@@ -282,7 +282,7 @@
          * @param {Array<Object|HTMLElement>|HTMLElement|DocumentFragment} newSlides
          */
         _setSlides: function(newSlides) {
-            var slides = this._slides = [];
+            var slides = this.slides = [];
 
             var slideProto = {
                 url: undefined,
@@ -367,7 +367,7 @@
         _updateDOM: function() {
             var params = this._params;
 
-            var slides = this._slides;
+            var slides = this.slides;
 
             var bViewportLayer = this.bViewportLayer,
                 bThumbsLayer = this.bThumbsLayer;
@@ -465,7 +465,7 @@
         _loadActualSlides: function(callback) {
             var modLoading = this._params._loading;
 
-            var slides = this._slides,
+            var slides = this.slides,
                 blSlides = this.blSlides;
 
             var startIndex = Math.max(0, this.current - 1),
@@ -517,7 +517,7 @@
          * @param {Function} [callback]
          */
         _loadThumbs: function(callback) {
-            var slides = this._slides;
+            var slides = this.slides;
 
             var loadingCount = 0;
 
@@ -553,7 +553,7 @@
         _paintSlide: function(index) {
             var params = this._params;
 
-            var slide = this._slides[index],
+            var slide = this.slides[index],
                 slideWidth = slide.width,
                 slideHeight = slide.height;
 
@@ -624,7 +624,7 @@
                 return;
             }
 
-            var slides = this._slides;
+            var slides = this.slides;
 
             var blThumbs = this.blThumbs,
                 i = blThumbs.length;
@@ -683,7 +683,7 @@
                 return;
             }
 
-            var currentThumbDims = this._slides[this.current].thumbDims;
+            var currentThumbDims = this.slides[this.current].thumbDims;
 
             var bThumbsLayer = this.bThumbsLayer,
                 bThumbFrame = this.bThumbFrame;
@@ -706,7 +706,7 @@
         },
 
         _computeThumbsOffsetX: function() {
-            var currentThumbDims = this._slides[this.current].thumbDims;
+            var currentThumbDims = this.slides[this.current].thumbDims;
 
             var offsetX;
 
@@ -1044,7 +1044,7 @@
                         var limit;
 
                         if (targetLayer == bViewportLayer) {
-                            limit = -1 * this._bViewportWidth * (this._slides.length - 1);
+                            limit = -1 * this._bViewportWidth * (this.slides.length - 1);
                         } else {
                             limit = this._bThumbsWidth - this._bThumbsLayerWidth;
                         }
@@ -1160,7 +1160,7 @@
                     if (touchEnd.shiftX > 0) {
                         toIndex = Math.max(0, this.current - count);
                     } else {
-                        toIndex = Math.min(this.current + count, this._slides.length - 1);
+                        toIndex = Math.min(this.current + count, this.slides.length - 1);
                     }
                 } else {
                     toIndex = this.current + (touchEnd.shiftX > 0 ? -count : count);
@@ -1247,14 +1247,14 @@
         },
 
         _onAutoplayTimerTick: function() {
-            this.go(this.current + 1 == this._slides.length ? 0 : this.current + 1);
+            this.go(this.current + 1 == this.slides.length ? 0 : this.current + 1);
         },
 
         update: function() {
             this._updateDims();
             this._updateThumbsDims();
 
-            var slides = this._slides,
+            var slides = this.slides,
                 i = slides.length;
 
             while (i) {
@@ -1283,7 +1283,7 @@
                 this._autoplayTimerId = setTimeout(this._onAutoplayTimerTick, params.autoplay);
             }
 
-            var slideCount = this._slides.length,
+            var slideCount = this.slides.length,
                 current = this.current;
 
             toIndex = calcIndex(toIndex, slideCount, false);
@@ -1319,7 +1319,7 @@
          * @returns {boolean}
          */
         canNext: function() {
-            return this.current < this._slides.length - 1;
+            return this.current < this.slides.length - 1;
         },
 
         /**
@@ -1351,7 +1351,7 @@
 
             var toIndex = this.current + 1;
 
-            if (toIndex == this._slides.length && !loop) {
+            if (toIndex == this.slides.length && !loop) {
                 return;
             }
 
