@@ -169,7 +169,7 @@ function testSlides(photor, photorContainer, photorImages) {
         var count = photorImages.length;
 
         it("Length of array with slides data is equal to count of slides", function() {
-            assert.lengthOf(photor._slides, count);
+            assert.lengthOf(photor.slides, count);
         });
 
         it("Length of array with slides DOM-elements is equal to count of slides", function() {
@@ -299,7 +299,7 @@ function testImagesProperties(photor, photorContainer) {
     describe("Images properties", function() {
 
         it("Custom class in instance object", function() {
-            assert.equal(photor._slides[0].classes, 'my-custom-class');
+            assert.equal(photor.slides[0].classes, 'my-custom-class');
         });
 
         it("Custom class on slide element", function() {
@@ -315,7 +315,7 @@ function testImagesProperties(photor, photorContainer) {
         });
 
         it("Caption exists in instance object", function() {
-            assert.equal(photor._slides[0].caption, 'Custom description');
+            assert.equal(photor.slides[0].caption, 'Custom description');
         });
 
         it("Caption exists in image attribute", function() {
