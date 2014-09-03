@@ -118,13 +118,13 @@
                 p.layer       = root.find('.' + p.params.layer);
 
                 // Data collection
-                p.gallery = [];
+                p.slides = [];
 
                 // Initialization by object
                 if (p.params.data && p.params.data.length) {
 
                     for (var i = 0, len = p.params.data.length; i < len; i++) {
-                        p.gallery.push($.extend({}, imageTemplate, p.params.data[i]));
+                        p.slides.push($.extend({}, imageTemplate, p.params.data[i]));
                     }
 
                 // Initialization by slides
@@ -137,7 +137,7 @@
                             var isPhoto = this.nodeName == 'IMG';
 
                             if (isPhoto) {
-                                p.gallery.push($.extend({}, imageTemplate, {
+                                p.slides.push($.extend({}, imageTemplate, {
                                     url: this.src,
                                     caption: this.alt,
                                     thumb: $(this).data('thumb'),
@@ -146,7 +146,7 @@
                             } else {
                                 hasHTML = true;
 
-                                p.gallery.push($.extend({}, imageTemplate, {
+                                p.slides.push($.extend({}, imageTemplate, {
                                     html: this.outerHTML,
                                     loaded: true
                                 }));
@@ -165,7 +165,7 @@
                 }
 
                 // Build DOM
-                content = methods.getHTML(p.params, p.gallery);
+                content = methods.getHTML(p.params, p.slides);
 
                 p.layer.html(content.slides);
                 p.thumbsLayer.html(content.thumbs);
@@ -183,7 +183,7 @@
 
                 // Settings
                 p.current = p.params.current;
-                p.count = p.gallery.length;
+                p.count = p.slides.length;
                 p.last = p.count - 1;
                 p.thumbsDragging = false;
                 p.thumbsIndent = 0;
@@ -211,7 +211,7 @@
                     root.addClass(p.params.ieClassPrefix + p.params.ie);
                 }
 
-                if (p.gallery.length == 1) {
+                if (p.slides.length == 1) {
                     root.addClass(p.params._single);
                 }
 
@@ -219,7 +219,7 @@
                     methods.loadThumbs(galleryId);
                 }
 
-                if (p.gallery.length > 1 || p.params.single) {
+                if (p.slides.length > 1 || p.params.single) {
                     methods.handlers(galleryId);
                 }
 
@@ -372,7 +372,7 @@
                 to = target + (onScreen * 2) - 1 > p.last ? p.last : target + (onScreen * 2) - 1;
 
             for (var i = from; i <= to; i++) {
-                if (p.gallery[i] && !p.gallery[i].loaded) {
+                if (p.slides[i] && !p.slides[i].loaded) {
                     methods.loadSlide(galleryId, i);
                 }
             }
@@ -382,13 +382,13 @@
             var p = data[galleryId],
                 slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
                 slideImg = slide.find('.' + p.params.slideImg),
-                alt = p.gallery[target].caption;
+                alt = p.slides[target].caption;
 
-            loadImage(p.gallery[target].url, function(success, url) {
+            loadImage(p.slides[target].url, function(success, url) {
                 if (success) {
-                    p.gallery[target].loaded = true;
-                    p.gallery[target].width = this.width;
-                    p.gallery[target].height = this.height;
+                    p.slides[target].loaded = true;
+                    p.slides[target].width = this.width;
+                    p.slides[target].height = this.height;
 
                     methods.position(galleryId, target);
 
@@ -417,7 +417,7 @@
         loadThumbs: function(galleryId) {
             var p = data[galleryId],
                 count = p.count,
-                images = p.gallery,
+                images = p.slides,
                 loaded = 0;
 
             p.galleryThumbs = [];
@@ -530,18 +530,18 @@
         position: function(galleryId, target) {
             var p = data[galleryId],
                 slide = p.root.find('.' + p.params.slide + '.' + p.params.modifierPrefix + target),
-                img = p.gallery[target],
+                img = p.slides[target],
                 viewportRatio = p.viewportWidth / p.viewportHeight,
                 imgRatio = img.width / img.height;
 
             // Algorithm
             if (p.viewportWidth > img.width && p.viewportHeight > img.height) {
-                p.gallery[target].algorithm = 'center';
+                p.slides[target].algorithm = 'center';
                 slide
                     .removeClass(p.params._auto)
                     .addClass(p.params._center);
             } else {
-                p.gallery[target].algorithm = 'auto';
+                p.slides[target].algorithm = 'auto';
                 slide
                     .removeClass(p.params._center)
                     .addClass(p.params._auto);
@@ -549,12 +549,12 @@
 
             // Orientation
             if (imgRatio >= viewportRatio) {
-                p.gallery[target].orientation = 'landscape';
+                p.slides[target].orientation = 'landscape';
                 slide
                     .removeClass(p.params._portrait)
                     .addClass(p.params._landscape);
             } else {
-                p.gallery[target].orientation = 'portrait';
+                p.slides[target].orientation = 'portrait';
                 slide
                     .removeClass(p.params._landscape)
                     .addClass(p.params._portrait);
@@ -1245,7 +1245,7 @@
         toggleSlides(galleryId, p.current);
 
         if (p.params.onShow) {
-            p.params.onShow(p);
+            p.params.onShow.call(p);
         }
     }
 
