@@ -658,6 +658,7 @@
             var offsetX = -1 * this._bViewportWidth * this.current;
 
             if (this._bViewportLayerOffsetX == offsetX) {
+                this._transitionCallback();
                 return;
             }
 
@@ -669,6 +670,17 @@
                 var duration = noEffects ? '0ms' : this._params.duration + 'ms';
                 this.bViewportLayer.style[prefixedTransitionDuration] = duration;
             }
+
+            // Проверяем вычисленное значение transition,
+            // если transition отключен, или нет getComputedStyle вызываем колбек
+            if (window.getComputedStyle) {
+                var style = window.getComputedStyle(this.bViewportLayer, null),
+                    computedDuration = parseFloat(style[prefixedTransitionDuration]);
+
+                if (!computedDuration) {
+                    this._transitionCallback();
+                }
+            } else this._transitionCallback();
 
             setOffsetX(this.bViewportLayer, offsetX);
         },
@@ -906,25 +918,7 @@
                 return;
             }
 
-            var params = this._params,
-                modHidden = params._hidden;
-
-            var blSlides = this.blSlides;
-
-            removeClass(this.element, params._animated);
-
-            var startIndex = Math.max(0, this.current - 1),
-                endIndex = Math.min(blSlides.length - 1, this.current + 1);
-
-            for (var i = 0, l = blSlides.length; i < l; i++) {
-                if (i < startIndex || i > endIndex) {
-                    addClass(blSlides[i], modHidden);
-                }
-            }
-
-            if (params.onShow) {
-                params.onShow.call(this);
-            }
+            this._transitionCallback();
         },
 
         _onWindowResize: function() {
@@ -1431,6 +1425,28 @@
                     target.detachEvent('on' + type, this._events[id].listener);
                 }
                 delete this._events[id];
+            }
+        },
+
+        _transitionCallback: function() {
+            var params = this._params,
+                modHidden = params._hidden;
+
+            var blSlides = this.blSlides;
+
+            removeClass(this.element, params._animated);
+
+            var startIndex = Math.max(0, this.current - 1),
+                endIndex = Math.min(blSlides.length - 1, this.current + 1);
+
+            for (var i = 0, l = blSlides.length; i < l; i++) {
+                if (i < startIndex || i > endIndex) {
+                    addClass(blSlides[i], modHidden);
+                }
+            }
+
+            if (params.onShow) {
+                params.onShow.call(this);
             }
         },
 
