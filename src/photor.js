@@ -807,9 +807,10 @@
      */
     function bindControl(galleryId) {
         var p = data[galleryId],
-            control = p.control,
             thumbs = p.thumbs,
-            touch = {};
+            touch = {},
+            inlineLinks = p.viewport[0].getElementsByTagName('a'),
+            inlineImages = p.viewport[0].getElementsByTagName('img');
 
         /**
          * Обработчик touchstart
@@ -1116,34 +1117,40 @@
         });
 
         // Отмена перехода по ссылке миниатюры
-        for (var i = 0, len = p.thumb.length; i < len; i++) {
-            p.events.push({
-                element: p.thumb[i],
-                event: 'click',
-                handler: function(e) {
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    }
-
-                    return false;
-                }
-            });
-        }
+        preventNativeEvents(p.thumb, 'click');
 
         // Отмена встроенного перетаскивания для картинок
-        for (var j = 0, m = p.thumbImg.length; j < m; j++) {
-            p.events.push({
-                element: p.thumbImg[j],
-                event: 'dragstart',
-                handler: function(e) {
-                    if (e.preventDefault) {
-                        e.preventDefault();
-                    }
+        preventNativeEvents(p.thumbImg, 'dragstart');
 
-                    return false;
-                }
-            });
+        // Отмена встроенного перетаскивания для вложенных ссылок
+        preventNativeEvents(inlineLinks, 'dragstart');
+
+        // Отмена встроенного перетаскивания для вложенных изображений
+        preventNativeEvents(inlineImages, 'dragstart');
+
+
+        /**
+         * Prevent native event
+         *
+         * @param {array|jQuery object} elements DOM-elements
+         * @param {string} evt Event
+         */
+        function preventNativeEvents(elements, evt) {
+            for (var i = 0, len = elements.length; i < len; i++) {
+                p.events.push({
+                    element: elements[i],
+                    event: evt,
+                    handler: function(e) {
+                        if (e.preventDefault) {
+                            e.preventDefault();
+                        }
+
+                        return false;
+                    }
+                });
+            }
         }
+
     }
 
     /**
