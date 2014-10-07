@@ -770,16 +770,14 @@
 
         _bindEvents: function() {
             var bViewport = this.bViewport,
-                bThumbs = this.bThumbs,
-                bEmbeddedImages = bViewport.getElementsByTagName('img'),
-                bEmbeddedLinks = bViewport.getElementsByTagName('a');
-
-            console.log(bViewport, bEmbeddedImages, bEmbeddedLinks);
+                bThumbs = this.bThumbs;
 
             this._bindEvent(bViewport, 'touchstart', this._onBViewportTouchStart);
             this._bindEvent(bViewport, 'mousedown', this._onBViewportMouseDown);
+            this._bindEvent(bViewport, 'dragstart', this._handleDragstart);
             this._bindEvent(bThumbs, 'touchstart', this._onBThumbsTouchStart);
             this._bindEvent(bThumbs, 'mousedown', this._onBThumbsMouseDown);
+            this._bindEvent(bThumbs, 'dragstart', this._handleDragstart);
 
             this._bindTransitionEnd(this.bViewportLayer, this._onBViewportLayerTransitionEnd);
 
@@ -793,9 +791,6 @@
             if (this._params.keyboard) {
                 this._bindEvent(document, 'keydown', this._onDocumentKeydown);
             }
-
-            this._bindDragstart(bEmbeddedImages, 'dragstart', this._handleDragstart);
-            this._bindDragstart(bEmbeddedLinks, 'dragstart', this._handleDragstart);
         },
 
         /**
