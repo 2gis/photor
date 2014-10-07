@@ -769,8 +769,12 @@
         },
 
         _bindEvents: function() {
-            var bViewport = this.bViewport;
-            var bThumbs = this.bThumbs;
+            var bViewport = this.bViewport,
+                bThumbs = this.bThumbs,
+                bEmbeddedImages = bViewport.getElementsByTagName('img'),
+                bEmbeddedLinks = bViewport.getElementsByTagName('a');
+
+            console.log(bViewport, bEmbeddedImages, bEmbeddedLinks);
 
             this._bindEvent(bViewport, 'touchstart', this._onBViewportTouchStart);
             this._bindEvent(bViewport, 'mousedown', this._onBViewportMouseDown);
@@ -789,6 +793,9 @@
             if (this._params.keyboard) {
                 this._bindEvent(document, 'keydown', this._onDocumentKeydown);
             }
+
+            this._bindDragstart(bEmbeddedImages, 'dragstart', this._handleDragstart);
+            this._bindDragstart(bEmbeddedLinks, 'dragstart', this._handleDragstart);
         },
 
         /**
@@ -845,6 +852,17 @@
             };
 
             this._observeTouch(isTouch);
+        },
+
+        /**
+         * @param {Event} evt
+         */
+        _handleDragstart: function(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+
+            return false;
         },
 
         /**
@@ -1407,6 +1425,19 @@
 
             for (var i = 0, l = names.length; i < l; i++) {
                 this._bindEvent(el, names[i], listener);
+            }
+        },
+
+        /**
+         * @param {HTMLCollection} elements
+         * @param {String} evt
+         * @param {Function} listener
+         */
+        _bindDragstart: function(elements, evt, listener) {
+            if (!elements) return;
+
+            for (var i = 0, len = elements.length; i < len; i++) {
+                this._bindEvent(elements[i], evt, listener);
             }
         },
 
