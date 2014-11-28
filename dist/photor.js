@@ -1276,7 +1276,7 @@
 
         img.onload = img.onerror = function(evt) {
             img.onload = img.onerror = null;
-            callback(evt.type == 'load', url);
+            callback.call(this, evt.type == 'load', url);
         };
 
         img.src = url;
