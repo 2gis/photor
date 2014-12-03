@@ -1274,9 +1274,14 @@
     function loadImage(url, callback) {
         var img = new Image();
 
-        img.onload = img.onerror = function(evt) {
-            img.onload = img.onerror = null;
-            callback.call(this, evt.type == 'load', url);
+        img.onload = function() {
+            img.onload = null;
+            callback.call(this, true, url);
+        };
+
+        img.onerror = function() {
+            img.onerror = null;
+            callback.call(this, false, url);
         };
 
         img.src = url;
