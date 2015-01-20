@@ -1873,13 +1873,13 @@
             }
 
             if (!method) {
-                this.each(function() {
+                return this.each(function() {
                     new Photor(this, options);
                 });
             } else {
                 var args = Array.prototype.slice.call(arguments, 1);
 
-                this.each(function() {
+                return this.each(function() {
                     if (this._photor) {
                         this._photor[method].apply(this._photor, args);
                     }
