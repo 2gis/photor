@@ -44,11 +44,10 @@
         }
     })();
 
-    var prefixedTransform = prefixed['transform'],
-        prefixedTransition = prefixed['transition'],
-        prefixedTransitionDuration = prefixed['transitionDuration'];
+    var prefixedTransform = prefixed.transform,
+        prefixedTransitionDuration = prefixed.transitionDuration;
 
-    var hasCSS3DTransforms = !!prefixed['perspective'];
+    var hasCSS3DTransforms = !!prefixed.perspective;
 
     var prefixedValTransform = prefixedTransform && {
         'transform': 'transform',
@@ -475,39 +474,41 @@
                 var slide = slides[i];
 
                 if (!slide.loaded) {
-                    (function(index, slide, url) {
-                        loadingCount++;
-
-                        loadImage(url, function(success, img) {
-                            loadingCount--;
-
-                            if (success) {
-                                var bSlide = blSlides[index],
-                                    bSlideImg = bSlide.firstChild;
-
-                                slide.width = img.width;
-                                slide.height = img.height;
-                                slide.loaded = true;
-
-                                removeClass(bSlide, modLoading);
-
-                                this._paintSlide(index);
-
-                                bSlideImg.src = url;
-                            } else {
-                                logError('Image wasn\'t loaded: ' + url);
-                            }
-
-                            if (!loadingCount && callback) {
-                                callback.call(this);
-                            }
-                        }, this);
-                    }).call(this, i, slide, slide.url);
+                    imageLoader.call(this, i, slide, slide.url);
                 }
             }
 
             if (!loadingCount && callback) {
                 callback.call(this);
+            }
+
+            function imageLoader(index, slide, url) {
+                loadingCount++;
+
+                loadImage(url, function(success, img) {
+                    loadingCount--;
+
+                    if (success) {
+                        var bSlide = blSlides[index],
+                            bSlideImg = bSlide.firstChild;
+
+                        slide.width = img.width;
+                        slide.height = img.height;
+                        slide.loaded = true;
+
+                        removeClass(bSlide, modLoading);
+
+                        this._paintSlide(index);
+
+                        bSlideImg.src = url;
+                    } else {
+                        logError('Image wasn\'t loaded: ' + url);
+                    }
+
+                    if (!loadingCount && callback && this.element._photor) {
+                        callback.call(this);
+                    }
+                }, this);
             }
         },
 
@@ -927,7 +928,9 @@
          * @param {TransitionEvent} evt
          */
         _onBViewportLayerTransitionEnd: function(evt) {
-            if (evt.propertyName.slice(-1 * 'transform'.length) != 'transform' && evt.propertyName != 'left') {
+            var prop = evt.propertyName;
+
+            if (prop.slice(-1 * 'transform'.length) != 'transform' && prop != 'left') {
                 return;
             }
 
@@ -1123,7 +1126,7 @@
                     if (Math.abs(touchEnd.shiftX) > 5 || Math.abs(touchEnd.shiftY) > 5) {
                         this._completeThumbsDrag();
                     } else {
-                        this._handleThumbsTap(evt, isTouch);
+                        this._handleThumbsTap(evt);
                     }
                 }
             } else {
@@ -1137,7 +1140,7 @@
                             this.next(params.loop);
                         }
                     } else {
-                        this._handleThumbsTap(evt, isTouch);
+                        this._handleThumbsTap(evt);
                     }
                 }
             }
@@ -1217,7 +1220,7 @@
          * @param {TouchEvent|MouseEvent} evt
          * @param {boolean} isTouch
          */
-        _handleThumbsTap: function(evt, isTouch) {
+        _handleThumbsTap: function(evt) {
             var el = evt.target;
 
             while (el != this.bThumbs) {
@@ -1276,7 +1279,7 @@
          * @param {boolean} [loop=false]
          * @returns {boolean}
          */
-        go: function(toIndex, loop) {
+        go: function(toIndex) {
             if (this.frozen) {
                 return false;
             }
@@ -1477,6 +1480,7 @@
         },
 
         destroy: function() {
+
             clearTimeout(this._autoplayTimerId);
 
             var events = this._events;
@@ -1495,6 +1499,7 @@
             }
 
             this.element._photor = null;
+
         }
     };
 
@@ -1806,29 +1811,29 @@
         this.cancelBubble = true;
     }
 
-    function fixEvent(evt) {
-        if (evt.fixed) {
-            return evt;
+    function fixEvent(e) {
+        if (e.fixed) {
+            return e;
         }
 
-        var fixedEvent = createObject(evt);
+        var fixedEvent = createObject(e);
 
-        fixedEvent.origEvent = evt;
+        fixedEvent.origEvent = e;
 
-        if (!evt.target) {
-            fixedEvent.target = evt.srcElement || document;
+        if (!e.target) {
+            fixedEvent.target = e.srcElement || document;
         }
 
-        if (evt.pageX === undefined && evt.clientX !== undefined) {
+        if (e.pageX === undefined && e.clientX !== undefined) {
             var html = document.documentElement,
                 body = document.body;
 
-            fixedEvent.pageX = evt.clientX + (html.scrollLeft || body && body.scrollLeft || 0) - html.clientLeft;
-            fixedEvent.pageY = evt.clientY + (html.scrollTop || body && body.scrollTop || 0) - html.clientTop;
+            fixedEvent.pageX = e.clientX + (html.scrollLeft || body && body.scrollLeft || 0) - html.clientLeft;
+            fixedEvent.pageY = e.clientY + (html.scrollTop || body && body.scrollTop || 0) - html.clientTop;
         }
 
-        if (evt.which === undefined && evt.button !== undefined) {
-            if (evt.button & 1) {
+        if (e.which === undefined && e.button !== undefined) {
+            if (e.button & 1) {
                 fixedEvent.which = 1;
             } else if (e.button & 4) {
                 fixedEvent.which = 2;
@@ -1837,11 +1842,11 @@
             }
         }
 
-        if (!evt.preventDefault) {
+        if (!e.preventDefault) {
             fixedEvent.preventDefault = preventDefault;
         }
 
-        if (!evt.stopPropagation) {
+        if (!e.stopPropagation) {
             fixedEvent.stopPropagation = stopPropagation;
         }
 
@@ -1874,7 +1879,7 @@
 
             if (!method) {
                 return this.each(function() {
-                    new Photor(this, options);
+                    Photor(this, options);
                 });
             } else {
                 var args = Array.prototype.slice.call(arguments, 1);
