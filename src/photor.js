@@ -167,6 +167,9 @@
                 // Build DOM
                 content = methods.getHTML(p.params, p.slides);
 
+                p._layerDOM = p.layer[0].innerHTML;
+                p._thumbsLayerDOM = p.thumbsLayer[0].innerHTML;
+
                 p.layer.html(content.slides);
                 p.thumbsLayer.html(content.thumbs);
 
@@ -263,27 +266,35 @@
         destroy: function(galleryId) {
 
             if (typeof galleryId != 'undefined') {
-                unbindInstance(galleryId);
+                destroyInstance(galleryId);
             } else {
                 for (var key in data) {
                     if (data.hasOwnProperty(key)) {
-                        unbindInstance(key);
+                        destroyInstance(key);
                     }
                 }
             }
 
 
             /*
-             * Удалить обработчики для указанного инстанса галереи
+             * Удалить обработчики для указанного инстанса галереи и вернуть DOM к изначальному состоянию
              *
              * @param {string|number} galleryId Id галереи (ключ для массива с объектами инстансов галереи)
              */
-            function unbindInstance(id) {
+            function destroyInstance(id) {
                 var p = data[id];
 
                 for (var i = 0, len = p.events.length; i < len; i++) {
                     eventManager(p.events[i].element, p.events[i].event, p.events[i].handler, p.events[i].capture, 1);
                 }
+
+                // Clear DOM
+                p.layer[0].innerHTML = p._layerDOM;
+                p.thumbsLayer[0].innerHTML = p._thumbsLayerDOM;
+
+                // Clear DOM attributes
+                p.layer.attr('style', '');
+                p.root.removeAttr('data-photor-id');
             }
         },
 
