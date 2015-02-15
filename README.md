@@ -140,7 +140,7 @@ $('.photor').photor({
     _draggable: '_draggable',   // Dragging is allowed for thumbnails
 
     // Transition callback
-    onShow: function(instance) {}
+    onShow: function() {}
 
 });
 ```
