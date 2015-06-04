@@ -295,6 +295,8 @@
                 // Clear DOM attributes
                 p.layer.attr('style', '');
                 p.root.removeAttr('data-photor-id');
+
+                delete data[id];
             }
         },
 
