@@ -1,77 +1,81 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Photor demo</title>
-    <link rel="stylesheet" href="../dist/photor.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            }
-        html,
-        body {
-            height: 100%;
-            }
+  <meta charset="UTF-8">
+  <title>Paintings by Moni and Jeremy</title>
+  <link rel="stylesheet" href="../dist/photor.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
 
-        .custom {
-            width: 100%;
-            height: 100%;
-            text-align: center;
-            font: 36px Helvetica, Arial, sans-serif;
-            color: #000;
-            background: #ccc;
-            }
-        .custom:before {
-            content: '';
-            display: inline-block;
-            vertical-align: middle;
-            height: 100%;
-            width: 0;
-            margin: 0 0 0 -4px;
-            }
-    </style>
+    html,
+    body {
+      height: 100%;
+    }
 
-    <meta name="viewport" content="width=device-width">
-    <meta name="msapplication-tap-highlight" content="no">
+    .custom {
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      font: 36px Helvetica, Arial, sans-serif;
+      color: #000;
+      background: #ccc;
+    }
+
+    .custom:before {
+      content: '';
+      display: inline-block;
+      vertical-align: middle;
+      height: 100%;
+      width: 0;
+      margin: 0 0 0 -4px;
+    }
+  </style>
+
+  <meta name="viewport" content="width=device-width">
+  <meta name="msapplication-tap-highlight" content="no">
 </head>
 <body>
 
 <div class="photor">
 
-    <div class="photor__viewport">
+  <div class="photor__viewport">
 
-        <div class="photor__viewportLayer">
-            <img src="images/1.jpg" data-thumb="thumbs/1.jpg">
-            <img src="images/2.jpg" data-thumb="thumbs/2.jpg">
-            <img src="images/3.jpg" data-thumb="thumbs/3.jpg">
-            <img src="images/4.jpg" data-thumb="thumbs/4.jpg">
-            <img src="images/5.jpg" data-thumb="thumbs/5.jpg">
-            <img src="images/6.jpg" data-thumb="thumbs/6.jpg">
-            <img src="images/7.jpg" data-thumb="thumbs/7.jpg">
-            <img src="images/8.jpg" data-thumb="thumbs/8.jpg">
-            <img src="images/9.jpg" data-thumb="thumbs/9.jpg">
-        </div>
-
-        <div class="photor__viewportControl">
-            <div class="photor__viewportControlPrev"></div>
-            <div class="photor__viewportControlNext"></div>
-        </div>
-
+    <div class="photor__viewportLayer">
+      <img src="images/558_painting_jeremy_2014-08.jpg" data-thumb="thumbs/558_painting_jeremy_2014-08.jpg">
+      <img src="images/559_painting_moni_2014-08.jpg" data-thumb="thumbs/559_painting_moni_2014-08.jpg">
+      <img src="images/560_painting_jeremy_2014-08.jpg" data-thumb="thumbs/560_painting_jeremy_2014-08.jpg">
+      <img src="images/561_painting_jeremy_2014-08.jpg" data-thumb="thumbs/561_painting_jeremy_2014-08.jpg">
+      <img src="images/562_painting_moni_2014-08.jpg" data-thumb="thumbs/562_painting_moni_2014-08.jpg">
+      <img src="images/563_painting_moni_jeremy_2014-08.jpg" data-thumb="thumbs/563_painting_moni_jeremy_2014-08.jpg">
+      <img src="images/564_painting_jeremy_2014-08.jpg" data-thumb="thumbs/564_painting_jeremy_2014-08.jpg">
+      <img src="images/565_painting_jeremy_2013-08.jpg" data-thumb="thumbs/565_painting_jeremy_2013-08.jpg">
+      <img src="images/566_painting_moni_2013-08.jpg" data-thumb="thumbs/566_painting_moni_2013-08.jpg">
+      <img src="images/570_painting_moni_jeremy_2012-08.jpg" data-thumb="thumbs/570_painting_moni_jeremy_2012-08.jpg">
+      <img src="images/571_painting_moni_jeremy_2012-08.jpg" data-thumb="thumbs/571_painting_moni_jeremy_2012-08.jpg">
     </div>
 
-    <div class="photor__thumbs">
-        <div class="photor__thumbsWrap"></div>
+    <div class="photor__viewportControl">
+      <div class="photor__viewportControlPrev"></div>
+      <div class="photor__viewportControlNext"></div>
     </div>
+
+  </div>
+
+  <div class="photor__thumbs">
+    <div class="photor__thumbsWrap"></div>
+  </div>
 
 </div>
 
 <script src="http://yandex.st/jquery/1.11.0/jquery.min.js"></script>
 <script src="../dist/photor.js"></script>
 <script>
-    $(document).ready(function() {
-        $('.photor').photor();
-    });
+  $(document).ready(function() {
+    $('.photor').photor();
+  });
 </script>
 
 </body>
