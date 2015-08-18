@@ -365,12 +365,13 @@
         },
 
         prev: function(galleryId) {
-            var p = data[galleryId];
+            var p = data[galleryId],
+                onScreen = p.params.slidesOnScreen;
 
             if (p.current > 0) {
                 methods.go(galleryId, p.current - 1);
             } else {
-                methods.go(galleryId, p.params.loop ? p.last : 0);
+                methods.go(galleryId, p.params.loop ? p.last - onScreen + 1 : 0);
             }
         },
 
