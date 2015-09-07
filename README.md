@@ -92,7 +92,7 @@ $('.photor').photor({
 
     // General options
     current: 0,           // {Number}  Index of start slide
-    delay: 300,           // {Number}  Transition duration
+    duration: 300,        // {Number}  Transition duration
     loop: false,          // {Boolean} Loop gallery
     slidesOnScreen: 1,    // {Number}  Number of visible slides in viewport
 
@@ -179,7 +179,7 @@ Note: some methods take `galleryId` as their first parameter. This allows you to
 
     * `galleryId {String|Number}`
     * `target {Number}` Index of target slide
-    * *`delay {Number}` optional* Sets transition duration
+    * *`duration {Number}` optional* Sets transition duration
 
 * ###next
 
