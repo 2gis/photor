@@ -224,8 +224,8 @@
 
             this._bViewportHeight = bViewport.offsetHeight;
 
-            this._bThumbsWidth = bThumbs.offsetWidth;
-            this._bThumbsHeight = bThumbs.offsetHeight;
+            this._bThumbsWidth = bThumbs && bThumbs.offsetWidth;
+            this._bThumbsHeight = bThumbs && bThumbs.offsetHeight;
         },
 
         /**
@@ -431,9 +431,9 @@
             }
 
             bViewportLayer.appendChild(dfSlides);
-            bThumbsLayer.appendChild(dfThumbs);
 
-            if (this._thumbsType == 'thumbs') {
+            if (bThumbsLayer && (this._thumbsType == 'thumbs')) {
+                bThumbsLayer.appendChild(dfThumbs);
                 bThumbsLayer.appendChild(this.bThumbFrame);
             }
         },
@@ -639,7 +639,7 @@
                 };
             }
 
-            this._bThumbsLayerWidth = this.bThumbsLayer.offsetWidth;
+            this._bThumbsLayerWidth = this.bThumbsLayer && this.bThumbsLayer.offsetWidth;
 
             this._thumbsDraggable = this._bThumbsWidth < this._bThumbsLayerWidth;
         },
@@ -704,7 +704,10 @@
             if (prefixedTransitionDuration) {
                 var duration = noEffects ? '0ms' : this._params.duration + 'ms';
 
-                bThumbsLayer.style[prefixedTransitionDuration] = duration;
+                if (bThumbsLayer && bThumbsLayer.style) {
+                    bThumbsLayer.style[prefixedTransitionDuration] = duration;
+                }
+
                 bThumbFrame.style[prefixedTransitionDuration] = duration;
             }
 
@@ -1380,7 +1383,11 @@
          * @param {Function} listener
          */
         _bindEvent: function(target, type, listener) {
-            var id = getUID(target) + '-' + type + '-' + getUID(listener);
+            if (!target) {
+                return;
+            }
+
+            var id = [getUID(target), type, getUID(listener)].join('-');
 
             if (!this._events.hasOwnProperty(id)) {
                 if (target.addEventListener) {
@@ -1445,7 +1452,7 @@
          * @param {Function} listener
          */
         _unbindEvent: function(target, type, listener) {
-            var id = getUID(target) + '-' + type + '-' + getUID(listener);
+            var id = [getUID(target), type, getUID(listener)].join('-');
 
             if (this._events.hasOwnProperty(id)) {
                 if (target.removeEventListener) {
@@ -1524,7 +1531,7 @@
      * @returns {int}
      */
     function getUID(obj) {
-        return obj._uid || (obj._uid = ++uidCounter);
+        return obj && (obj._uid || (obj._uid = ++uidCounter));
     }
 
     /**
@@ -1728,7 +1735,7 @@
      * @returns {Node}
      */
     function clearNode(node) {
-        while (node.lastChild) {
+        while (node && node.lastChild) {
             node.removeChild(node.lastChild);
         }
         return node;
@@ -1751,8 +1758,10 @@
                 unit = 'px';
             }
 
-            el.style[prefixedTransform] = 'translate(' + value + unit + ', 0)' +
-                (hasCSS3DTransforms ? ' translateZ(0)' : '');
+            if (el && el.style) {
+                el.style[prefixedTransform] = 'translate(' + value + unit + ', 0)' +
+                    (hasCSS3DTransforms ? ' translateZ(0)' : '');
+            }
         };
 
         setOffsets = function(el, x, y, unit) {
