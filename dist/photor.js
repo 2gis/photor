@@ -168,7 +168,7 @@
                 content = methods.getHTML(p.params, p.slides);
 
                 p._layerDOM = p.layer[0].innerHTML;
-                p._thumbsLayerDOM = p.thumbsLayer[0].innerHTML;
+                p._thumbsLayerDOM = p.thumbsLayer.first().innerHTML;
 
                 p.layer.html(content.slides);
                 p.thumbsLayer.html(content.thumbs);
@@ -629,16 +629,14 @@
 
                 // Thumbnails template
 
-                thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb +
-                    ' ' + params.modifierPrefix + i +
-                    ' ' + data[i].classes + '">';
-
                 if (params.showThumbs == 'thumbs' && data[i].url) {
-                    thumbsHTML += '<img src="' + data[i].thumb +
-                        '" class="' + params.thumbImg + '" data-rel="' + i + '">';
+                    thumbsHTML += '<span data-rel="' + i + '" class="' + params.thumb +
+                        ' ' + params.modifierPrefix + i +
+                        ' ' + data[i].classes + '">' +
+                            '<img src="' + data[i].thumb +
+                            '" class="' + params.thumbImg + '" data-rel="' + i + '">' +
+                        '</span>';
                 }
-
-                thumbsHTML += '</span>';
 
                 // Slides template
 
