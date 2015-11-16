@@ -432,9 +432,12 @@
 
             bViewportLayer.appendChild(dfSlides);
 
-            if (bThumbsLayer && (this._thumbsType == 'thumbs')) {
+            if (bThumbsLayer && this._thumbsType) {
                 bThumbsLayer.appendChild(dfThumbs);
-                bThumbsLayer.appendChild(this.bThumbFrame);
+
+                if (bThumbsLayer && (this._thumbsType == 'thumbs')) {
+                    bThumbsLayer.appendChild(this.bThumbFrame);
+                }
             }
         },
 
