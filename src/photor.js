@@ -61,7 +61,7 @@
         return ua.indexOf('msie') != -1 ? parseInt(ua.split('msie')[1]) : false;
     })(navigator.userAgent.toLowerCase());
 
-    var photorPrefix = 'photor__';
+    var defaultPhotorPrefix = 'photor__';
 
     function Photor(el, options) {
         var instance = this instanceof Photor ? this : createObject(Photor.prototype);
@@ -112,6 +112,7 @@
 
         // Dimensions
         _bViewportWidth: undefined,
+        _bViewportLayerWidth: undefined,
         _bViewportHeight: undefined,
         _bThumbsWidth: undefined,
         _bThumbsHeight: undefined,
@@ -126,6 +127,7 @@
 
             this._events = {};
 
+            var photorPrefix = options && options.photorPrefix ? options.photorPrefix : defaultPhotorPrefix;
             var params = this._params = extendObject({
 
                 // Elements
@@ -180,7 +182,8 @@
                 loop: false,                // Зациклить галерею
                 duration: 300,              // Время анимации для слайдов
                 showThumbs: 'thumbs',       // 'thumbs' / 'dots' / false
-                keyboard: true              // Управление с клавиатуры
+                keyboard: true,             // Управление с клавиатуры
+                slidesOnScreen: 1           // Количество видимых слайдов во вьюпорте
 
             }, options);
 
@@ -216,10 +219,15 @@
 
         _updateDims: function() {
             var bViewport = this.bViewport,
+                bViewportLayer = this.bViewportLayer,
                 bThumbs = this.bThumbs;
 
             this._bViewportWidth = window.getComputedStyle ?
                 parseFloat(window.getComputedStyle(bViewport).width, 10) :
+                bViewport.offsetWidth;
+
+            this._bViewportLayerWidth = window.getComputedStyle ?
+                parseFloat(window.getComputedStyle(bViewportLayer).width, 10) :
                 bViewport.offsetWidth;
 
             this._bViewportHeight = bViewport.offsetHeight;
@@ -241,7 +249,7 @@
             this._setSlides(newSlides);
 
             var slideCount = this.slides.length,
-                current = this.current = calcIndex(params.current, slideCount);
+                current = this.current = calcIndex(params.current, slideCount, params.slidesOnScreen);
 
             if (slideCount == 1) {
                 addClass(el, params._single);
@@ -659,7 +667,13 @@
          * @param {boolean} [noEffects=false]
          */
         _moveToCurrentSlide: function(noEffects) {
-            var offsetX = -1 * this._bViewportWidth * this.current;
+            var offsetX;
+
+            if (this._params.slidesOnScreen > 1) {
+                offsetX = -1 * this._bViewportLayerWidth * this.current;
+            } else {
+                offsetX = -1 * this._bViewportWidth * this.current;
+            }
 
             if (this._bViewportLayerOffsetX == offsetX) {
                 this._transitionCallback();
@@ -1158,16 +1172,14 @@
         _completeSlidesDrag: function() {
             var touch = this._touch,
                 touchStart = touch.start,
-                touchEnd = touch.end;
+                touchEnd = touch.end,
+                touchDuration = touchEnd.timeStamp - touchStart.timeStamp;
 
             var absShiftX = Math.abs(touchEnd.shiftX),
                 absShiftY = Math.abs(touchEnd.shiftY);
 
-            if (
-                absShiftX >= absShiftY &&
-                    ((touchEnd.timeStamp - touchStart.timeStamp) < 250 || absShiftX >= (this._bViewportWidth / 5))
-            ) {
-                var count = Math.max(Math.round(absShiftX / this._bViewportWidth), 1),
+            if (absShiftX >= absShiftY && (touchDuration < 250 || absShiftX >= (this._bViewportLayerWidth / 5))) {
+                var count = Math.max(Math.round(absShiftX / this._bViewportLayerWidth), 1),
                     toIndex;
 
                 if (!this._params.loop) {
@@ -1300,7 +1312,7 @@
             var slideCount = this.slides.length,
                 current = this.current;
 
-            toIndex = calcIndex(toIndex, slideCount, false);
+            toIndex = calcIndex(toIndex, slideCount, params.slidesOnScreen, false);
 
             if (toIndex == current || toIndex === false) {
                 return false;
@@ -1540,20 +1552,31 @@
     /**
      * @param {int} value
      * @param {int} length
+     * @param {int} slidesOnScreen
      * @param {*} [altValue=0]
      * @returns {int|*}
      */
-    function calcIndex(value, length, altValue) {
-        if (value < 0) {
-            value += length;
-
+    function calcIndex(value, length, slidesOnScreen, altValue) {
+        if (slidesOnScreen == 1) {
             if (value < 0) {
-                return altValue !== undefined ? altValue : 0;
-            }
-        } else if (value >= length) {
-            value -= length;
+                value += length;
 
-            if (value >= length) {
+                if (value < 0) {
+                    return altValue !== undefined ? altValue : 0;
+                }
+            } else if (value >= length) {
+                value -= length;
+
+                if (value >= length) {
+                    return altValue !== undefined ? altValue : 0;
+                }
+            }
+        } else {
+            if (value + slidesOnScreen > length) {
+                if (length - value < slidesOnScreen) {
+                    return length - slidesOnScreen;
+                }
+
                 return altValue !== undefined ? altValue : 0;
             }
         }
