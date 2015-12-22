@@ -187,6 +187,10 @@
 
             }, options);
 
+            if (params.slidesOnScreen > 1) {
+                params.showThumbs = false;
+            }
+
             this.element = el;
             this.bControl = el.querySelector('.' + params.control);
             this.btnPrev = el.querySelector('.' + params.prev);
@@ -249,7 +253,7 @@
             this._setSlides(newSlides);
 
             var slideCount = this.slides.length,
-                current = this.current = calcIndex(params.current, slideCount, params.slidesOnScreen);
+                current = this.current = calcIndex(params.current, params.slidesOnScreen, slideCount, params.loop);
 
             if (slideCount == 1) {
                 addClass(el, params._single);
@@ -1192,7 +1196,7 @@
                     toIndex = this.current + (touchEnd.shiftX > 0 ? -count : count);
                 }
 
-                if (this.go(toIndex, this._params.loop)) {
+                if (this.go(toIndex)) {
                     return;
                 }
             }
@@ -1312,7 +1316,7 @@
             var slideCount = this.slides.length,
                 current = this.current;
 
-            toIndex = calcIndex(toIndex, slideCount, params.slidesOnScreen, false);
+            toIndex = calcIndex(toIndex, params.slidesOnScreen, slideCount, params.loop, false);
 
             if (toIndex == current || toIndex === false) {
                 return false;
@@ -1363,7 +1367,7 @@
                 return;
             }
 
-            return this.go(toIndex, loop);
+            return this.go(toIndex);
         },
 
         /**
@@ -1381,7 +1385,7 @@
                 return;
             }
 
-            return this.go(toIndex, loop);
+            return this.go(toIndex);
         },
 
         freeze: function() {
@@ -1553,35 +1557,57 @@
      * @param {int} value
      * @param {int} length
      * @param {int} slidesOnScreen
+     * @param {boolean} loop
      * @param {*} [altValue=0]
      * @returns {int|*}
      */
-    function calcIndex(value, length, slidesOnScreen, altValue) {
+    function calcIndex(value, slidesOnScreen, length, loop, altValue) {
+        loop = loop !== undefined ? loop : false;
+        altValue = altValue !== undefined ? altValue : 0;
+
         if (slidesOnScreen == 1) {
             if (value < 0) {
                 value += length;
 
                 if (value < 0) {
-                    return altValue !== undefined ? altValue : 0;
+                    return altValue;
                 }
             } else if (value >= length) {
                 value -= length;
 
                 if (value >= length) {
-                    return altValue !== undefined ? altValue : 0;
+                    return altValue;
                 }
             }
-        } else {
-            if (value + slidesOnScreen > length) {
-                if (length - value < slidesOnScreen) {
+
+            return value;
+        }
+
+        if (slidesOnScreen > 1) {
+            if (length <= slidesOnScreen) {
+                return altValue;
+            }
+
+            if (!loop) {
+                if (value > length - slidesOnScreen) {
                     return length - slidesOnScreen;
                 }
 
-                return altValue !== undefined ? altValue : 0;
+                if (value < 0) {
+                    return altValue;
+                }
+            } else {
+                if (value < 0) {
+                    return length - slidesOnScreen;
+                } else {
+                    if (value > length - slidesOnScreen) {
+                        return 0;
+                    }
+                }
             }
-        }
 
-        return value;
+            return value;
+        }
     }
 
     /**
