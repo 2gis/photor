@@ -2,6 +2,7 @@
   "name": "photor",
   "description": "JavaScript photo gallery",
   "version": "0.2.0",
+  "main": "dist/photor.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/2gis/photor.git"
