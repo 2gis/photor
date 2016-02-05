@@ -1,14 +1,11 @@
 {
   "name": "photor",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "jQuery photo gallery",
   "main": "index.js",
-  "scripts": {
-    "test": "test"
-  },
   "repository": {
     "type": "git",
-    "url": "git://github.com/Chaptykov/photor.git"
+    "url": "git://github.com/2gis/photor.git"
   },
   "keywords": [
     "jQuery",
@@ -16,11 +13,10 @@
     "plugin"
   ],
   "author": "Tim Chaptykov",
-  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Chaptykov/photor/issues"
+    "url": "https://github.com/2gis/photor/issues"
   },
-  "homepage": "https://github.com/Chaptykov/photor",
+  "homepage": "https://github.com/2gis/photor",
   "devDependencies": {
     "grunt": "~0.4.2",
     "grunt-contrib-less": "~0.9.0",
