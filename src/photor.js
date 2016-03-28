@@ -250,6 +250,9 @@
             this._thumbsType = params.showThumbs;
             this._thumbsDraggable = false;
 
+            setOffsetX(this.bThumbsLayer, 0);
+            setOffsetX(this.bViewportLayer, 0);
+
             this._setSlides(newSlides);
 
             var slideCount = this.slides.length,
