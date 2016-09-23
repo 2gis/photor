@@ -248,7 +248,6 @@
                 el = this.element;
 
             this._thumbsType = params.showThumbs;
-            this._thumbsDraggable = true;
 
             setOffsetX(this.bThumbsLayer, 0);
             setOffsetX(this.bViewportLayer, 0);
