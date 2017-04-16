@@ -4,13 +4,13 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
 
 [License](LICENSE)
 
-##Browser Support
+## Browser Support
 
 *Full support:* Chrome, Firefox, Safari, Opera 12+, IE 10+, iOS, Android.
 
 *Partial support:* IE 7—9 (without animations).
 
-##Usage
+## Usage
 
 1. Include `jQuery`, `photor.min.js` and `photor.min.css`:
 
@@ -63,7 +63,7 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
     ```
 
 
-##How to build
+## How to build
 
 1. Make sure you have `nodejs`, `npm` and `grunt-cli` installed;
 
@@ -83,7 +83,7 @@ Photor is a minimalistic lightweight jQuery gallery with touch devices support.
 
 Optional task `grunt dev` builds Photor as well as starts a web server on port 3000, and runs a _watcher_ that rebuilds the project on file change.
 
-##Configuration
+## Configuration
 
 You can specify parameters on initialization.
 
@@ -145,7 +145,7 @@ $('.photor').photor({
 });
 ```
 
-##Methods
+## Methods
 
 Note: some methods take `galleryId` as their first parameter. This allows you to have multiple independent instances of Photor in your app.
 
