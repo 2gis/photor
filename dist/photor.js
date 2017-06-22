@@ -161,7 +161,7 @@
                 _hidden: '_hidden',         // Спрятанный слайд
 
                 // Algorithms
-                algorithm: 'contain',         // Алгоритм размещения фотографии при маленьком размере экрана: 'contain' / 'cover'
+                algorithm: 'contain',       // Алгоритм размещения фотографии при маленьком размере экрана: 'contain' / 'cover'
                 _auto: '_auto',             // Фотография больше вьюпорта
                 _center: '_center',         // Фотография меньше вьюпорта
 
@@ -248,7 +248,6 @@
                 el = this.element;
 
             this._thumbsType = params.showThumbs;
-            this._thumbsDraggable = false;
 
             setOffsetX(this.bThumbsLayer, 0);
             setOffsetX(this.bViewportLayer, 0);
@@ -284,6 +283,7 @@
                         this._moveToCurrentItems(true);
                     });
                 } else {
+                    this._updateThumbsDims();
                     this._moveToCurrentItems(true);
                 }
 
@@ -637,10 +637,6 @@
         },
 
         _updateThumbsDims: function() {
-            if (this._thumbsType != 'thumbs') {
-                return;
-            }
-
             var slides = this.slides;
 
             var blThumbs = this.blThumbs,
@@ -714,10 +710,6 @@
          * @param {boolean} [noEffects=false]
          */
         _moveToCurrentThumb: function(noEffects) {
-            if (this._thumbsType != 'thumbs') {
-                return;
-            }
-
             var currentThumbDims = this.slides[this.current].thumbDims;
 
             var bThumbsLayer = this.bThumbsLayer,
